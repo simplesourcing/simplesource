@@ -49,7 +49,7 @@ public final class ClusterTest {
 
     @Test
     public void testSuccessRun() throws Exception {
-         int loopCount = 100000;
+         int loopCount = 1000;
          int server1Port = randomPort();
          int server2Port = randomPort();
 
