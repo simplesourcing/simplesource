@@ -1,0 +1,10 @@
+language: java
+jdk: oraclejdk8
+
+script: make build
+
+deploy:
+  provider: script
+  script: make deploy
+  on:
+    tags: true
