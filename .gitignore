@@ -149,3 +149,6 @@ _pdf
 __pycache__
 
 *.codekit3
+
+# Sensitive Data
+.deploy/private-key.gpg
