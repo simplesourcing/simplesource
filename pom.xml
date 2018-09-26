@@ -334,7 +334,7 @@
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>ossrh</serverId>
-                            <nexusUrl>https://localhost:8081</nexusUrl>
+                            <nexusUrl>https://oss.sonatype.org</nexusUrl>
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                             <skipStaging>true</skipStaging>
                         </configuration>
@@ -344,15 +344,15 @@
         </profile>
     </profiles>
     <distributionManagement>
-    <repository>
-    <id>ossrh</id>
-    <name>Releases</name>
-    <url>http://localhost:8081/repository/maven-releases</url>
-    </repository>
-    <snapshotRepository>
-    <id>ossrh</id>
-    <name>Snapshot</name>
-    <url>http://localhost:8081/repository/maven-snapshots</url>
-    </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <name>Releases</name>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+        </repository>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <name>Snapshot</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
     </distributionManagement>
 </project>
