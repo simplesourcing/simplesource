@@ -30,5 +30,7 @@ docs:
 	    rm -rf apidocs && \
 	    cp -Rf ../target/site/apidocs apidocs && \
 	    git add . && \
-	    git commit -m "Lastest javadoc on successful travis deploy ${TRAVIS_BUILD_NUMBER} auto-pushed to simplesourcing.github.io"
+	    git commit -m "Lastest javadoc on successful travis deploy ${TRAVIS_BUILD_NUMBER} auto-pushed to simplesourcing.github.io" && \
+	    git push -fq > /dev/null
+
 	rm -rf simplesourcing.github.io
