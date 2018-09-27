@@ -1,9 +1,12 @@
 build:
 	mvn install
 
+decrypt:
+	openssl aes-256-cbc -K ${encrypted_bbcf2f683b6c_key} -iv ${encrypted_bbcf2f683b6c_iv} -in .deploy/keys.tar.enc -out .deploy/keys.tar -d
+	tar xvf .deploy/keys.tar -C .deploy
+
 deploy:
-	openssl aes-256-cbc -K ${encrypted_bbcf2f683b6c_key} -iv ${encrypted_bbcf2f683b6c_iv} -in .deploy/private-key.gpg.enc -out .deploy/private-key.gpg -d
-	gpg --import .deploy/private-key.gpg
+	gpg --import .deploy/keys/private-key.gpg
 	mvn versions:set -DnewVersion=${TRAVIS_TAG}
 	mvn clean deploy -DskipTests -P release --settings .deploy/settings.xml
 
@@ -13,11 +16,8 @@ docs:
 	git config --global user.email "travis@travis-ci.com"
 	git config --global user.name "travis-ci"
 
-	# Decrypt the file containing the private key
-	# .deploy/docs_deploy_key.enc is the travis-encrypted private key (public key added as a deploy key to simplesourcing/simplesourcing.github.io)
-	openssl aes-256-cbc -K ${$encrypted_bbcf2f683b6c_key} -iv ${$encrypted_bbcf2f683b6c_iv} -in .deploy/docs_deploy_key.enc -out ${HOME}/.ssh/docs_deploy_key -d
-
 	# Enable SSH authentication
+	mv .deploy/keys/docs_deploy_key ${HOME}/.ssh/docs_deploy_key
 	chmod 600 "${HOME}/.ssh/docs_deploy_key" \
 	         && printf "%s\n" \
 	              "Host github.com" \

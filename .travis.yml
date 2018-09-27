@@ -5,8 +5,8 @@ script: make build
 
 deploy:
   provider: script
-  script: make deploy && make docs
+  script: make decrypt && make deploy && make docs
   on:
     tags: true
 
-after_deploy: rm .deploy/private-key.gpg
+after_deploy: rm -rf .deploy/keys ; rm ${HOME}/.ssh/docs_deploy_key
