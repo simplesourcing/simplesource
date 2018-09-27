@@ -5,7 +5,7 @@ script: make build
 
 deploy:
   provider: script
-  script: make deploy
+  script: make deploy && make docs
   on:
     tags: true
 

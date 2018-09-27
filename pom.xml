@@ -312,6 +312,10 @@
                                 </goals>
                             </execution>
                         </executions>
+                        <configuration>
+                            <aggregate>true</aggregate>
+                            <excludePackageNames>*.internal:io.simplesource.kafka.serialization.avro.mappers</excludePackageNames>
+                        </configuration>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
