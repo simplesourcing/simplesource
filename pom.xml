@@ -5,7 +5,7 @@
 
     <groupId>io.simplesource</groupId>
     <artifactId>simplesource-command-parent</artifactId>
-    <version>0.1.2-SNAPSHOT</version>
+    <version>0.1.2</version>
     <packaging>pom</packaging>
 
     <name>simplesourcing</name>
@@ -312,6 +312,10 @@
                                 </goals>
                             </execution>
                         </executions>
+                        <configuration>
+                            <aggregate>true</aggregate>
+                            <excludePackageNames>*.internal:io.simplesource.kafka.serialization.avro.mappers</excludePackageNames>
+                        </configuration>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
