@@ -12,7 +12,7 @@ deploy:
 
 docs:
 	mvn install -DskipTests
-	mvn javadoc:javadoc -P release
+	mvn javadoc:javadoc -P sitedocs
 	git config --global user.email "travis@travis-ci.com"
 	git config --global user.name "travis-ci"
 

@@ -312,10 +312,6 @@
                                 </goals>
                             </execution>
                         </executions>
-                        <configuration>
-                            <aggregate>true</aggregate>
-                            <excludePackageNames>*.internal:io.simplesource.kafka.serialization.avro.mappers</excludePackageNames>
-                        </configuration>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
@@ -341,6 +337,30 @@
                             <nexusUrl>https://oss.sonatype.org</nexusUrl>
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                             <skipStaging>true</skipStaging>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>sitedocs</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.9.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <aggregate>true</aggregate>
+                            <excludePackageNames>*.internal:io.simplesource.kafka.serialization.avro.mappers</excludePackageNames>
                         </configuration>
                     </plugin>
                 </plugins>
