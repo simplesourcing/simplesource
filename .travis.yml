@@ -9,4 +9,4 @@ deploy:
   on:
     tags: true
 
-after_deploy: rm -rf .deploy/keys ; rm ${HOME}/.ssh/docs_deploy_key
+after_deploy: rm -rf .deploy/keys ; rm .deploy/keys.tar ; rm ${HOME}/.ssh/docs_deploy_key
