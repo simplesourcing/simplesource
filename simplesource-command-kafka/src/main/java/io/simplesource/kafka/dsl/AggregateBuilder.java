@@ -47,7 +47,7 @@ public final class AggregateBuilder<K, C, E, A> {
         return this;
     }
 
-    public AggregateBuilder<K, C, E, A> withDomainSerializer(final AggregateSerdes<K, C, E, A> aggregateSerdes) {
+    public AggregateBuilder<K, C, E, A> withSerdes(final AggregateSerdes<K, C, E, A> aggregateSerdes) {
         this.aggregateSerdes = aggregateSerdes;
         return this;
     }

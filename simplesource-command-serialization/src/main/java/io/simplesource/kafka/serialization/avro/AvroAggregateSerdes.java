@@ -141,11 +141,6 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
         return aur;
     }
 
-    @Override
-    public Map<String, Object> serializerConfig() {
-        return serializerConfig;
-    }
-
     private static class CommandRequestAvroHelper {
         private static final Map<Schema, Schema> schemaCache = new ConcurrentHashMap<>();
 

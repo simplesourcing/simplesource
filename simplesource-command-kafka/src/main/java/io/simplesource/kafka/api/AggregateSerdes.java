@@ -21,9 +21,6 @@ import java.util.UUID;
  * @param <C> base type of all commands for this aggregate
  */
 public interface AggregateSerdes<K, C, E, A> {
-    // TODO: remove this
-    Map<String, Object> serializerConfig();
-
     Serde<K> aggregateKey();
     Serde<CommandRequest<C>> commandRequest();
     Serde<UUID> commandResponseKey();
