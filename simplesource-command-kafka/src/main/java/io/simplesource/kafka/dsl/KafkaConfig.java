@@ -44,8 +44,8 @@ public final class KafkaConfig {
             CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers());
     }
 
-    public Map<String, Object> producerConfig(final AggregateSerdes<?, ?, ?, ?> aggregateSerdes) {
-        final Map<String, Object> configs = new HashMap<>(aggregateSerdes.serializerConfig());
+    public Map<String, Object> producerConfig() {
+        final Map<String, Object> configs = new HashMap<>();
         configs.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers());
         configs.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, config.get(ProducerConfig.COMPRESSION_TYPE_CONFIG));
         if (isExactlyOnce()) {

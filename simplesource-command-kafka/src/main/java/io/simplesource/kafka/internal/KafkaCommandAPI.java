@@ -54,9 +54,10 @@ public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
         commandRequestTopic = aggregateSpec.serialization().resourceNamingStrategy().topicName(
             aggregateSpec.aggregateName(),
             command_request.name());
-        aggregateSerdes = aggregateSpec.serialization().serdes();
+        AggregateSpec.Serialization<K, C, ?, A> serialization = aggregateSpec.serialization();
+        aggregateSerdes = serialization.serdes();
         commandProducer = new KafkaProducer<>(
-            kafkaConfig.producerConfig(aggregateSerdes),
+            kafkaConfig.producerConfig(),
             aggregateSerdes.aggregateKey().serializer(),
             aggregateSerdes.commandRequest().serializer());
         currentHost = kafkaConfig.currentHostInfo();

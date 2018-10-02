@@ -131,11 +131,6 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
         return aur;
     }
 
-    @Override
-    public Map<String, Object> serializerConfig() {
-        return serializerConfig;
-    }
-
     private class CommandRequestAdapter implements JsonSerializer<CommandRequest<C>>, JsonDeserializer<CommandRequest<C>> {
 
         private static final String READ_SEQUENCE = "readSequence";
