@@ -35,7 +35,7 @@ public final class NonEmptyList<A> extends AbstractList<A> {
             return NonEmptyList.of(l.get(0));
         }
 
-        return new NonEmptyList(l.get(0), l.subList(1, l.size()));
+        return new NonEmptyList<>(l.get(0), l.subList(1, l.size()));
     }
 
     public NonEmptyList(final A head, final List<A> tail) {
