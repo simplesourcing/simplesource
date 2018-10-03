@@ -5,13 +5,14 @@ import io.simplesource.kafka.serialization.avro.mappers.steps.DomainSerializedCl
 import io.simplesource.kafka.serialization.util.GenericMapper;
 import org.apache.avro.generic.GenericRecord;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static java.util.Objects.requireNonNull;
 
-public final class DomainMapperBuilder {
+
+public class DomainMapperBuilder {
     private final DomainMapperRegistry domainMapperRegistry;
     private BuildConfig buildConfig;
 
@@ -25,18 +26,20 @@ public final class DomainMapperBuilder {
     }
 
     public <D, A extends GenericRecord> DomainSerializedClassMapperToSerializedStep<D, A> mapperFor(Class<D> domainClass, Class<A> serializedClass) {
-        return new DomainSerializedClassMapperImpl<D, A>(this, domainMapperRegistry).mapperFor(domainClass, serializedClass);
+        return new DomainSerializedClassMapperImpl<D, A>(this, domainMapperRegistry)
+                .mapperFor(requireNonNull(domainClass), requireNonNull(serializedClass));
     }
 
     public <D, A extends GenericRecord> DomainSerializedClassMapperToSerializedStep<Optional<D>, A> optionalMapperFor(Class<D> domainClass, Class<A> serializedClass) {
         //For cases where Optional is empty, we return the base class of all mapped types. This is useful for cases when
         //map only one type like aggregate or aggregate key
         buildConfig.setDomainValueToClassFunc((Optional<D> v) -> v.<Class<?>>map(D::getClass).orElse(domainClass));
-        return new DomainSerializedClassMapperImpl<Optional<D>, A>(this, domainMapperRegistry).mapperFor(domainClass, serializedClass);
+        return new DomainSerializedClassMapperImpl<Optional<D>, A>(this, domainMapperRegistry)
+                .mapperFor(requireNonNull(domainClass), requireNonNull(serializedClass));
     }
 
     public DomainMapperBuilder withExceptionSupplierForNotRegisteredMapper(Supplier<RuntimeException> exceptionSupplier) {
-        buildConfig.exceptionSupplier = Optional.of(Objects.requireNonNull(exceptionSupplier));
+        buildConfig.exceptionSupplier = Optional.of(requireNonNull(exceptionSupplier));
         return this;
     }
 

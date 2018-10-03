@@ -8,7 +8,7 @@ import org.apache.avro.specific.SpecificData;
 
 import static java.util.Objects.isNull;
 
-public final class AvroSpecificGenericMapper<D extends GenericRecord> implements GenericMapper<D, GenericRecord> {
+public class AvroSpecificGenericMapper<D extends GenericRecord> implements GenericMapper<D, GenericRecord> {
 
     private AvroSpecificGenericMapper() {
     }
