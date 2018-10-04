@@ -9,4 +9,7 @@ protocol AccountSubsystem {
     string username;
     decimal(12,4) balance;
   }
+  record UpdateUserName {
+    string username;
+  }
 }

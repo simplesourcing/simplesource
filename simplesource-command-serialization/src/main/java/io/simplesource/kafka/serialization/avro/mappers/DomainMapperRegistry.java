@@ -11,21 +11,21 @@ import java.util.function.Predicate;
 import static com.google.common.collect.Maps.newHashMap;
 import static java.util.Objects.requireNonNull;
 
-public final class DomainMapperRegistry {
-    private final Map<RegisterKey, RegistryMapper> mappers = newHashMap();
+public class DomainMapperRegistry {
+    private final Map<RegisterKey, RegisterMapper> mappers = newHashMap();
 
-    public <D, A extends GenericRecord> Optional<RegistryMapper<D, A>> mapperFor(Class clazz) {
-        Class classToSearchFor = requireNonNull(clazz);
-        return mappers.entrySet().stream().filter(byClass(classToSearchFor))
-                .<RegistryMapper<D, A>>map(Map.Entry::getValue).findAny();
+    public <D, A extends GenericRecord> Optional<RegisterMapper<D, A>> mapperFor(Class clazz) {
+        return mappers.entrySet().stream().filter(byClass(requireNonNull(clazz)))
+                .<RegisterMapper<D, A>>map(Map.Entry::getValue).findAny();
     }
 
-    public <D, A extends GenericRecord> DomainMapperRegistry register(Class<?> domainClazz, Class<?> avroClazz,
+    public <D, A extends GenericRecord> RegisterMapper<D, A> register(Class<?> domainClazz, Class<?> avroClazz,
                                                                       Function<D, A> fromDomain,
                                                                       Function<A, D> toDomain) {
+        RegisterMapper<D, A> registerMapper = new RegisterMapper<>(requireNonNull(fromDomain), requireNonNull(toDomain));
         mappers.put(new RegisterKey(requireNonNull(domainClazz), requireNonNull(avroClazz)),
-                new RegistryMapper<>(requireNonNull(fromDomain), requireNonNull(toDomain)));
-        return this;
+                registerMapper);
+        return registerMapper;
     }
 
     @Value
@@ -35,12 +35,12 @@ public final class DomainMapperRegistry {
     }
 
     @Value
-    static final class RegistryMapper<D, A> {
+    static final class RegisterMapper<D, A> {
         final Function<D, A> fromDomainFunc;
         final Function<A, D> toDomainFunc;
     }
 
-    private Predicate<Map.Entry<RegisterKey,RegistryMapper>> byClass(Class clazz) {
+    private Predicate<Map.Entry<RegisterKey,RegisterMapper>> byClass(Class clazz) {
         return e -> e.getKey().domainClass().equals(clazz) || e.getKey().serializedClass().equals(clazz);
     }
 }

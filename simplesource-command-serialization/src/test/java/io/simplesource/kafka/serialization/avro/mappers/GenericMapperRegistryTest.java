@@ -37,14 +37,14 @@ class GenericMapperRegistryTest {
         registry.register(domainClass, serializedClass, toSerialized, fromSerialized);
         registry.register(domainClass, serializedClass, toSerialized2, fromSerialized2);
 
-        DomainMapperRegistry.RegistryMapper<UserAccountDomain, UserAccount> mapperFunctions =
-                new DomainMapperRegistry.RegistryMapper<>(toSerialized2, fromSerialized2);
+        DomainMapperRegistry.RegisterMapper<UserAccountDomain, UserAccount> mapperFunctions =
+                new DomainMapperRegistry.RegisterMapper<>(toSerialized2, fromSerialized2);
         assertThat(registry.<UserAccountDomain, UserAccount>mapperFor(domainClass)).isPresent().contains(mapperFunctions);
     }
 
     @Test
     void mapperForShouldReturnEmptyWhenSearchForNotRegisteredClasses() {
-        Optional<DomainMapperRegistry.RegistryMapper<UserAccountDomain, GenericRecord>> actualResult = registry.mapperFor(UserAccountDomain.class);
+        Optional<DomainMapperRegistry.RegisterMapper<UserAccountDomain, GenericRecord>> actualResult = registry.mapperFor(UserAccountDomain.class);
 
         Assertions.assertThat(actualResult).isEmpty();
     }
@@ -57,11 +57,11 @@ class GenericMapperRegistryTest {
         Class<UserAccount> serializedClass = UserAccount.class;
         registry.register(domainClass, serializedClass, toSerialized, fromSerialized);
 
-        Optional<DomainMapperRegistry.RegistryMapper<UserAccountDomain, UserAccount>> actualResultForDomainClass = registry.mapperFor(domainClass);
-        Optional<DomainMapperRegistry.RegistryMapper<UserAccountDomain, UserAccount>> actualResultForSerializedClass = registry.mapperFor(serializedClass);
+        Optional<DomainMapperRegistry.RegisterMapper<UserAccountDomain, UserAccount>> actualResultForDomainClass = registry.mapperFor(domainClass);
+        Optional<DomainMapperRegistry.RegisterMapper<UserAccountDomain, UserAccount>> actualResultForSerializedClass = registry.mapperFor(serializedClass);
 
-        DomainMapperRegistry.RegistryMapper<UserAccountDomain, UserAccount> mapperFunctions =
-                new DomainMapperRegistry.RegistryMapper<>(toSerialized, fromSerialized);
+        DomainMapperRegistry.RegisterMapper<UserAccountDomain, UserAccount> mapperFunctions =
+                new DomainMapperRegistry.RegisterMapper<>(toSerialized, fromSerialized);
         Assertions.assertThat(actualResultForDomainClass).isPresent().contains(mapperFunctions);
         Assertions.assertThat(actualResultForSerializedClass).isPresent().contains(mapperFunctions);
     }
@@ -72,7 +72,7 @@ class GenericMapperRegistryTest {
         Function<UserAccount, ParentDomainModel> fromSerialized = (UserAccount d) -> new ParentDomainModel();
         registry.register(ParentDomainModel.class, UserAccount.class, toSerialized, fromSerialized);
 
-        Optional<DomainMapperRegistry.RegistryMapper<ParentDomainModel, UserAccount>> actualResult = registry.mapperFor(ChildUserAccountDomain.class);
+        Optional<DomainMapperRegistry.RegisterMapper<ParentDomainModel, UserAccount>> actualResult = registry.mapperFor(ChildUserAccountDomain.class);
 
         Assertions.assertThat(actualResult).isEmpty();
     }

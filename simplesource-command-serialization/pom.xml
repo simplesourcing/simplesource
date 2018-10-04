@@ -68,10 +68,15 @@
             <version>2.21.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>2.10</version>
+        </dependency>
+
     </dependencies>
 
     <build>
-
         <plugins>
             <plugin>
                 <groupId>org.apache.avro</groupId>
@@ -84,7 +89,8 @@
                         </goals>
 
                         <configuration>
-                            <sourceDirectory>${project.basedir}/src/test/resources</sourceDirectory>
+                            <sourceDirectory>${project.basedir}/src/main/avro</sourceDirectory>
+                            <testSourceDirectory>${project.basedir}/src/test/resources</testSourceDirectory>
                             <stringType>String</stringType>
                             <enableDecimalLogicalType>true</enableDecimalLogicalType>
                         </configuration>

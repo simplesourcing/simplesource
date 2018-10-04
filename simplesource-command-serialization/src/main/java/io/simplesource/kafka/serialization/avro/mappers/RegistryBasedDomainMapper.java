@@ -19,10 +19,10 @@ public final class RegistryBasedDomainMapper<V, S extends GenericRecord> impleme
     private Supplier<? extends RuntimeException> exceptionSupplier;
 
     RegistryBasedDomainMapper(DomainMapperRegistry domainMapperRegistry, GenericMapper<S, GenericRecord> avroSpecificGenericMapper,
-                              Function<V, Class<?>> f) {
+                              Function<V, Class<?>> domainValueToType) {
         this.domainMapperRegistry = domainMapperRegistry;
         this.avroSpecificGenericMapper = avroSpecificGenericMapper;
-        domainValueToTypeFunct = f;
+        this.domainValueToTypeFunct = domainValueToType;
         this.exceptionSupplier = () -> new IllegalArgumentException("Class not supported");
     }
 
@@ -41,8 +41,8 @@ public final class RegistryBasedDomainMapper<V, S extends GenericRecord> impleme
         this.exceptionSupplier = exceptionSupplier;
     }
 
-    private DomainMapperRegistry.RegistryMapper<V, S> lookupMapperInRegistry(Class<?> typeClass) {
-        Optional<DomainMapperRegistry.RegistryMapper<V, S>> registryMapper = domainMapperRegistry.mapperFor(typeClass);
+    private DomainMapperRegistry.RegisterMapper<V, S> lookupMapperInRegistry(Class<?> typeClass) {
+        Optional<DomainMapperRegistry.RegisterMapper<V, S>> registryMapper = domainMapperRegistry.mapperFor(typeClass);
         return registryMapper.orElseThrow(exceptionSupplier);
     }
 }

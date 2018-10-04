@@ -10,4 +10,8 @@ public interface UserAccountDomainCommand {
         final String name;
         final BigDecimal balance;
     }
+    @Value
+    class UpdateUserName implements UserAccountDomainCommand {
+        final String name;
+    }
 }
