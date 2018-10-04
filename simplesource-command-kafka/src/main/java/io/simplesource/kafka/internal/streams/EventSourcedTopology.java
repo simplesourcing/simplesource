@@ -3,6 +3,7 @@ package io.simplesource.kafka.internal.streams;
 import io.simplesource.api.CommandAPI.CommandError;
 import io.simplesource.api.Aggregator;
 import io.simplesource.api.InitialValue;
+import io.simplesource.data.Reason;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
@@ -216,11 +217,19 @@ public final class EventSourcedTopology<K, C, E, A> {
 
             Result<CommandError, NonEmptyList<E>> commandResult;
             try {
-                commandResult = aggregateSpec.generation().commandHandler().interpretCommand(readOnlyKey,
+                Optional<Reason<CommandError>> rejected = aggregateSpec.generation().sequenceHandler().rejectIfError(
+                        readOnlyKey,
                         request.readSequence(),
                         currentUpdate.sequence(),
                         currentUpdate.aggregate(),
                         request.command());
+
+                commandResult = rejected.<Result<CommandError, NonEmptyList<E>>>map(
+                        commandErrorReason -> Result.failure(commandErrorReason)).orElseGet(
+                                () -> aggregateSpec.generation().commandHandler().interpretCommand(
+                                        readOnlyKey,
+                                        currentUpdate.aggregate(),
+                                        request.command()));
             } catch (final Exception e) {
                 logger.warn("[{} aggregate] Failed to apply command handler on key {} to request {}",
                         aggregateSpec.aggregateName(), readOnlyKey, request, e);

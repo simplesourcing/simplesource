@@ -2,6 +2,7 @@ package io.simplesource.kafka.spec;
 
 import io.simplesource.api.Aggregator;
 import io.simplesource.api.CommandHandler;
+import io.simplesource.api.SequenceHandler;
 import io.simplesource.api.InitialValue;
 import io.simplesource.kafka.api.*;
 import io.simplesource.kafka.internal.util.RetryDelay;
@@ -27,6 +28,7 @@ public final class AggregateSpec<K, C, E, A>  {
         private final WindowedStateStoreSpec stateStoreSpec;
         private final RetryDelay retryDelay;
         private final CommandHandler<K, C, E, A> commandHandler;
+        private final SequenceHandler<K, C, A> sequenceHandler;
         private final Aggregator<E, A> aggregator;
         private final InitialValue<K, A> initialValue;
     }

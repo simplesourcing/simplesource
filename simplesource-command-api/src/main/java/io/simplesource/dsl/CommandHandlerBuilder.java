@@ -39,14 +39,14 @@ public final class CommandHandlerBuilder<K, C, E, A> {
         // defensive copy
         final Map<Class<? extends C>, CommandHandler<K, ? extends C, E, A>> ch = getCommandHandlers();
 
-        return (key, expSeq, currentSeq, currentAggregate, command) -> {
+        return (key, currentAggregate, command) -> {
             final CommandHandler<K, SC, E, A> commandHandler = (CommandHandler<K, SC, E, A>) ch.get(command.getClass());
             if (commandHandler == null) {
                 return Result.failure(CommandAPI.CommandError.InvalidCommand, String.format("Unhandled command type: %s",
                         command.getClass().getSimpleName()));
             }
 
-            return commandHandler.interpretCommand(key, expSeq, currentSeq, currentAggregate, (SC) command);
+            return commandHandler.interpretCommand(key, currentAggregate, (SC) command);
         };
     }
 }
