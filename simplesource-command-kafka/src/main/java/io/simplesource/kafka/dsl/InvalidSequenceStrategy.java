@@ -1,6 +1,6 @@
 package io.simplesource.kafka.dsl;
 
-public enum CommandSequenceStrategy {
+public enum InvalidSequenceStrategy {
     Strict,
     LastWriteWins
 }

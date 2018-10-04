@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -205,7 +206,6 @@ public final class EventSourcedTopology<K, C, E, A> {
         @Override
         public CommandEvents<E, A> transform(final K readOnlyKey, final CommandRequest<C> request) {
 
-            //Optional<AggregateUpdate<A>> currentUpdate;
             AggregateUpdate<A> currentUpdatePre;
             try {
                 currentUpdatePre = Optional.ofNullable(stateStore.get(readOnlyKey))
@@ -217,14 +217,16 @@ public final class EventSourcedTopology<K, C, E, A> {
 
             Result<CommandError, NonEmptyList<E>> commandResult;
             try {
-                Optional<Reason<CommandError>> rejected = aggregateSpec.generation().sequenceHandler().rejectIfError(
-                        readOnlyKey,
-                        request.readSequence(),
-                        currentUpdate.sequence(),
-                        currentUpdate.aggregate(),
-                        request.command());
+                Optional<Reason<CommandError>> maybeReject =
+                        Objects.equals(request.readSequence(), currentUpdate.sequence()) ? Optional.empty() :
+                            aggregateSpec.generation().invalidSequenceHandler().shouldReject(
+                                readOnlyKey,
+                                currentUpdate.sequence(),
+                                request.readSequence(),
+                                currentUpdate.aggregate(),
+                                request.command());
 
-                commandResult = rejected.<Result<CommandError, NonEmptyList<E>>>map(
+                commandResult = maybeReject.<Result<CommandError, NonEmptyList<E>>>map(
                         commandErrorReason -> Result.failure(commandErrorReason)).orElseGet(
                                 () -> aggregateSpec.generation().commandHandler().interpretCommand(
                                         readOnlyKey,

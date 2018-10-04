@@ -1,13 +1,13 @@
 package io.simplesource.kafka.dsl;
 
 import io.simplesource.api.CommandHandler;
-import io.simplesource.api.SequenceHandler;
+import io.simplesource.api.InvalidSequenceHandler;
 import io.simplesource.kafka.api.AggregateResources.TopicEntity;
 import io.simplesource.api.Aggregator;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.api.InitialValue;
 import io.simplesource.kafka.api.ResourceNamingStrategy;
-import io.simplesource.kafka.internal.streams.SequenceHandlerProvider;
+import io.simplesource.kafka.internal.streams.InvalidSequenceHandlerProvider;
 import io.simplesource.kafka.internal.util.RetryDelay;
 import io.simplesource.kafka.spec.AggregateSpec;
 import io.simplesource.kafka.spec.TopicSpec;
@@ -29,7 +29,7 @@ public final class AggregateBuilder<K, C, E, A> {
     private RetryDelay retryDelay = (startTime, timeoutMillis, spinCount) -> 15L;
     private CommandHandler<K, C, E, A> commandHandler;
     private Aggregator<E, A> aggregator;
-    private SequenceHandler<K, C, A> sequenceHandler;
+    private InvalidSequenceHandler<K, C, A> invalidSequenceHandler;
 
     public static <K, C, E, A> AggregateBuilder<K, C, E, A> newBuilder() {
         return new AggregateBuilder<>();
@@ -85,8 +85,8 @@ public final class AggregateBuilder<K, C, E, A> {
         return this;
     }
 
-    public AggregateBuilder<K, C, E, A> withCommandSequenceStrategy(final CommandSequenceStrategy commandSequenceStrategy) {
-        this.sequenceHandler = SequenceHandlerProvider.getForStrategy(commandSequenceStrategy);
+    public AggregateBuilder<K, C, E, A> withCommandSequenceStrategy(final InvalidSequenceStrategy invalidSequenceStrategy) {
+        this.invalidSequenceHandler = InvalidSequenceHandlerProvider.getForStrategy(invalidSequenceStrategy);
         return this;
     }
 
@@ -97,7 +97,7 @@ public final class AggregateBuilder<K, C, E, A> {
         requireNonNull(topicConfig, "No topic config for aggregate has been defined");
         requireNonNull(initialValue, "No initial value for aggregate has been defined");
         requireNonNull(commandHandler, "No CommandHandler for aggregate has been defined");
-        requireNonNull(sequenceHandler, "No CommandSequenceStrategy for aggregate has been defined");
+        requireNonNull(invalidSequenceHandler, "No InvalidSequenceStrategy for aggregate has been defined");
         requireNonNull(aggregator, "No Aggregator for aggregate has been defined");
 
         // defensive copy
@@ -105,7 +105,7 @@ public final class AggregateBuilder<K, C, E, A> {
         final AggregateSpec.Serialization<K, C, E, A> serialization =
             new AggregateSpec.Serialization<>(resourceNamingStrategy, aggregateSerdes);
         final AggregateSpec.Generation<K, C, E, A> generation =
-            new AggregateSpec.Generation<>(topicConfig, commandResponseStoreSpec, retryDelay, commandHandler, null, aggregator, initialValue);
+            new AggregateSpec.Generation<>(topicConfig, commandResponseStoreSpec, retryDelay, commandHandler, invalidSequenceHandler, aggregator, initialValue);
 
         return new AggregateSpec<>(name, serialization, generation);
     }
