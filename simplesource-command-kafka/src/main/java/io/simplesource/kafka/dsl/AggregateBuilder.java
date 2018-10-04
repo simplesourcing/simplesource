@@ -67,7 +67,7 @@ public final class AggregateBuilder<K, C, E, A> {
         return this;
     }
 
-    public AggregateBuilder<K, C, E, A> withInitialValue(final InitialValue initialValue) {
+    public AggregateBuilder<K, C, E, A> withInitialValue(final InitialValue<K, A> initialValue) {
         this.initialValue = initialValue;
         return this;
     }

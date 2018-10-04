@@ -28,12 +28,7 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     private final GenericMapper<A, JsonElement> aggregateMapper;
     private final GenericMapper<E, JsonElement> eventMapper;
     private final GenericMapper<C, JsonElement> commandMapper;
-    private final GenericMapper<K, JsonElement> keyMapper;
     private final Serde<String> serde;
-    private final Consumed<String, String> consumed;
-    private final Produced<String, String> produced;
-    private final Serialized<String, String> serialized;
-    private final Map<String, Object> serializerConfig;
     private final Gson gson;
     private final JsonParser parser;
 
@@ -56,16 +51,7 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
         this.aggregateMapper = aggregateMapper;
         this.eventMapper = eventMapper;
         this.commandMapper = commandMapper;
-        this.keyMapper = keyMapper;
         serde = Serdes.String();
-        consumed = Consumed.with(serde, serde);
-        produced = Produced.with(serde, serde);
-        serialized = Serialized.with(serde, serde);
-
-        final Map<String, Object> configs = new HashMap<>();
-        configs.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, org.apache.kafka.connect.json.JsonSerializer.class);
-        configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, org.apache.kafka.connect.json.JsonSerializer.class);
-        serializerConfig = Collections.unmodifiableMap(configs);
 
         final GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(CommandRequest.class, new CommandRequestAdapter());

@@ -33,7 +33,6 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
 
     private final Serde<GenericRecord> keySerde;
     private final Serde<GenericRecord> valueSerde;
-    private final Map<String, Object> serializerConfig;
 
     private final Serde<K> ak;
     private final Serde<CommandRequest<C>> cr;
@@ -75,22 +74,9 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry,
             final Schema aggregateSchema) {
-        GenericMapper<A, GenericRecord> aggregateMapper1 = aggregateMapper;
-        GenericMapper<E, GenericRecord> eventMapper1 = eventMapper;
-        GenericMapper<C, GenericRecord> commandMapper1 = commandMapper;
-        GenericMapper<K, GenericRecord> keyMapper1 = keyMapper;
-        Schema aggregateSchema1 = aggregateSchema;
+
         keySerde = AvroGenericUtils.genericAvroSerde(schemaRegistryUrl, useMockSchemaRegistry, true);
         valueSerde = AvroGenericUtils.genericAvroSerde(schemaRegistryUrl, useMockSchemaRegistry, false);
-        Consumed<GenericRecord, GenericRecord> consumed = Consumed.with(keySerde, valueSerde);
-        Produced<GenericRecord, GenericRecord> produced = Produced.with(keySerde, valueSerde);
-        Serialized<GenericRecord, GenericRecord> serialized = Serialized.with(keySerde, valueSerde);
-
-        final Map<String, Object> configs = new HashMap<>();
-        configs.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
-        configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
-        configs.put(AbstractKafkaAvroSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryUrl);
-        serializerConfig = Collections.unmodifiableMap(configs);
 
         ak = GenericSerde.of(keySerde, keyMapper::toGeneric, keyMapper::fromGeneric);
         cr = GenericSerde.of(valueSerde,
