@@ -3,6 +3,7 @@ package io.simplesource.kafka.internal.streams;
 import io.simplesource.api.CommandAPI.CommandError;
 import io.simplesource.api.Aggregator;
 import io.simplesource.api.InitialValue;
+import io.simplesource.data.Reason;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
@@ -25,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -204,7 +206,6 @@ public final class EventSourcedTopology<K, C, E, A> {
         @Override
         public CommandEvents<E, A> transform(final K readOnlyKey, final CommandRequest<C> request) {
 
-            //Optional<AggregateUpdate<A>> currentUpdate;
             AggregateUpdate<A> currentUpdatePre;
             try {
                 currentUpdatePre = Optional.ofNullable(stateStore.get(readOnlyKey))
@@ -216,11 +217,21 @@ public final class EventSourcedTopology<K, C, E, A> {
 
             Result<CommandError, NonEmptyList<E>> commandResult;
             try {
-                commandResult = aggregateSpec.generation().commandHandler().interpretCommand(readOnlyKey,
-                        request.readSequence(),
-                        currentUpdate.sequence(),
-                        currentUpdate.aggregate(),
-                        request.command());
+                Optional<Reason<CommandError>> maybeReject =
+                        Objects.equals(request.readSequence(), currentUpdate.sequence()) ? Optional.empty() :
+                            aggregateSpec.generation().invalidSequenceHandler().shouldReject(
+                                readOnlyKey,
+                                currentUpdate.sequence(),
+                                request.readSequence(),
+                                currentUpdate.aggregate(),
+                                request.command());
+
+                commandResult = maybeReject.<Result<CommandError, NonEmptyList<E>>>map(
+                        commandErrorReason -> Result.failure(commandErrorReason)).orElseGet(
+                                () -> aggregateSpec.generation().commandHandler().interpretCommand(
+                                        readOnlyKey,
+                                        currentUpdate.aggregate(),
+                                        request.command()));
             } catch (final Exception e) {
                 logger.warn("[{} aggregate] Failed to apply command handler on key {} to request {}",
                         aggregateSpec.aggregateName(), readOnlyKey, request, e);
