@@ -85,7 +85,7 @@ public final class AggregateBuilder<K, C, E, A> {
         return this;
     }
 
-    public AggregateBuilder<K, C, E, A> withCommandSequenceStrategy(final InvalidSequenceStrategy invalidSequenceStrategy) {
+    public AggregateBuilder<K, C, E, A> withInvalidSequenceStrategy(final InvalidSequenceStrategy invalidSequenceStrategy) {
         this.invalidSequenceHandler = InvalidSequenceHandlerProvider.getForStrategy(invalidSequenceStrategy);
         return this;
     }
@@ -97,8 +97,11 @@ public final class AggregateBuilder<K, C, E, A> {
         requireNonNull(topicConfig, "No topic config for aggregate has been defined");
         requireNonNull(initialValue, "No initial value for aggregate has been defined");
         requireNonNull(commandHandler, "No CommandHandler for aggregate has been defined");
-        requireNonNull(invalidSequenceHandler, "No InvalidSequenceStrategy for aggregate has been defined");
         requireNonNull(aggregator, "No Aggregator for aggregate has been defined");
+        
+        // by default strict
+        if (invalidSequenceHandler == null)
+            invalidSequenceHandler = InvalidSequenceHandlerProvider.getForStrategy(InvalidSequenceStrategy.Strict);
 
         // defensive copy
 
