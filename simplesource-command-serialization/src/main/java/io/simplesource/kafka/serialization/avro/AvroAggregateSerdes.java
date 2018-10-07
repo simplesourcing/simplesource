@@ -1,25 +1,19 @@
 package io.simplesource.kafka.serialization.avro;
 
-import io.simplesource.api.CommandAPI.CommandError;
+import io.simplesource.data.CommandError;
+import io.simplesource.data.CommandError.Reason;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.NonEmptyList;
-import io.simplesource.data.Reason;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.serialization.util.GenericMapper;
 import io.simplesource.kafka.model.*;
 import io.simplesource.kafka.serialization.util.GenericSerde;
-import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;
-import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Serde;
-import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.Produced;
-import org.apache.kafka.streams.kstream.Serialized;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -275,10 +269,10 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
                     .build();
         }
 
-        private static GenericRecord fromReason(final Schema schema, final Reason<CommandError> reason) {
+        private static GenericRecord fromReason(final Schema schema, final CommandError commandError) {
             return new GenericRecordBuilder(schema)
-                    .set(ERROR_MESSAGE, reason.getMessage())
-                    .set(ERROR_CODE, reason.getError().name())
+                    .set(ERROR_MESSAGE, commandError.getMessage())
+                    .set(ERROR_CODE, commandError.getReason().name())
                     .build();
         }
 
@@ -293,28 +287,28 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
                 final GenericRecord genericAggregate = (GenericRecord) genericResult.get(AGGREGATION);
                 result = Result.success(new AggregateUpdate<>(genericAggregate, writeSequence));
             } else {
-                final Reason<CommandError> reason = toReason((GenericRecord) genericResult.get(REASON));
-                final List<Reason<CommandError>> additionalReasons = ((List<GenericRecord>) genericResult.get(ADDITIONAL_REASONS))
+                final CommandError commandError = toCommandError((GenericRecord) genericResult.get(REASON));
+                final List<CommandError> additionalCommandErrors = ((List<GenericRecord>) genericResult.get(ADDITIONAL_REASONS))
                         .stream()
-                        .map(CommandResponseAvroHelper::toReason)
+                        .map(CommandResponseAvroHelper::toCommandError)
                         .collect(Collectors.toList());
-                result = Result.failure(new NonEmptyList<>(reason, additionalReasons));
+                result = Result.failure(new NonEmptyList<>(commandError, additionalCommandErrors));
             }
 
             return new AggregateUpdateResult<>(commandId, readSequence, result);
         }
 
-        private static Reason<CommandError> toReason(final GenericRecord record) {
+        private static CommandError toCommandError(final GenericRecord record) {
             String errorMessage = String.valueOf(record.get(ERROR_MESSAGE));
             final String errorCodeStr = String.valueOf(record.get(ERROR_CODE));
-            CommandError error;
+            Reason error;
             try {
-                error = CommandError.valueOf(errorCodeStr);
+                error = CommandError.Reason.valueOf(errorCodeStr);
             } catch (final IllegalArgumentException e) {
-                error = CommandError.UnexpectedErrorCode;
+                error = CommandError.Reason.UnexpectedErrorCode;
                 errorMessage += "Unexpected errorCode " + errorCodeStr;
             }
-            return Reason.of(error, errorMessage);
+            return CommandError.of(error, errorMessage);
         }
 
 

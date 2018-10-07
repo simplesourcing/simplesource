@@ -1,6 +1,6 @@
 package io.simplesource.kafka.internal.cluster;
 
-import io.simplesource.api.*;
+import io.simplesource.data.CommandError;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.FutureResult;
 import io.simplesource.data.NonEmptyList;
@@ -45,7 +45,7 @@ public final class ClusterSubsystem implements RemoteCommandResponseStore {
     }
 
     @Override
-    public FutureResult<CommandAPI.CommandError, NonEmptyList<Sequence>> get(HostInfo targetHost, String aggregateName, UUID commandId, Duration timeout) {
+    public FutureResult<CommandError, NonEmptyList<Sequence>> get(HostInfo targetHost, String aggregateName, UUID commandId, Duration timeout) {
         final MappedCommandRequest request = requestResponseMapper.newCommandRequest(targetHost, aggregateName, commandId, timeout);
         client.send(targetHost, request.commandRequest());
         return FutureResult.ofCompletableFuture(request.completableFuture());

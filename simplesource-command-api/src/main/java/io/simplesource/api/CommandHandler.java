@@ -1,10 +1,8 @@
 package io.simplesource.api;
 
-import io.simplesource.api.CommandAPI.CommandError;
+import io.simplesource.data.CommandError;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
-
-import static io.simplesource.data.Result.failure;
 
 /**
  * A command handler is responsible for accepting or rejecting commands and turning accepted commands into a list of

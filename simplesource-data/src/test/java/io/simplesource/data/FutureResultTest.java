@@ -15,10 +15,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FutureResultTest {
     private static final int COUNTDOWN_SLEEP_TIME = 1000;
     private static final String DEFAULT_VALUE = "not exist value";
-    private static final Reason<CommandError> FAILURE_REASON_1 = Reason.of(CommandError.InternalError, "Internal error");
-    private static final Reason<CommandError> FAILURE_REASON_2 = Reason.of(CommandError.InvalidCommand, "Invalid command error");
-    private static final Function<NonEmptyList<Reason<CommandError>>, List<CommandError>> CONCATENATE_ERROR_REASONS_FUNC =
-            rs -> rs.stream().map(Reason::getError).collect(Collectors.toList());
+    private static final io.simplesource.data.CommandError FAILURE_COMMAND_ERROR_1 =
+            io.simplesource.data.CommandError.of(io.simplesource.data.CommandError.Reason.valueOf(BusinessErrorType.InternalError.name()),
+                    "Internal error");
+    private static final io.simplesource.data.CommandError FAILURE_COMMAND_ERROR_2 =
+            io.simplesource.data.CommandError.of(io.simplesource.data.CommandError.Reason.valueOf(BusinessErrorType.InvalidCommand.name()),
+                    "Invalid command error");
+
+    private static final Function<NonEmptyList<io.simplesource.data.CommandError>, List<BusinessErrorType>> TO_BUSINESS_ERROR_TYPE_FUNC =
+            rs -> rs.stream().map(FutureResultTest::toBusinessError).collect(Collectors.toList());
 
     private CountDownLatch futureResultReturnSignal;
 
@@ -29,11 +34,11 @@ class FutureResultTest {
 
     @Test
     void mapShouldNotMapValueWhenFutureResultIsFailure() {
-        FutureResult<CommandError, Integer> futureResult = asynchronousFailure(futureResultReturnSignal,
-                Reason.of(CommandError.InternalError, "Command error"));
+        FutureResult<io.simplesource.data.CommandError, Integer> futureResult = asynchronousFailure(futureResultReturnSignal,
+                FAILURE_COMMAND_ERROR_1);
 
         triggerFutureResultReturnSignal();
-        Result<CommandError, String> result = getFutureResultValue(futureResult.map(Object::toString));
+        Result<io.simplesource.data.CommandError, String> result = getFutureResultValue(futureResult.map(Object::toString));
 
         assertThat(result.getOrElse(DEFAULT_VALUE)).isEqualTo(DEFAULT_VALUE);
         assertTrue(result.isFailure());
@@ -41,10 +46,10 @@ class FutureResultTest {
 
     @Test
     void mapShouldMapValueWhenFutureResultIsSuccess() {
-        FutureResult<CommandError, Integer> futureResult = asynchronousSuccess(futureResultReturnSignal,10);
+        FutureResult<io.simplesource.data.CommandError, Integer> futureResult = asynchronousSuccess(futureResultReturnSignal,10);
 
         triggerFutureResultReturnSignal();
-        Result<CommandError, String> result = getFutureResultValue(futureResult.map(Object::toString));
+        Result<io.simplesource.data.CommandError, String> result = getFutureResultValue(futureResult.map(Object::toString));
 
         assertThat(result.getOrElse(DEFAULT_VALUE)).isEqualTo("10");
         assertTrue(result.isSuccess());
@@ -53,7 +58,7 @@ class FutureResultTest {
 
     @Test
     void foldShouldMapIntValueToStringWhenFutureResultIsSuccess() {
-        FutureResult<CommandError, Integer> futureResult = asynchronousSuccess(futureResultReturnSignal,10);
+        FutureResult<io.simplesource.data.CommandError, Integer> futureResult = asynchronousSuccess(futureResultReturnSignal,10);
 
         triggerFutureResultReturnSignal();
         assertDoesNotThrow(() -> {
@@ -64,22 +69,23 @@ class FutureResultTest {
 
     @Test
     void foldShouldConcatenateErrorReasonsWhenFutureResultIsFailure() {
-        FutureResult<CommandError, Integer> futureResult = asynchronousFailure(futureResultReturnSignal,
-                FAILURE_REASON_1, FAILURE_REASON_2);
+        FutureResult<io.simplesource.data.CommandError, Integer> futureResult = asynchronousFailure(futureResultReturnSignal,
+                FAILURE_COMMAND_ERROR_1, FAILURE_COMMAND_ERROR_2);
 
         triggerFutureResultReturnSignal();
         assertDoesNotThrow(() -> {
-            List<CommandError> actualResult = futureResult.fold(CONCATENATE_ERROR_REASONS_FUNC, null).get();
-            assertThat(actualResult).containsOnly(FAILURE_REASON_1.getError(), FAILURE_REASON_2.getError());
+            List<BusinessErrorType> actualResult = futureResult.fold(TO_BUSINESS_ERROR_TYPE_FUNC, null).get();
+            assertThat(actualResult).containsOnly(toBusinessError(FAILURE_COMMAND_ERROR_1),
+                    toBusinessError(FAILURE_COMMAND_ERROR_2));
         });
     }
 
     @Test
     void flatMapShouldMapIntValueToStringWhenFutureResultIsSuccess() {
-        FutureResult<CommandError, Integer> futureResult = asynchronousSuccess(futureResultReturnSignal,10);
+        FutureResult<io.simplesource.data.CommandError, Integer> futureResult = asynchronousSuccess(futureResultReturnSignal,10);
 
         triggerFutureResultReturnSignal();
-        Result<CommandError, String> result = getFutureResultValue(futureResult.flatMap(v -> FutureResult.of(v.toString())));
+        Result<io.simplesource.data.CommandError, String> result = getFutureResultValue(futureResult.flatMap(v -> FutureResult.of(v.toString())));
         assertThat(result.getOrElse(DEFAULT_VALUE)).isEqualTo("10");
         assertTrue(result.isSuccess());
     }
@@ -87,13 +93,13 @@ class FutureResultTest {
 
     @Test
     void flatMapShouldReturnFailureReasonsAsTheyAreWithoutMappingAndDoesNotMapValueWhenFutureResultIsFailure() {
-        FutureResult<CommandError, Integer> futureResult = asynchronousFailure(futureResultReturnSignal,
-                FAILURE_REASON_1, FAILURE_REASON_2);
+        FutureResult<io.simplesource.data.CommandError, Integer> futureResult = asynchronousFailure(futureResultReturnSignal,
+                FAILURE_COMMAND_ERROR_1, FAILURE_COMMAND_ERROR_2);
 
         triggerFutureResultReturnSignal();
-        Result<CommandError, String> result = getFutureResultValue(futureResult.flatMap(v -> FutureResult.of(v.toString())));
+        Result<io.simplesource.data.CommandError, String> result = getFutureResultValue(futureResult.flatMap(v -> FutureResult.of(v.toString())));
         assertThat(result.getOrElse(DEFAULT_VALUE)).isEqualTo(DEFAULT_VALUE);
-        assertThat(result.failureReasons()).contains(NonEmptyList.of(FAILURE_REASON_1, FAILURE_REASON_2));
+        assertThat(result.failureReasons()).contains(NonEmptyList.of(FAILURE_COMMAND_ERROR_1, FAILURE_COMMAND_ERROR_2));
     }
 
 
@@ -110,7 +116,7 @@ class FutureResultTest {
         }).start();
     }
 
-    private static <T> FutureResult<CommandError, T> asynchronousSuccess(CountDownLatch countDownLatch, T v) {
+    private static <T> FutureResult<io.simplesource.data.CommandError, T> asynchronousSuccess(CountDownLatch countDownLatch, T v) {
         return FutureResult.ofSupplier(
                 () -> {
                     try {
@@ -123,8 +129,8 @@ class FutureResultTest {
         );
     }
 
-    private static <T> FutureResult<CommandError, T> asynchronousFailure(CountDownLatch countDownLatch, Reason<CommandError> reason,
-                                                                         Reason<CommandError>... reasons) {
+    private static <T> FutureResult<io.simplesource.data.CommandError, T> asynchronousFailure(CountDownLatch countDownLatch, io.simplesource.data.CommandError commandError,
+                                                                                              io.simplesource.data.CommandError... commandErrors) {
         return FutureResult.ofSupplier(
                 () -> {
                     try {
@@ -132,17 +138,21 @@ class FutureResultTest {
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
-                    return Result.failure(reason, reasons);
+                    return Result.failure(commandError, commandErrors);
                 }
         );
     }
 
-    private static <T> Result<CommandError, T> getFutureResultValue(FutureResult<CommandError, T> futureResult) {
+    private static <T> Result<io.simplesource.data.CommandError, T> getFutureResultValue(FutureResult<io.simplesource.data.CommandError, T> futureResult) {
         return futureResult.future().join();
     }
 
-    enum CommandError {
+    enum BusinessErrorType {
         InternalError,
         InvalidCommand
+    }
+
+    private static BusinessErrorType toBusinessError(CommandError error) {
+        return BusinessErrorType.valueOf(error.getReason().name());
     }
 }

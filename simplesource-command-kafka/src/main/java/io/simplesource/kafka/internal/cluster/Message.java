@@ -1,9 +1,9 @@
 package io.simplesource.kafka.internal.cluster;
 
-import io.simplesource.api.CommandAPI;
+import io.simplesource.data.CommandError;
+import io.simplesource.data.CommandError.Reason;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.NonEmptyList;
-import io.simplesource.data.Reason;
 import io.simplesource.data.Result;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
@@ -75,7 +75,7 @@ public abstract class Message {
 
     }
 
-    public static CommandResponse response(long requestId, Result<CommandAPI.CommandError, NonEmptyList<Sequence>> result) {
+    public static CommandResponse response(long requestId, Result<CommandError, NonEmptyList<Sequence>> result) {
         return new CommandResponse(requestId, result);
     }
 
@@ -164,7 +164,7 @@ public abstract class Message {
         private static int TYPE = 1;
 
         long requestId;
-        Result<CommandAPI.CommandError, NonEmptyList<Sequence>> result;
+        Result<CommandError, NonEmptyList<Sequence>> result;
 
         public void write(DataOutputStream out) {
             ignoreIOException(() -> {
@@ -173,9 +173,9 @@ public abstract class Message {
                         (errors) -> ignoreIOException(() -> {
                             out.writeShort((short) 0);
                             out.writeInt(errors.size());
-                            for (Reason<CommandAPI.CommandError> error : errors) {
+                            for (CommandError error : errors) {
                                 writeString(out, error.getMessage());
-                                writeString(out, error.getError().name());
+                                writeString(out, error.getReason().name());
                             }
                             return null;
                         }),
@@ -198,11 +198,11 @@ public abstract class Message {
 
                 if (!isSuccess) {
                     int size = in.readInt();
-                    List<Reason<CommandAPI.CommandError>> errors = new ArrayList<>(size);
+                    List<CommandError> errors = new ArrayList<>(size);
                     for (int i = 0; i < size; i++) {
                         String msg = readString(in);
-                        CommandAPI.CommandError error = CommandAPI.CommandError.valueOf(readString(in));
-                        errors.add(i, Reason.of(error, msg));
+                        Reason error = Reason.valueOf(readString(in));
+                        errors.add(i, CommandError.of(error, msg));
                     }
                     return new CommandResponse(requestId, Result.failure(NonEmptyList.fromList(errors)));
                 } else {

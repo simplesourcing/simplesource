@@ -1,5 +1,6 @@
 package io.simplesource.api;
 
+import io.simplesource.data.CommandError;
 import io.simplesource.data.FutureResult;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Sequence;
@@ -77,15 +78,4 @@ public interface CommandAPI<K, C> {
         private final C command;
     }
 
-    enum CommandError {
-        InvalidCommand,
-        InvalidReadSequence,
-        CommandHandlerFailed,
-        AggregateNotFound,
-        Timeout,
-        RemoteLookupFailed,
-        CommandPublishError,
-        InternalError,
-        UnexpectedErrorCode
-    }
 }

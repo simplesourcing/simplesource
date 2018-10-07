@@ -1,11 +1,7 @@
 package io.simplesource.kafka.internal.cluster;
 
-import io.simplesource.api.*;
 import io.simplesource.api.CommandAPI;
-import io.simplesource.data.Sequence;
-import io.simplesource.data.FutureResult;
-import io.simplesource.data.NonEmptyList;
-import io.simplesource.data.Result;
+import io.simplesource.data.*;
 import io.simplesource.kafka.internal.util.NamedThreadFactory;
 import org.apache.kafka.streams.state.HostInfo;
 import org.junit.jupiter.api.Test;
@@ -22,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public final class ClusterTest {
 
     private static final String SUCCESS_AGGREGATE = "SuccessAggregate";
-    private static final Result<CommandAPI.CommandError, NonEmptyList<Sequence>> SUCCESS_RESULT =
+    private static final Result<CommandError, NonEmptyList<Sequence>> SUCCESS_RESULT =
             Result.success(NonEmptyList.of(Sequence.position(new Random().nextLong())));
 
     private final CommandAPI<Object, Object> succsssCommandPI = new CommandAPI<Object, Object>() {
@@ -62,7 +58,7 @@ public final class ClusterTest {
         subsystem1.start();
         subsystem2.start();
 
-        List<CompletableFuture<Result<CommandAPI.CommandError, NonEmptyList<Sequence>>>> futures = new ArrayList<>();
+        List<CompletableFuture<Result<CommandError, NonEmptyList<Sequence>>>> futures = new ArrayList<>();
 
         long start = System.currentTimeMillis();
         for (int i = 0; i < loopCount; i++) {
@@ -70,7 +66,7 @@ public final class ClusterTest {
                     Duration.ofSeconds(120)).future());
         }
 
-        List<Result<CommandAPI.CommandError, NonEmptyList<Sequence>>> results = sequence(futures).get();
+        List<Result<CommandError, NonEmptyList<Sequence>>> results = sequence(futures).get();
 
         System.out.print("Processed: " + loopCount + " requests in " + ((System.currentTimeMillis()-start) / 1000) + " seconds");
 

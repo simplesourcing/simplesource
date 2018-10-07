@@ -2,21 +2,17 @@ package io.simplesource.kafka.serialization.json;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import io.simplesource.api.CommandAPI.CommandError;
+import io.simplesource.data.CommandError.Reason;
+import io.simplesource.data.CommandError;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.NonEmptyList;
-import io.simplesource.data.Reason;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.serialization.util.GenericMapper;
 import io.simplesource.kafka.model.*;
 import io.simplesource.kafka.serialization.util.GenericSerde;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.Produced;
-import org.apache.kafka.streams.kstream.Serialized;
 
 import java.lang.reflect.Type;
 import java.util.*;
@@ -269,10 +265,10 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
             return wrapper;
         }
 
-        private JsonElement serializeReason(final Reason<CommandError> reason) {
+        private JsonElement serializeReason(final CommandError commandError) {
             final JsonObject wrapper = new JsonObject();
-            wrapper.addProperty(ERROR_MESSAGE, reason.getMessage());
-            wrapper.addProperty(ERROR_CODE, reason.getError().name());
+            wrapper.addProperty(ERROR_MESSAGE, commandError.getMessage());
+            wrapper.addProperty(ERROR_CODE, commandError.getReason().name());
             return wrapper;
         }
 
@@ -286,11 +282,11 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
             final JsonObject resultWrapper = wrapper.getAsJsonObject(RESULT);
             final Result<CommandError, AggregateUpdate<A>> result;
             if (resultWrapper.has(REASON)) {
-                final Reason<CommandError> headReason = deserializeReason(resultWrapper.getAsJsonObject(REASON));
-                final List<Reason<CommandError>> tailReasons = new ArrayList<>();
+                final CommandError headCommandError = deserializeReason(resultWrapper.getAsJsonObject(REASON));
+                final List<CommandError> tailCommandErrors = new ArrayList<>();
                 resultWrapper.getAsJsonArray(ADDITIONAL_REASONS)
-                        .forEach(reason -> tailReasons.add(deserializeReason(reason.getAsJsonObject())));
-                result = Result.<CommandError, AggregateUpdate<A>>failure(new NonEmptyList(headReason, tailReasons));
+                        .forEach(reason -> tailCommandErrors.add(deserializeReason(reason.getAsJsonObject())));
+                result = Result.<Reason, AggregateUpdate<A>>failure(new NonEmptyList(headCommandError, tailCommandErrors));
             } else {
                 result = Result.success(
                         new AggregateUpdate<>(
@@ -305,9 +301,9 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
                     result);
         }
 
-        private Reason<CommandError> deserializeReason(final JsonObject element) {
-            return Reason.of(
-                    CommandError.valueOf(element.getAsJsonPrimitive(ERROR_CODE).getAsString()),
+        private CommandError deserializeReason(final JsonObject element) {
+            return CommandError.of(
+                    Reason.valueOf(element.getAsJsonPrimitive(ERROR_CODE).getAsString()),
                     element.getAsJsonPrimitive(ERROR_MESSAGE).getAsString());
         }
 

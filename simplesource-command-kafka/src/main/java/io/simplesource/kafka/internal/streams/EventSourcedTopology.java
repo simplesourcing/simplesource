@@ -1,12 +1,12 @@
 package io.simplesource.kafka.internal.streams;
 
-import io.simplesource.api.CommandAPI.CommandError;
 import io.simplesource.api.Aggregator;
 import io.simplesource.api.InitialValue;
-import io.simplesource.data.Reason;
-import io.simplesource.data.Sequence;
+import io.simplesource.data.CommandError;
+import io.simplesource.data.CommandError.Reason;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
+import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.model.*;
@@ -34,7 +34,8 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import static io.simplesource.data.Result.failure;
-import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.*;
+import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.aggregate_update;
+import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.command_response;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.*;
 import static org.apache.kafka.streams.state.Stores.persistentKeyValueStore;
 
@@ -217,7 +218,7 @@ public final class EventSourcedTopology<K, C, E, A> {
 
             Result<CommandError, NonEmptyList<E>> commandResult;
             try {
-                Optional<Reason<CommandError>> maybeReject =
+                Optional<CommandError> maybeReject =
                         Objects.equals(request.readSequence(), currentUpdate.sequence()) ? Optional.empty() :
                             aggregateSpec.generation().invalidSequenceHandler().shouldReject(
                                 readOnlyKey,
@@ -235,7 +236,7 @@ public final class EventSourcedTopology<K, C, E, A> {
             } catch (final Exception e) {
                 logger.warn("[{} aggregate] Failed to apply command handler on key {} to request {}",
                         aggregateSpec.aggregateName(), readOnlyKey, request, e);
-                commandResult = failure(CommandError.CommandHandlerFailed, e);
+                commandResult = failure(CommandError.of(Reason.CommandHandlerFailed, e));
             }
             final Result<CommandError, NonEmptyList<ValueWithSequence<E>>> eventsResult = commandResult.map(
                     eventList -> {

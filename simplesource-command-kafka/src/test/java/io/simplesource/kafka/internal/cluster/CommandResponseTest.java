@@ -1,9 +1,9 @@
 package io.simplesource.kafka.internal.cluster;
 
-import io.simplesource.api.CommandAPI;
+import io.simplesource.data.CommandError;
+import io.simplesource.data.CommandError.Reason;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.NonEmptyList;
-import io.simplesource.data.Reason;
 import io.simplesource.data.Result;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +38,7 @@ public final class CommandResponseTest {
                 Message cmdr =  Message.response(l,
                         Result.failure(
                                 NonEmptyList.fromList(
-                                        Stream.of(strings).map((s) -> Reason.of(randomEnum(), s)).collect(Collectors.toList())
+                                        Stream.of(strings).map((s) -> CommandError.of(randomEnum(), s)).collect(Collectors.toList())
                                 )
                         )
                 );
@@ -48,9 +48,9 @@ public final class CommandResponseTest {
     }
 
 
-    private CommandAPI.CommandError randomEnum () {
+    private Reason randomEnum () {
             Random random = new Random();
-            return CommandAPI.CommandError.values()[random.nextInt(CommandAPI.CommandError.values().length)];
+            return Reason.values()[random.nextInt(Reason.values().length)];
     }
 
 }

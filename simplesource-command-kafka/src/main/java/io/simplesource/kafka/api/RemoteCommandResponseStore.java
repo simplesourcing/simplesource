@@ -1,6 +1,6 @@
 package io.simplesource.kafka.api;
 
-import io.simplesource.api.CommandAPI.CommandError;
+import io.simplesource.data.CommandError;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.FutureResult;
 import io.simplesource.data.NonEmptyList;
