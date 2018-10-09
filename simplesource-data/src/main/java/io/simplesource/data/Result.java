@@ -8,9 +8,9 @@ import java.util.function.Function;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A Result is either a success containing a value of the specified type, or a failure with a list value commandErrors.
+ * A Result is either a success containing a value of the specified type, or a failure with a list value errors.
  *
- * @param <E> on failure there will be a NonEmptyList of CommandError instances with an error value of this type.
+ * @param <E> on failure there will be a NonEmptyList of error instances with an error value of this type.
  * @param <A> when successful there will be a contained value of this type.
  */
 public abstract class Result<E, A> {
@@ -28,13 +28,13 @@ public abstract class Result<E, A> {
     }
 
     /**
-     * Factory method to creates a Failed {@code Result} from a array value {@code CommandError}
+     * Factory method to creates a Failed {@code Result} from a array value of error
      *
      * @param <E> The error type for failures.
      * @param <S> when successful there will be a contained value this type.
      * @param error the first cause of {@code Result} to be failed
      * @param errors a variable argument list of further causes of failure
-     * @return new failed {@code Result} containing the failed {@code CommandError}
+     * @return new failed {@code Result} containing the failed errors
      */
     @SafeVarargs
     public static <E, S> Result<E, S> failure(final E error, final E... errors) {
@@ -42,12 +42,12 @@ public abstract class Result<E, A> {
     }
 
     /**
-     * Factory method to creates a Failed {@code Result} from a {@code {@link NonEmptyList<  CommandError  >}}}
+     * Factory method to creates a Failed {@code Result} from a {@code {@link NonEmptyList<  E  >}}}
      *
      * @param <E> The error type for failures.
      * @param <S> when successful there will be a contained value this type.
      * @param errors what caused this {@code Result} to failed
-     * @return new failed {@code Result} containing the failed {@code CommandError}
+     * @return new failed {@code Result} containing the failed errors
      */
     public static <E, S> Result<E, S> failure(final NonEmptyList<E> errors) {
         return new Failure<>(errors);
@@ -88,7 +88,7 @@ public abstract class Result<E, A> {
 
     /**
      * Turn this Result into a destination type by supplying functions
-     * from the commandErrors, or a function from the contained value.
+     * from the list of failure errors, or a function from the contained value.
      *
      * @param <T> The target return type
      * @param f a function to apply to the list of errors for failure, if any
@@ -102,7 +102,7 @@ public abstract class Result<E, A> {
     }
 
     /**
-     * If this is a failure, return the commandErrors for that failure, if not return nothing.
+     * If this is a failure, return the error reasons for that failure, if not return nothing.
      *
      * @return the nonempty list of failures
      */
@@ -132,7 +132,7 @@ public abstract class Result<E, A> {
      *
      * @param mapper A mapper
      * @param <T>    The new component type
-     * @return a {@code CommandError}
+     * @return a mapped result with the new value mapped to the new type
      * @throws NullPointerException if {@code mapper} is null
      */
     public <T> Result<E, T> flatMap(final Function<A, Result<E, T>> mapper) {

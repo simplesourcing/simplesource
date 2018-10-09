@@ -1,6 +1,5 @@
 package io.simplesource.api;
 
-import io.simplesource.data.CommandError;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 

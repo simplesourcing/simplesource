@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 /**
  * Represents an operation that calculates an {@link Result} asynchronously.
  *
- * @param <E> on failure there will be a NonEmptyList of CommandError instances with an error value of this type.
+ * @param <E> on failure there will be a NonEmptyList of error instances with an error value of this type.
  * @param <T> when successful there will be a contained value of this type.
  */
 public final class FutureResult<E, T> {

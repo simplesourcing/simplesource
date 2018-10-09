@@ -2,8 +2,8 @@ package io.simplesource.kafka.internal.streams;
 
 import io.simplesource.api.Aggregator;
 import io.simplesource.api.InitialValue;
-import io.simplesource.data.CommandError;
-import io.simplesource.data.CommandError.Reason;
+import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandError.Reason;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;

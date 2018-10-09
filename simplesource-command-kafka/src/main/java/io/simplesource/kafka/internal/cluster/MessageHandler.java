@@ -3,8 +3,9 @@ package io.simplesource.kafka.internal.cluster;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.simplesource.api.CommandAPI;
+import io.simplesource.api.CommandError;
 import io.simplesource.data.*;
-import io.simplesource.data.CommandError.Reason;
+import io.simplesource.api.CommandError.Reason;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

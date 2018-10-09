@@ -1,6 +1,7 @@
 package io.simplesource.kafka.internal.cluster;
 
 import io.simplesource.api.CommandAPI;
+import io.simplesource.api.CommandError;
 import io.simplesource.data.*;
 import io.simplesource.kafka.internal.util.NamedThreadFactory;
 import org.apache.kafka.streams.state.HostInfo;

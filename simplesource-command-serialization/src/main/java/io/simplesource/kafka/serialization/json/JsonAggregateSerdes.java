@@ -2,8 +2,8 @@ package io.simplesource.kafka.serialization.json;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import io.simplesource.data.CommandError.Reason;
-import io.simplesource.data.CommandError;
+import io.simplesource.api.CommandError.Reason;
+import io.simplesource.api.CommandError;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;

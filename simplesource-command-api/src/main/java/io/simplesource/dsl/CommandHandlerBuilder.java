@@ -1,8 +1,8 @@
 package io.simplesource.dsl;
 
 import io.simplesource.api.CommandHandler;
-import io.simplesource.data.CommandError;
-import io.simplesource.data.CommandError.Reason;
+import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandError.Reason;
 import io.simplesource.data.Result;
 
 import java.util.HashMap;

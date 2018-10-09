@@ -1,4 +1,4 @@
-package io.simplesource.data;
+package io.simplesource.api;
 
 import java.util.Objects;
 import java.util.function.BiFunction;

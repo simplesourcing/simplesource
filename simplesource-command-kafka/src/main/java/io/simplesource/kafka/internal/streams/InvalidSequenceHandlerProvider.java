@@ -1,8 +1,8 @@
 package io.simplesource.kafka.internal.streams;
 
 import io.simplesource.api.InvalidSequenceHandler;
-import io.simplesource.data.CommandError;
-import io.simplesource.data.CommandError.Reason;
+import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandError.Reason;
 import io.simplesource.kafka.dsl.InvalidSequenceStrategy;
 
 import java.util.Optional;

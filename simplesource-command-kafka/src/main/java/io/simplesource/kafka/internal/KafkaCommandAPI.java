@@ -1,6 +1,7 @@
 package io.simplesource.kafka.internal;
 
 import io.simplesource.api.CommandAPI;
+import io.simplesource.api.CommandError;
 import io.simplesource.data.*;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.api.RemoteCommandResponseStore;
@@ -26,7 +27,7 @@ import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
 
-import static io.simplesource.data.CommandError.Reason.*;
+import static io.simplesource.api.CommandError.Reason.*;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_request;
 
 public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
