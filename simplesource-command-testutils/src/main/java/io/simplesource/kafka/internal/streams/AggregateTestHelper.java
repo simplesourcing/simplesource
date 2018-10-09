@@ -1,10 +1,10 @@
 package io.simplesource.kafka.internal.streams;
 
 import io.simplesource.api.CommandAPI;
-import io.simplesource.api.CommandAPI.CommandError;
+import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandError.Reason;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.NonEmptyList;
-import io.simplesource.data.Reason;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.model.AggregateUpdate;
 import io.simplesource.kafka.model.AggregateUpdateResult;
@@ -97,7 +97,7 @@ public final class AggregateTestHelper<K, C, E, A> {
         final K key,
         final Sequence readSequence,
         final C command,
-        final Consumer<NonEmptyList<Reason<CommandError>>> failureValidator
+        final Consumer<NonEmptyList<CommandError>> failureValidator
     ) {
         final UUID commandId = publish(key, readSequence, command);
 
@@ -152,7 +152,7 @@ public final class AggregateTestHelper<K, C, E, A> {
     }
 
     private static CommandError commandError(final Exception e) {
-        return CommandError.InternalError;
+        return CommandError.of(Reason.InternalError, e);
     }
 
 
@@ -186,7 +186,7 @@ public final class AggregateTestHelper<K, C, E, A> {
          * @param failureValidator the failure reasons are provided for validation
          */
         public void expectingFailure(
-            final Consumer<NonEmptyList<Reason<CommandError>>> failureValidator) {
+            final Consumer<NonEmptyList<CommandError>> failureValidator) {
             publishExpectingError(key, readSequence, command, failureValidator);
         }
 
@@ -196,9 +196,9 @@ public final class AggregateTestHelper<K, C, E, A> {
          * @param expectedErrorCodes expected error codes contains in each of the generated failure reasons
          */
         public void expectingFailure(
-            final NonEmptyList<CommandError> expectedErrorCodes) {
-            final Consumer<NonEmptyList<Reason<CommandError>>> failureValidator = reasons ->
-                assertEquals(expectedErrorCodes, reasons.map(Reason::getError));
+            final NonEmptyList<CommandError.Reason> expectedErrorCodes) {
+            final Consumer<NonEmptyList<CommandError>> failureValidator = reasons ->
+                assertEquals(expectedErrorCodes, reasons.map(CommandError::getReason));
             expectingFailure(failureValidator);
         }
     }

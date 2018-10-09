@@ -1,6 +1,6 @@
 package io.simplesource.kafka.model;
 
-import io.simplesource.api.CommandAPI.CommandError;
+import io.simplesource.api.CommandError;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.Result;
 import lombok.AllArgsConstructor;

@@ -119,7 +119,7 @@ public final class StateStoreUtils {
                 }
 
                 if (timeout < System.currentTimeMillis() - start) {
-                    return FutureResult.fail(timeoutErrorSupplier.get(), "Request timed out");
+                    return FutureResult.fail(timeoutErrorSupplier.get());
                 }
                 // TODO make stack safe
                 return spin(hostInfoForAggregate,

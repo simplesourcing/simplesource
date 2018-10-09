@@ -1,10 +1,8 @@
 package io.simplesource.kafka.internal;
 
 import io.simplesource.api.CommandAPI;
-import io.simplesource.data.Sequence;
-import io.simplesource.data.FutureResult;
-import io.simplesource.data.NonEmptyList;
-import io.simplesource.data.Result;
+import io.simplesource.api.CommandError;
+import io.simplesource.data.*;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.api.RemoteCommandResponseStore;
 import io.simplesource.kafka.dsl.KafkaConfig;
@@ -29,7 +27,7 @@ import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
 
-import static io.simplesource.api.CommandAPI.CommandError.*;
+import static io.simplesource.api.CommandError.Reason.*;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_request;
 
 public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
@@ -77,7 +75,7 @@ public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
             commandRequestTopic,
             request.key(),
             commandRequest);
-        return FutureResult.ofFuture(commandProducer.send(record), e -> CommandPublishError)
+        return FutureResult.ofFuture(commandProducer.send(record), e -> CommandError.of(CommandPublishError, e))
             .map(meta -> request.commandId());
     }
 
@@ -88,8 +86,8 @@ public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
             currentHost,
             () -> getLocalAggregate(commandId),
             (hostInfo, newTimeout) -> remoteStore.get(hostInfo, aggregateName, commandId, newTimeout),
-            () -> Timeout,
-            e -> RemoteLookupFailed,
+            () -> CommandError.of(Timeout, "Request timed out"),
+            e -> CommandError.of(RemoteLookupFailed, e),
             scheduledExecutor,
             retryDelay,
             timeout);
@@ -124,6 +122,6 @@ public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
     private Supplier<Result<CommandError, HostInfo>> hostInfoForCommandResponseKey(final UUID key) {
         return () -> storeBridge.hostInfoForCommandResponseStoreKey(key)
             .map(Result::<CommandError, HostInfo>success)
-            .orElse(Result.failure(AggregateNotFound, "No metadata found for command response key " + key));
+            .orElse(Result.failure(CommandError.of(AggregateNotFound, "No metadata found for command response key " + key)));
     }
 }

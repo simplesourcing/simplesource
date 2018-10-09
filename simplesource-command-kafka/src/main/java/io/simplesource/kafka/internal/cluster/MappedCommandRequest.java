@@ -1,6 +1,6 @@
 package io.simplesource.kafka.internal.cluster;
 
-import io.simplesource.api.CommandAPI;
+import io.simplesource.api.CommandError;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
@@ -17,6 +17,6 @@ class MappedCommandRequest {
     private long requestId;
     private HostInfo toHostInfo;
     private Message.CommandRequest commandRequest;
-    private CompletableFuture<Result<CommandAPI.CommandError, NonEmptyList<Sequence>>> completableFuture;
+    private CompletableFuture<Result<CommandError, NonEmptyList<Sequence>>> completableFuture;
 
 }

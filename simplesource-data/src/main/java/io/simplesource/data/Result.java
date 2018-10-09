@@ -8,9 +8,9 @@ import java.util.function.Function;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A Result is either a success containing a value of the specified type, or a failure with a list value reasons.
+ * A Result is either a success containing a value of the specified type, or a failure with a list value errors.
  *
- * @param <E> on failure there will be a NonEmptyList of Reason instances with an error value of this type.
+ * @param <E> on failure there will be a NonEmptyList of error instances with an error value of this type.
  * @param <A> when successful there will be a contained value of this type.
  */
 public abstract class Result<E, A> {
@@ -28,54 +28,29 @@ public abstract class Result<E, A> {
     }
 
     /**
-     * Factory method to creates a failed {@code Result} from a reason message.
+     * Factory method to creates a Failed {@code Result} from a array value of error
      *
      * @param <E> The error type for failures.
      * @param <S> when successful there will be a contained value this type.
-     * @param error for the type of failure
-     * @param reason that this {@code Result} to be failed
-     * @return new failed {@code Result} containing the failed {@code Reason}
+     * @param error the first cause of {@code Result} to be failed
+     * @param errors a variable argument list of further causes of failure
+     * @return new failed {@code Result} containing the failed errors
      */
-    public static <E, S> Result<E, S> failure(final E error, final String reason) {
-        return failure(Reason.of(error, reason));
+    @SafeVarargs
+    public static <E, S> Result<E, S> failure(final E error, final E... errors) {
+        return failure(NonEmptyList.of(error, errors));
     }
 
     /**
-     * Factory method to creates a Failed {@code Result} from a {@code Throwable}.
+     * Factory method to creates a Failed {@code Result} from a {@code {@link NonEmptyList<  E  >}}}
      *
      * @param <E> The error type for failures.
      * @param <S> when successful there will be a contained value this type.
-     * @param error for the type of failure
-     * @param throwable that caused this {@code Result} to be failed
-     * @return new failed {@code Result} containing the failed {@code Reason}
+     * @param errors what caused this {@code Result} to failed
+     * @return new failed {@code Result} containing the failed errors
      */
-    public static <E, S> Result<E, S> failure(final E error, final Throwable throwable) {
-        return failure(Reason.of(error, throwable));
-    }
-
-    /**
-     * Factory method to creates a Failed {@code Result} from a array value {@code Reason}
-     *
-     * @param <E> The error type for failures.
-     * @param <S> when successful there will be a contained value this type.
-     * @param reason the first cause of {@code Result} to be failed
-     * @param reasons a variable argument list of further causes of failure
-     * @return new failed {@code Result} containing the failed {@code Reason}
-     */
-    public static <E, S> Result<E, S> failure(final Reason<E> reason, final Reason<E>... reasons) {
-        return failure(NonEmptyList.of(reason, reasons));
-    }
-
-    /**
-     * Factory method to creates a Failed {@code Result} from a {@code {@link NonEmptyList<Reason>}}}
-     *
-     * @param <E> The error type for failures.
-     * @param <S> when successful there will be a contained value this type.
-     * @param reasons what caused this {@code Result} to failed
-     * @return new failed {@code Result} containing the failed {@code Reason}
-     */
-    public static <E, S> Result<E, S> failure(final NonEmptyList<Reason<E>> reasons) {
-        return new Failure<>(reasons);
+    public static <E, S> Result<E, S> failure(final NonEmptyList<E> errors) {
+        return new Failure<>(errors);
     }
 
     /**
@@ -113,25 +88,25 @@ public abstract class Result<E, A> {
 
     /**
      * Turn this Result into a destination type by supplying functions
-     * from the reasons, or a function from the contained value.
+     * from the list of failure errors, or a function from the contained value.
      *
      * @param <T> The target return type
-     * @param f a function to apply to the list of reseans for failure, if any
+     * @param f a function to apply to the list of errors for failure, if any
      * @param s a function to apply to successfully updated aggregate value
      * @return the target type returned in either the success or the failure cases
      */
-    public <T> T fold(final Function<NonEmptyList<Reason<E>>, T> f, final Function<A, T> s) {
+    public <T> T fold(final Function<NonEmptyList<E>, T> f, final Function<A, T> s) {
         return isSuccess() ?
                 s.apply(((Success<E, A>) this).value) :
-                f.apply(((Failure<E, A>) this).reasons);
+                f.apply(((Failure<E, A>) this).errors);
     }
 
     /**
-     * If this is a failure, return the reasons for that failure, if not return nothing.
+     * If this is a failure, return the error reasons for that failure, if not return nothing.
      *
      * @return the nonempty list of failures
      */
-    public Optional<NonEmptyList<Reason<E>>> failureReasons() {
+    public Optional<NonEmptyList<E>> failureReasons() {
         return fold(Optional::of, a -> Optional.empty());
     }
 
@@ -157,7 +132,7 @@ public abstract class Result<E, A> {
      *
      * @param mapper A mapper
      * @param <T>    The new component type
-     * @return a {@code Reason}
+     * @return a mapped result with the new value mapped to the new type
      * @throws NullPointerException if {@code mapper} is null
      */
     public <T> Result<E, T> flatMap(final Function<A, Result<E, T>> mapper) {
@@ -185,7 +160,7 @@ public abstract class Result<E, A> {
             final Result<?, ?> resultObj= (Result<?, ?>)obj;
             if (isSuccess() == resultObj.isSuccess()) {
                 return resultObj.fold(
-                        reasons -> Objects.equals(((Failure<E, A>) this).reasons, reasons),
+                        errors -> Objects.equals(((Failure<E, A>) this).errors, errors),
                         value -> Objects.equals(((Success<E, A>)this).value, value)
                 );
             }
@@ -215,10 +190,10 @@ public abstract class Result<E, A> {
     }
 
     static final class Failure<E, A> extends Result<E, A> {
-        private final NonEmptyList<Reason<E>> reasons;
+        private final NonEmptyList<E> errors;
 
-        Failure(final NonEmptyList<Reason<E>> reasons) {
-            this.reasons = requireNonNull(reasons);
+        Failure(final NonEmptyList<E> errors) {
+            this.errors = requireNonNull(errors);
         }
 
         @Override
@@ -228,7 +203,7 @@ public abstract class Result<E, A> {
 
         @Override
         public String toString() {
-            return "Failure{" + "reasons=" + reasons + '}';
+            return "Failure{" + "errors=" + errors + '}';
         }
     }
 }

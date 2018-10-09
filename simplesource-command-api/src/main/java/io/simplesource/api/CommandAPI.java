@@ -77,15 +77,4 @@ public interface CommandAPI<K, C> {
         private final C command;
     }
 
-    enum CommandError {
-        InvalidCommand,
-        InvalidReadSequence,
-        CommandHandlerFailed,
-        AggregateNotFound,
-        Timeout,
-        RemoteLookupFailed,
-        CommandPublishError,
-        InternalError,
-        UnexpectedErrorCode
-    }
 }

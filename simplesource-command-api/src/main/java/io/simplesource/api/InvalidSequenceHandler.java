@@ -1,6 +1,5 @@
 package io.simplesource.api;
 
-import io.simplesource.data.Reason;
 import io.simplesource.data.Sequence;
 
 import java.util.Optional;
@@ -33,9 +32,9 @@ public interface InvalidSequenceHandler<K, C, A> {
      *
      * @return If the command should be rejected, return <code>Optional</code> with a reason. If the command should still be invoked, return <code>Optional.empty</code>
      */
-    Optional<Reason<CommandAPI.CommandError>> shouldReject(K key,
-                                                           Sequence expectedSeq,
-                                                           Sequence currentSeq,
-                                                           A currentAggregate,
-                                                           C command);
+    Optional<CommandError> shouldReject(K key,
+                                        Sequence expectedSeq,
+                                        Sequence currentSeq,
+                                        A currentAggregate,
+                                        C command);
 }
