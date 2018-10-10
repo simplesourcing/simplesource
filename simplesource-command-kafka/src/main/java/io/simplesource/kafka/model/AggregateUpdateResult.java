@@ -18,10 +18,11 @@ public final class AggregateUpdateResult<P> {
 
     public <S> AggregateUpdateResult<S> map(final Function<P, S> f) {
         return new AggregateUpdateResult<>(
-            commandId,
-            readSequence,
-            updatedAggregateResult.map( pu -> pu.map(f)));
+                commandId,
+                readSequence,
+                updatedAggregateResult.map( pu -> pu.map(f)));
     }
 
 }
+
 

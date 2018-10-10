@@ -1,19 +1,20 @@
 @namespace("io.simplesource.kafka.protocol")
 protocol SimpleSourcing {
-
-  record UpdateSuccess {
-    long writeSequence;
-  }
-
-  error UpdateFailure {
-    string errorCode;
-    string errorMessage;
-  }
-
-  record CommandResponse {
-    string commandId;
-    long readSequence;
-    union { UpdateSuccess, UpdateFailure } result;
-  }
-
+//
+//  record UpdateSuccess {
+//    long writeSequence;
+//  }
+//
+//  error UpdateFailure {
+//    string errorCode;
+//    string errorMessage;
+//  }
+//
+//  record CommandResponse {
+//    string commandId;
+//    long readSequence;
+//    union { UpdateSuccess, UpdateFailure } result;
+//  }
+//
 }
+

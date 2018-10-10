@@ -27,4 +27,5 @@ public interface AggregateSerdes<K, C, E, A> {
     Serde<ValueWithSequence<E>> valueWithSequence();
     Serde<AggregateUpdate<A>> aggregateUpdate();
     Serde<AggregateUpdateResult<A>> updateResult();
+    Serde<CommandResponse> commandResponse();
 }
