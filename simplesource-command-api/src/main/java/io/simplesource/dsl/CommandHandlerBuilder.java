@@ -3,6 +3,7 @@ package io.simplesource.dsl;
 import io.simplesource.api.CommandHandler;
 import io.simplesource.api.CommandError;
 import io.simplesource.api.CommandError.Reason;
+import io.simplesource.api.KeyedCommandInterpreter;
 import io.simplesource.data.Result;
 
 import java.util.HashMap;
@@ -40,14 +41,14 @@ public final class CommandHandlerBuilder<K, C, E, A> {
         // defensive copy
         final Map<Class<? extends C>, CommandHandler<K, ? extends C, E, A>> ch = getCommandHandlers();
 
-        return (key, currentAggregate, command) -> {
+        return (command) -> {
             final CommandHandler<K, SC, E, A> commandHandler = (CommandHandler<K, SC, E, A>) ch.get(command.getClass());
             if (commandHandler == null) {
                 return Result.failure(CommandError.of(Reason.InvalidCommand, String.format("Unhandled command type: %s",
                         command.getClass().getSimpleName())));
             }
 
-            return commandHandler.interpretCommand(key, currentAggregate, (SC) command);
+            return commandHandler.interpretCommand((SC) command);
         };
     }
 }
