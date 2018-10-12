@@ -1,8 +1,7 @@
 package io.simplesource.kafka.internal.streams;
 
+import io.simplesource.api.*;
 import io.simplesource.api.Aggregator;
-import io.simplesource.api.InitialValue;
-import io.simplesource.api.CommandError;
 import io.simplesource.api.CommandError.Reason;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
@@ -80,7 +79,11 @@ public final class EventSourcedTopology<K, C, E, A> {
     public void addTopology(final StreamsBuilder builder) {
         addStateStores(builder);
 
-        final KStream<K, CommandEvents<E, A>> eventResultStream = eventResultStream(builder);
+        final CommandInterpreterStreams<K, C, E, A> streams = keyedCommandInterpreterStream(builder);
+
+        final KStream<K, CommandEvents<E, A>> eventResultStream = eventResultStream2(streams.successStream());
+        // TODO: handle the failure case
+
         publishEvents(eventResultStream);
 
         final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream = aggregateUpdateStream(eventResultStream);
@@ -100,12 +103,45 @@ public final class EventSourcedTopology<K, C, E, A> {
         builder.addStateStore(aggregateStoreBuilder);
     }
 
-    private KStream<K, CommandEvents<E, A>> eventResultStream(final StreamsBuilder builder) {
+    private CommandInterpreterStreams<K, C, E, A> keyedCommandInterpreterStream(final StreamsBuilder builder) {
         final KStream<K, CommandRequest<C>> requestStream = builder.stream(
                 topicName(command_request), commandEventsConsumed);
-        return requestStream
-                .transformValues(CommandRequestTransformer::new, storeName(aggregate_update));
+
+        final KStream<UUID, CommandRequest<C>> requestStream2 = null;
+
+        KStream<UUID, KeyedCommandInput<K, C, E, A>> keyedCommandInputKStream = requestStream2.map((key, commandRequest) -> {
+            Result<CommandError, KeyedCommandInterpreter<K, E, A>> keyedCR = aggregateSpec.generation().commandHandler().interpretCommand(commandRequest.command());
+
+            KeyedCommandInput<K, C, E, A> keyedCommandInput = KeyedCommandInput.apply(
+                    commandRequest,
+                    commandRequest.commandId(),
+                    keyedCR.map(z -> KeyedCommandInterpreter2.apply(z.aggregateKey(), commandRequest, z.interpreter())));
+
+            return KeyValue.pair(commandRequest.commandId(), keyedCommandInput);
+        });
+
+        KStream<UUID, KeyedCommandInput<K, C, E, A>>[] v2 = keyedCommandInputKStream.branch((k, v) -> v.interpreter().isSuccess());
+        KStream<K, KeyedCommandInterpreter2<K, C, E, A>> successStream = v2[0].map((k, v) -> {
+                    KeyedCommandInterpreter2<K, C, E, A> d = v.interpreter().fold(e -> null, r -> r);
+                    return KeyValue.pair(d.aggregateKey(), d);
+                }
+        );
+
+
+        KStream<UUID, AggregateUpdateResult<A>> failureStream = v2[1].map((k, v) -> {
+            NonEmptyList<CommandError> c = v.interpreter().fold(e -> e, r -> null);
+            return KeyValue.pair(v.commandId(), new AggregateUpdateResult<>(v.commandId(), v.request().readSequence(), Result.failure(c)));
+        });
+
+        return new CommandInterpreterStreams(successStream, failureStream);
     }
+
+
+    private KStream<K, CommandEvents<E, A>> eventResultStream2(final KStream<K, KeyedCommandInterpreter2<K, C, E, A>> successStream) {
+        return successStream
+                .transformValues(CommandRequestTransformer2::new, storeName(aggregate_update));
+    }
+
 
     private void publishEvents(final KStream<K, CommandEvents<E, A>> eventResultStream) {
         final KStream<K, ValueWithSequence<E>> eventStream = eventResultStream.flatMapValues(result -> result.eventValue()
@@ -212,7 +248,7 @@ public final class EventSourcedTopology<K, C, E, A> {
                 .withValueSerde(serdes.updateResult());
     }
 
-    private final class CommandRequestTransformer implements ValueTransformerWithKey<K, CommandRequest<C>, CommandEvents<E, A>> {
+    private final class CommandRequestTransformer2 implements ValueTransformerWithKey<K, KeyedCommandInterpreter2<K, C, E, A>, CommandEvents<E, A>> {
         private ReadOnlyKeyValueStore<K, AggregateUpdate<A>> stateStore;
 
         @Override
@@ -221,9 +257,11 @@ public final class EventSourcedTopology<K, C, E, A> {
         }
 
         @Override
-        public CommandEvents<E, A> transform(final K readOnlyKey, final CommandRequest<C> request) {
+        public CommandEvents<E, A> transform(final K readOnlyKey, final KeyedCommandInterpreter2<K, C, E, A> keyedCommandInterpreter) {
+            CommandRequest<C> request = keyedCommandInterpreter.request();
 
             AggregateUpdate<A> currentUpdatePre;
+
             try {
                 currentUpdatePre = Optional.ofNullable(stateStore.get(readOnlyKey))
                         .orElse(AggregateUpdate.of(initialValue.empty(readOnlyKey)));
@@ -236,19 +274,17 @@ public final class EventSourcedTopology<K, C, E, A> {
             try {
                 Optional<CommandError> maybeReject =
                         Objects.equals(request.readSequence(), currentUpdate.sequence()) ? Optional.empty() :
-                            aggregateSpec.generation().invalidSequenceHandler().shouldReject(
-                                readOnlyKey,
-                                currentUpdate.sequence(),
-                                request.readSequence(),
-                                currentUpdate.aggregate(),
-                                request.command());
+                                aggregateSpec.generation().invalidSequenceHandler().shouldReject(
+                                        readOnlyKey,
+                                        currentUpdate.sequence(),
+                                        request.readSequence(),
+                                        currentUpdate.aggregate(),
+                                        request.command());
 
                 commandResult = maybeReject.<Result<CommandError, NonEmptyList<E>>>map(
                         commandErrorReason -> Result.failure(commandErrorReason)).orElseGet(
-                                () -> aggregateSpec.generation().commandHandler().interpretCommand(
-                                        readOnlyKey,
-                                        currentUpdate.aggregate(),
-                                        request.command()));
+                        () -> keyedCommandInterpreter.interpreter().interpretCommand(
+                                currentUpdate.aggregate()));
             } catch (final Exception e) {
                 logger.warn("[{} aggregate] Failed to apply command handler on key {} to request {}",
                         aggregateSpec.aggregateName(), readOnlyKey, request, e);
