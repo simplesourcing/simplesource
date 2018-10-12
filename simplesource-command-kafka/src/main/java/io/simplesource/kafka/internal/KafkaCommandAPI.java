@@ -30,11 +30,11 @@ import java.util.stream.StreamSupport;
 import static io.simplesource.api.CommandError.Reason.*;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_request;
 
-public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
+public final class KafkaCommandAPI<K, C, A> implements CommandAPI<C> {
 
     private final String aggregateName;
     private final String commandRequestTopic;
-    private final Producer<K, CommandRequest<C>> commandProducer;
+    private final Producer<UUID, CommandRequest<C>> commandProducer;
     private final AggregateSerdes<K, C, ?, A> aggregateSerdes;
     private final HostInfo currentHost;
     private final CommandResponseStoreBridge<A> storeBridge;
@@ -57,7 +57,7 @@ public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
         aggregateSerdes = serialization.serdes();
         commandProducer = new KafkaProducer<>(
             kafkaConfig.producerConfig(),
-            aggregateSerdes.aggregateKey().serializer(),
+            aggregateSerdes.commandKey().serializer(),
             aggregateSerdes.commandRequest().serializer());
         currentHost = kafkaConfig.currentHostInfo();
         this.aggregateName = aggregateSpec.aggregateName();
@@ -68,12 +68,12 @@ public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
     }
 
     @Override
-    public FutureResult<CommandError, UUID> publishCommand(final Request<K, C> request) {
+    public FutureResult<CommandError, UUID> publishCommand(final Request<C> request) {
         final CommandRequest<C> commandRequest = new CommandRequest<>(
             request.command(), request.readSequence(), request.commandId());
-        final ProducerRecord<K, CommandRequest<C>> record = new ProducerRecord<>(
+        final ProducerRecord<UUID, CommandRequest<C>> record = new ProducerRecord<>(
             commandRequestTopic,
-            request.key(),
+            request.commandId(),
             commandRequest);
         return FutureResult.ofFuture(commandProducer.send(record), e -> CommandError.of(CommandPublishError, e))
             .map(meta -> request.commandId());

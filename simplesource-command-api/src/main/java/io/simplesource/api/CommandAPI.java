@@ -14,10 +14,9 @@ import java.util.UUID;
  *
  * For a command to be successfully applied, this sequence must be the same as the sequence id of the last applied event.
  *
- * @param <K> the aggregate key
  * @param <C> all commands for this aggregate
  */
-public interface CommandAPI<K, C> {
+public interface CommandAPI<C> {
 
     /**
      * Submit the given command ready for processing. A successful result implies the command has been
@@ -29,7 +28,7 @@ public interface CommandAPI<K, C> {
      * @return a <code>FutureResult</code> with the commandId echoed back if the command was successfully queued,
      * otherwise a list of reasons for the failure.
      */
-    FutureResult<CommandError, UUID> publishCommand(Request<K, C> request);
+    FutureResult<CommandError, UUID> publishCommand(Request<C> request);
 
     /**
      * Get the result of the execution of the command identified by the provided UUID.
@@ -58,7 +57,7 @@ public interface CommandAPI<K, C> {
      *         command or error reasons on failure.
      */
     default FutureResult<CommandError, NonEmptyList<Sequence>> publishAndQueryCommand(
-        final Request<K, C> commandRequest,
+        final Request<C> commandRequest,
         final Duration timeout
     ) {
         return publishCommand(commandRequest)
@@ -66,9 +65,7 @@ public interface CommandAPI<K, C> {
     }
 
     @Value
-    class Request<K, C> {
-        // the aggregate key the command applies to
-        private final K key;
+    class Request<C> {
         // the version of the aggregate this command is based on
         private final Sequence readSequence;
         // unique id for this command

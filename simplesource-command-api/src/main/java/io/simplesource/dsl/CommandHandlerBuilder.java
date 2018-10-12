@@ -3,7 +3,6 @@ package io.simplesource.dsl;
 import io.simplesource.api.CommandHandler;
 import io.simplesource.api.CommandError;
 import io.simplesource.api.CommandError.Reason;
-import io.simplesource.api.KeyedCommandInterpreter;
 import io.simplesource.data.Result;
 
 import java.util.HashMap;
@@ -48,7 +47,7 @@ public final class CommandHandlerBuilder<K, C, E, A> {
                         command.getClass().getSimpleName())));
             }
 
-            return commandHandler.interpretCommand((SC) command);
+            return commandHandler.handleCommand((SC) command);
         };
     }
 }

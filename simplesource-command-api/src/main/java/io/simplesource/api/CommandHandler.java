@@ -1,6 +1,5 @@
 package io.simplesource.api;
 
-import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 
 /**
@@ -25,5 +24,5 @@ public interface CommandHandler<K, C, E, A> {
      * @return If rejecting, return a failed <code>Result</code> providing one or more <code>Reasons</code> for the
      * rejection. If accepting return one or more events that represent the command.
      */
-    Result<CommandError, KeyedCommandInterpreter<K, E, A>> interpretCommand(C command);
+    Result<CommandError, KeyedCommandInterpreter<K, E, A>> handleCommand(C command);
 }

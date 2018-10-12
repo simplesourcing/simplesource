@@ -8,9 +8,8 @@ public interface CommandAPISet {
      * @param aggregateName unique name of one of the aggregates
      *
      * @param <C> all commands for this aggregate
-     * @param <K> the aggregate key
      * @return the aggregate matching the given name
      */
-    <K, C> CommandAPI<K, C> getCommandAPI(String aggregateName);
+    <C> CommandAPI<C> getCommandAPI(String aggregateName);
 
 }
