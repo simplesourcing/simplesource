@@ -24,5 +24,5 @@ public interface CommandHandler<K, C, E, A> {
      * @return If rejecting, return a failed <code>Result</code> providing one or more <code>Reasons</code> for the
      * rejection. If accepting return one or more events that represent the command.
      */
-    Result<CommandError, KeyedCommandInterpreter<K, E, A>> handleCommand(C command);
+    Result<CommandError, CommandInterpreter<K, E, A>> handleCommand(C command);
 }

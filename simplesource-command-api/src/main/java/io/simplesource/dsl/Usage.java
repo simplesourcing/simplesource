@@ -4,7 +4,7 @@ package io.simplesource.dsl;
 import io.simplesource.api.Aggregator;
 import io.simplesource.api.CommandError;
 import io.simplesource.api.CommandHandler;
-import io.simplesource.api.KeyedCommandInterpreter;
+import io.simplesource.api.CommandInterpreter;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import lombok.AllArgsConstructor;
@@ -70,7 +70,7 @@ interface UserCommand {
     }
 
     static CommandHandler<UserKey, InsertUser, UserEvent, Optional<User>> doInsertUser() {
-        return command -> KeyedCommandInterpreter.apply(
+        return command -> CommandInterpreter.apply(
                 command.key(),
                 currentAggregate -> currentAggregate
                         .map(d -> failure("User already created: " + command.key().id()))
@@ -80,7 +80,7 @@ interface UserCommand {
     }
 
     static CommandHandler<UserKey, DeleteUser, UserEvent, Optional<User>> doDeleteUser() {
-        return command -> KeyedCommandInterpreter.apply(
+        return command -> CommandInterpreter.apply(
                 command.key(),
                 currentAggregate -> currentAggregate
                         .map(d -> success(new UserEvent.UserDeleted()))
@@ -88,7 +88,7 @@ interface UserCommand {
     }
 
     static CommandHandler<UserKey, UpdateYearOfBirth, UserEvent, Optional<User>> doUpdateYearOfBirth() {
-        return command -> KeyedCommandInterpreter.apply(
+        return command -> CommandInterpreter.apply(
                 command.key(),
                 currentAggregate -> currentAggregate
                         .map(d -> success(new UserEvent.YearOfBirthUpdated(command.yearOfBirth())))
@@ -96,7 +96,7 @@ interface UserCommand {
     }
 
     static CommandHandler<UserKey, UpdateName, UserEvent, Optional<User>> doUpdateName() {
-        return command -> KeyedCommandInterpreter.apply(
+        return command -> CommandInterpreter.apply(
                 command.key(),
                 currentAggregate -> currentAggregate
                         .map(d -> success(
@@ -106,7 +106,7 @@ interface UserCommand {
     }
 
     static CommandHandler<UserKey, BuggyCommand, UserEvent, Optional<User>> doBuggyCommand() {
-        return command -> KeyedCommandInterpreter.apply(
+        return command -> CommandInterpreter.apply(
                 command.key(),
                 currentAggregate -> {
                     if (command.throwInCommandHandler()) {

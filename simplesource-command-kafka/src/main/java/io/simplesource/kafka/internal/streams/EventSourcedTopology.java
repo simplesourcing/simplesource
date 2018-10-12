@@ -57,7 +57,7 @@ final class EventSourcedTopology<K, C, E, A> {
     final class CommandInterpreterContext {
         private final K aggregateKey;
         private final CommandRequest<C> request;
-        private final CommandInterpreter<E, A> interpreter;
+        private final CommandInterpretFunction<E, A> interpreter;
     }
 
     @Value
@@ -141,7 +141,7 @@ final class EventSourcedTopology<K, C, E, A> {
                 topicName(command_request), commandEventsConsumed);
 
         KStream<UUID, KeyedCommandInput> keyedCommandInputKStream = requestStream.map((key, commandRequest) -> {
-            Result<CommandError, KeyedCommandInterpreter<K, E, A>> keyedCR = aggregateSpec.generation().commandHandler().handleCommand(commandRequest.command());
+            Result<CommandError, CommandInterpreter<K, E, A>> keyedCR = aggregateSpec.generation().commandHandler().handleCommand(commandRequest.command());
 
             KeyedCommandInput keyedCommandInput = new KeyedCommandInput(
                     commandRequest,
