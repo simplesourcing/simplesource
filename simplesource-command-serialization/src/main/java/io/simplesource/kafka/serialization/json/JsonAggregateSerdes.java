@@ -398,8 +398,5 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
                     Reason.valueOf(element.getAsJsonPrimitive(ERROR_CODE).getAsString()),
                     element.getAsJsonPrimitive(ERROR_MESSAGE).getAsString());
         }
-
     }
-
-
 }
