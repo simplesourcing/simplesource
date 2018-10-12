@@ -169,7 +169,7 @@ final class EventSourcedTopology<K, C, E, A> {
 
     private KStream<K, CommandEvents> eventResultStream2(final KStream<K, CommandInterpreterContext> successStream) {
         return successStream
-                .transformValues(CommandRequestTransformer2::new, storeName(aggregate_update));
+                .transformValues(CommandRequestTransformer::new, storeName(aggregate_update));
     }
 
     private void publishEvents(final KStream<K, CommandEvents> eventResultStream) {
@@ -272,7 +272,7 @@ final class EventSourcedTopology<K, C, E, A> {
                 .withValueSerde(serdes.updateResult());
     }
 
-    private final class CommandRequestTransformer2 implements ValueTransformerWithKey<K, CommandInterpreterContext, CommandEvents> {
+    private final class CommandRequestTransformer implements ValueTransformerWithKey<K, CommandInterpreterContext, CommandEvents> {
         private ReadOnlyKeyValueStore<K, AggregateUpdate<A>> stateStore;
 
         @Override
