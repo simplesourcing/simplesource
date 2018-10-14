@@ -25,7 +25,7 @@ public final class AggregateBuilder<K, C, E, A> {
     private InitialValue<K, A> initialValue;
     private RetryDelay retryDelay = (startTime, timeoutMillis, spinCount) -> 15L;
     private CommandAggregateKey<K, C> commandAggregateKey;
-    private CommandHandler<K, C, E, A> commandHandler;
+    private CommandHandler<C, E, A> commandHandler;
     private Aggregator<E, A> aggregator;
     private InvalidSequenceHandler<K, C, A> invalidSequenceHandler;
 
@@ -83,7 +83,7 @@ public final class AggregateBuilder<K, C, E, A> {
         return this;
     }
 
-    public AggregateBuilder<K, C, E, A> withCommandHandler(final CommandHandler<K, C, E, A> commandHandler) {
+    public AggregateBuilder<K, C, E, A> withCommandHandler(final CommandHandler<C, E, A> commandHandler) {
         this.commandHandler = commandHandler;
         return this;
     }

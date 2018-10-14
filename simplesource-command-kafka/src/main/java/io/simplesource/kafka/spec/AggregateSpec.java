@@ -25,7 +25,7 @@ public final class AggregateSpec<K, C, E, A>  {
         private final WindowedStateStoreSpec stateStoreSpec;
         private final RetryDelay retryDelay;
         private final CommandAggregateKey<K, C> commandAggregateKey;
-        private final CommandHandler<K, C, E, A> commandHandler;
+        private final CommandHandler<C, E, A> commandHandler;
         private final InvalidSequenceHandler<K, C, A> invalidSequenceHandler;
         private final Aggregator<E, A> aggregator;
         private final InitialValue<K, A> initialValue;

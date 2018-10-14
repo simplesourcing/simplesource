@@ -66,36 +66,36 @@ interface UserCommand {
         private final UserKey key;
     }
 
-    static CommandHandler<UserKey, InsertUser, UserEvent, Optional<User>> doInsertUser() {
-        return (key, currentAggregate, command) -> currentAggregate
-                        .map(d -> failure("User already created: " + key.id()))
+    static CommandHandler<InsertUser, UserEvent, Optional<User>> doInsertUser() {
+        return (currentAggregate, command) -> currentAggregate
+                        .map(d -> failure("User already created: " + command.key.id()))
                         .orElse(success(new UserEvent.UserInserted(
                                 command.firstName(),
                                 command.lastName())));
     }
 
-    static CommandHandler<UserKey, DeleteUser, UserEvent, Optional<User>> doDeleteUser() {
-        return (key, currentAggregate, command) -> currentAggregate
+    static CommandHandler<DeleteUser, UserEvent, Optional<User>> doDeleteUser() {
+        return (currentAggregate, command) -> currentAggregate
                         .map(d -> success(new UserEvent.UserDeleted()))
-                        .orElse(failure("Attempted to delete non-existent user: " + key.id()));
+                        .orElse(failure("Attempted to delete non-existent user: " + command.key().id()));
     }
 
-    static CommandHandler<UserKey, UpdateYearOfBirth, UserEvent, Optional<User>> doUpdateYearOfBirth() {
-        return (key, currentAggregate, command) -> currentAggregate
+    static CommandHandler<UpdateYearOfBirth, UserEvent, Optional<User>> doUpdateYearOfBirth() {
+        return (currentAggregate, command) -> currentAggregate
                         .map(d -> success(new UserEvent.YearOfBirthUpdated(command.yearOfBirth())))
-                        .orElse(failure("Attempted to update non-existent user: " + key.id()));
+                        .orElse(failure("Attempted to update non-existent user: " + command.key().id()));
     }
 
-    static CommandHandler<UserKey, UpdateName, UserEvent, Optional<User>> doUpdateName() {
-        return (key, currentAggregate, command) -> currentAggregate
+    static CommandHandler<UpdateName, UserEvent, Optional<User>> doUpdateName() {
+        return (currentAggregate, command) -> currentAggregate
                         .map(d -> success(
                                 new UserEvent.FirstNameUpdated(command.firstName()),
                                 new UserEvent.LastNameUpdated(command.lastName())))
-                        .orElse(failure("Attempted to update non-existent user: " + key.id()));
+                        .orElse(failure("Attempted to update non-existent user: " + command.key().id()));
     }
 
-    static CommandHandler<UserKey, BuggyCommand, UserEvent, Optional<User>> doBuggyCommand() {
-        return (key, currentAggregate, command) -> {
+    static CommandHandler<BuggyCommand, UserEvent, Optional<User>> doBuggyCommand() {
+        return (currentAggregate, command) -> {
                     if (command.throwInCommandHandler()) {
                         throw new RuntimeException("Buggy bug");
                     } else {
@@ -113,7 +113,7 @@ interface UserCommand {
         return Result.success(of(event, events));
     }
 
-    static CommandHandler<UserKey, UserCommand, UserEvent, Optional<User>> getCommandHandler() {
+    static CommandHandler<UserCommand, UserEvent, Optional<User>> getCommandHandler() {
         return CommandHandlerBuilder.<UserKey, UserCommand, UserEvent, Optional<User>>newBuilder()
                 // Command handling
                 .onCommand(InsertUser.class, doInsertUser())

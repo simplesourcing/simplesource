@@ -306,7 +306,7 @@ final class EventSourcedTopology<K, C, E, A> {
 
                 commandResult = maybeReject.<Result<CommandError, NonEmptyList<E>>>map(
                         commandErrorReason -> Result.failure(commandErrorReason)).orElseGet(
-                        () -> aggregateSpec.generation().commandHandler().interpretCommand(readOnlyKey,
+                        () -> aggregateSpec.generation().commandHandler().interpretCommand(
                                 currentUpdate.aggregate(), context.request.command()));
             } catch (final Exception e) {
                 logger.warn("[{} aggregate] Failed to apply command handler on key {} to request {}",
