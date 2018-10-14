@@ -30,7 +30,7 @@ public final class AggregateSetBuilder {
     private KafkaConfig kafkaConfig;
     private Map<String, AggregateSpec<?, ?, ?, ?>> aggregateConfigMap = new HashMap<>();
 
-    private static Function<AggregateSpec<?, ?, ?, ?>, KeyValue<String, CommandAPI<?, ?>>> createAggregate(
+    private static Function<AggregateSpec<?, ?, ?, ?>, KeyValue<String, CommandAPI<?>>> createAggregate(
             final KafkaConfig kafkaConfig,
             final KafkaStreams kafkaStreams,
             final RemoteCommandResponseStore remoteCommandResponseStore,
@@ -103,7 +103,7 @@ public final class AggregateSetBuilder {
         final ClusterSubsystem clusterSubsystem =
                 new ClusterSubsystem((aggName) -> aggregatesRef[0].getCommandAPI(aggName), kafkaConfig.clusterConfig(), scheduledExecutor);
 
-        final Map<String, CommandAPI<?, ?>> aggregates = aggregateSetSpec.aggregateConfigMap().values()
+        final Map<String, CommandAPI<?>> aggregates = aggregateSetSpec.aggregateConfigMap().values()
                 .stream()
                 .map(createAggregate(
                         aggregateSetSpec.executionSpec().kafkaConfig(),
@@ -115,8 +115,8 @@ public final class AggregateSetBuilder {
 
         CommandAPISet commandAPISet = new CommandAPISet() {
             @Override
-            public <K, C> CommandAPI<K, C> getCommandAPI(final String aggregateName) {
-                return (CommandAPI<K, C>) aggregates.get(aggregateName);
+            public <C> CommandAPI<C> getCommandAPI(final String aggregateName) {
+                return (CommandAPI<C>) aggregates.get(aggregateName);
             }
         };
 

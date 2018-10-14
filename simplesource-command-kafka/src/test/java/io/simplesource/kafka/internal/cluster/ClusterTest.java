@@ -22,9 +22,9 @@ public final class ClusterTest {
     private static final Result<CommandError, NonEmptyList<Sequence>> SUCCESS_RESULT =
             Result.success(NonEmptyList.of(Sequence.position(new Random().nextLong())));
 
-    private final CommandAPI<Object, Object> succsssCommandPI = new CommandAPI<Object, Object>() {
+    private final CommandAPI<Object> succsssCommandPI = new CommandAPI<Object>() {
         @Override
-        public FutureResult<CommandError, UUID> publishCommand(Request<Object, Object> request) {
+        public FutureResult<CommandError, UUID> publishCommand(Request<Object> request) {
             throw new UnsupportedOperationException();
         }
 
@@ -34,7 +34,7 @@ public final class ClusterTest {
         }
     };
 
-    private final Map<String, CommandAPI<?, ?>> aggregates = new HashMap<String, CommandAPI<?, ?>>() {{
+    private final Map<String, CommandAPI<?>> aggregates = new HashMap<String, CommandAPI<?>>() {{
         put(SUCCESS_AGGREGATE, succsssCommandPI);
     }};
 

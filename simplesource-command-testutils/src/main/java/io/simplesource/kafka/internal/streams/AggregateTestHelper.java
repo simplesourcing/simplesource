@@ -37,11 +37,10 @@ public final class AggregateTestHelper<K, C, E, A> {
     }
 
     private UUID publish(
-        final K key,
         final Sequence readSequence,
         final C command) {
         final UUID commandId = UUID.randomUUID();
-        final Result<CommandError, UUID> result = testAPI.publishCommand(new CommandAPI.Request<>(key, readSequence, commandId, command))
+        final Result<CommandError, UUID> result = testAPI.publishCommand(new CommandAPI.Request<>(readSequence, commandId, command))
             .unsafePerform(AggregateTestHelper::commandError);
         return result.fold(
             reasons -> fail("Publishing command " + command + " failed with " + reasons),
@@ -59,7 +58,7 @@ public final class AggregateTestHelper<K, C, E, A> {
         final NonEmptyList<E> expectedEvents,
         final A expectedAggregate
     ) {
-        final UUID commandId = publish(key, readSequence, command);
+        final UUID commandId = publish(readSequence, command);
         final NonEmptyList<Sequence> expectedSequences = validateEvents(key, readSequence, expectedEvents);
 
         final AggregateUpdateResult<A> updateResponse = testAPI.fetchAggregateUpdateResult(commandId)
@@ -94,12 +93,11 @@ public final class AggregateTestHelper<K, C, E, A> {
     }
 
     private void publishExpectingError(
-        final K key,
         final Sequence readSequence,
         final C command,
         final Consumer<NonEmptyList<CommandError>> failureValidator
     ) {
-        final UUID commandId = publish(key, readSequence, command);
+        final UUID commandId = publish(readSequence, command);
 
         final AggregateUpdateResult<A> updateResponse = testAPI.fetchAggregateUpdateResult(commandId)
             .orElseGet(() -> fail("Didn't find command response"));
@@ -187,7 +185,7 @@ public final class AggregateTestHelper<K, C, E, A> {
          */
         public void expectingFailure(
             final Consumer<NonEmptyList<CommandError>> failureValidator) {
-            publishExpectingError(key, readSequence, command, failureValidator);
+            publishExpectingError(readSequence, command, failureValidator);
         }
 
         /**

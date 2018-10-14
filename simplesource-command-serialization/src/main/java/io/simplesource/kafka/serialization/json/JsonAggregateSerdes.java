@@ -100,7 +100,7 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     }
 
     @Override
-    public Serde<UUID> commandResponseKey() {
+    public Serde<UUID> commandKey() {
         return crk;
     }
 
