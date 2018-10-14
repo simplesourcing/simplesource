@@ -43,7 +43,7 @@ public final class KafkaStreamCommandResponseStoreBridge<K, A> implements Comman
             .ofNullable(kafkaStreams.metadataForKey(
                 commandResponseStoreName,
                 key,
-                aggregateSerdes.commandResponseKey().serializer()))
+                aggregateSerdes.commandKey().serializer()))
             .map(StreamsMetadata::hostInfo);
     }
 }

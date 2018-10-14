@@ -27,7 +27,7 @@ public final class MessageHandler extends SimpleChannelInboundHandler<Message> {
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
         msg.fold((request) -> {
             logger.trace("Got request:{}", request);
-            CommandAPI<CommandError, NonEmptyList<Sequence>> commandAPI = getCommandAPI(request.aggregateName);
+            CommandAPI<NonEmptyList<Sequence>> commandAPI = getCommandAPI(request.aggregateName);
             if (commandAPI == null) {
                 client.send(request.sourceHost, Message.response(request.requestId,
                         Result.failure(CommandError.of(Reason.RemoteLookupFailed,
@@ -53,7 +53,7 @@ public final class MessageHandler extends SimpleChannelInboundHandler<Message> {
         return true;
     }
 
-    private CommandAPI<CommandError, NonEmptyList<Sequence>> getCommandAPI(String aggregateName) {
-        return (CommandAPI<CommandError, NonEmptyList<Sequence>>) aggregates.get(aggregateName);
+    private CommandAPI<NonEmptyList<Sequence>> getCommandAPI(String aggregateName) {
+        return (CommandAPI<NonEmptyList<Sequence>>) aggregates.get(aggregateName);
     }
 }

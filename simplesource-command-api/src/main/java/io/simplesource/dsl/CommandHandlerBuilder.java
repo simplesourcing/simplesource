@@ -23,31 +23,31 @@ public final class CommandHandlerBuilder<K, C, E, A> {
         return new CommandHandlerBuilder<>();
     }
 
-    private final Map<Class<? extends C>, CommandHandler<K, ? extends C, E, A>> commandHandlers = new HashMap<>();
+    private final Map<Class<? extends C>, CommandHandler<? extends C, E, A>> commandHandlers = new HashMap<>();
 
     private CommandHandlerBuilder() {}
 
-    public <SC extends C> CommandHandlerBuilder<K, C, E, A> onCommand(final Class<SC> specificCommandClass, final CommandHandler<K, SC, E, A> ch) {
+    public <SC extends C> CommandHandlerBuilder<K, C, E, A> onCommand(final Class<SC> specificCommandClass, final CommandHandler<SC, E, A> ch) {
         commandHandlers.put(specificCommandClass, ch);
         return this;
     }
 
-    private Map<Class<? extends C>, CommandHandler<K, ? extends C, E, A>> getCommandHandlers() {
+    private Map<Class<? extends C>, CommandHandler<? extends C, E, A>> getCommandHandlers() {
         return new HashMap<>(commandHandlers);
     }
 
-    public <SC extends C> CommandHandler<K, SC, E, A> build() {
+    public <SC extends C> CommandHandler<SC, E, A> build() {
         // defensive copy
-        final Map<Class<? extends C>, CommandHandler<K, ? extends C, E, A>> ch = getCommandHandlers();
+        final Map<Class<? extends C>, CommandHandler<? extends C, E, A>> ch = getCommandHandlers();
 
-        return (key, currentAggregate, command) -> {
-            final CommandHandler<K, SC, E, A> commandHandler = (CommandHandler<K, SC, E, A>) ch.get(command.getClass());
+        return (aggregate, command) -> {
+            final CommandHandler<SC, E, A> commandHandler = (CommandHandler<SC, E, A>) ch.get(command.getClass());
             if (commandHandler == null) {
                 return Result.failure(CommandError.of(Reason.InvalidCommand, String.format("Unhandled command type: %s",
                         command.getClass().getSimpleName())));
             }
 
-            return commandHandler.interpretCommand(key, currentAggregate, (SC) command);
+            return commandHandler.interpretCommand(aggregate, command);
         };
     }
 }

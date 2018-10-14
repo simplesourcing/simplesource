@@ -10,25 +10,23 @@ import io.simplesource.data.Result;
  * generated. The internal aggregator is guaranteed to be fully up-to-date at the point a new command is interpreted
  * with the latest aggregate provided as an argument ready to use for validation and business logic.
  *
- * @param <K> the aggregate key
  * @param <C> all commands for this aggregate
  * @param <E> all events generated for this aggregate
  * @param <A> the aggregate
  */
 @FunctionalInterface
-public interface CommandHandler<K, C, E, A> {
+public interface CommandHandler<C, E, A> {
     /**
      * Determine if you will accept or reject the given command given the current aggregate aggregate and
      * transform into events.
      *
-     * @param key              the aggregate key the command applies to
      * @param currentAggregate the aggregate for this aggregate guaranteed to be up to date with all events seen to date
      * @param command          the command to validate and convert into events
      * @return If rejecting, return a failed <code>Result</code> providing one or more <code>Reasons</code> for the
      * rejection. If accepting return one or more events that represent the command.
      */
     Result<CommandError, NonEmptyList<E>> interpretCommand(
-            K key,
             A currentAggregate,
             C command);
 }
+

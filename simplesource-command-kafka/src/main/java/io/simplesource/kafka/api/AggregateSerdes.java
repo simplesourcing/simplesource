@@ -23,7 +23,7 @@ import java.util.UUID;
 public interface AggregateSerdes<K, C, E, A> {
     Serde<K> aggregateKey();
     Serde<CommandRequest<C>> commandRequest();
-    Serde<UUID> commandResponseKey();
+    Serde<UUID> commandKey();
     Serde<ValueWithSequence<E>> valueWithSequence();
     Serde<AggregateUpdate<A>> aggregateUpdate();
     Serde<AggregateUpdateResult<A>> updateResult();

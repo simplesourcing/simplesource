@@ -37,14 +37,14 @@ import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_r
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.event;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.aggregate;
 
-public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
+public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<C> {
     private final TopologyTestDriver driver;
     private final AggregateSpec<K, C, E, A> aggregateSpec;
     private final KafkaConfig kafkaConfig;
     private final AggregateSerdes<K, C, E, A> aggregateSerdes;
     private final TestDriverPublisher publisher;
 
-    private final CommandAPI<K, C> commandAPI;
+    private final CommandAPI<C> commandAPI;
 
     public AggregateTestDriver(
         final AggregateSpec<K, C, E, A> aggregateSpec,
@@ -75,8 +75,8 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
     }
 
     @Override
-    public FutureResult<CommandError, UUID> publishCommand(final Request<K, C> request) {
-        publisher.publish(topicName(command_request), request.key(), new CommandRequest<>(request.command(), request.readSequence(), request.commandId()));
+    public FutureResult<CommandError, UUID> publishCommand(final Request<C> request) {
+        publisher.publish(topicName(command_request), request.commandId(), new CommandRequest<>(request.command(), request.readSequence(), request.commandId()));
         return FutureResult.of(request.commandId());
     }
 
@@ -131,17 +131,17 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
     }
 
     private class TestDriverPublisher {
-        private final ConsumerRecordFactory<K, CommandRequest<C>> factory;
+        private final ConsumerRecordFactory<UUID, CommandRequest<C>> factory;
 
         TestDriverPublisher(final AggregateSerdes<K, C, E, A> aggregateSerdes) {
-            factory = new ConsumerRecordFactory<>(aggregateSerdes.aggregateKey().serializer(), aggregateSerdes.commandRequest().serializer());
+            factory = new ConsumerRecordFactory<>(aggregateSerdes.commandKey().serializer(), aggregateSerdes.commandRequest().serializer());
         }
 
-        private ConsumerRecordFactory<K, CommandRequest<C>> recordFactory() {
+        private ConsumerRecordFactory<UUID, CommandRequest<C>> recordFactory() {
             return factory;
         }
 
-        void publish(final String topic, final K key, final CommandRequest<C> value) {
+        void publish(final String topic, final UUID key, final CommandRequest<C> value) {
             driver.pipeInput(recordFactory().create(topic, key, value));
         }
 
