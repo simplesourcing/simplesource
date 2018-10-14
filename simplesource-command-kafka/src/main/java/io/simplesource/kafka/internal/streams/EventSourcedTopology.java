@@ -57,14 +57,13 @@ final class EventSourcedTopology<K, C, E, A> {
     final class CommandInterpreterContext {
         private final K aggregateKey;
         private final CommandRequest<C> request;
-        private final CommandInterpretFunction<E, A> interpreter;
     }
 
     @Value
     private final class KeyedCommandInput {
         private final CommandRequest<C> request;
         private final UUID commandId;
-        private final Result<CommandError, CommandInterpreterContext> interpreter;
+        private final Result<CommandError, K> aggregateKey;
     }
 
     @Value
@@ -141,26 +140,26 @@ final class EventSourcedTopology<K, C, E, A> {
                 topicName(command_request), commandEventsConsumed);
 
         KStream<UUID, KeyedCommandInput> keyedCommandInputKStream = requestStream.map((key, commandRequest) -> {
-            Result<CommandError, CommandInterpreter<K, E, A>> keyedCR = aggregateSpec.generation().commandHandler().handleCommand(commandRequest.command());
+            Result<CommandError, K> keyedCR = aggregateSpec.generation().commandAggregateKey().getAggregateKey(commandRequest.command());
 
             KeyedCommandInput keyedCommandInput = new KeyedCommandInput(
                     commandRequest,
                     commandRequest.commandId(),
-                    keyedCR.map(z -> new CommandInterpreterContext(z.aggregateKey(), commandRequest, z.interpreter())));
+                    keyedCR);
 
             return KeyValue.pair(commandRequest.commandId(), keyedCommandInput);
         });
 
-        KStream<UUID, KeyedCommandInput>[] branchedStreams = keyedCommandInputKStream.branch((k, v) -> v.interpreter().isSuccess());
+        KStream<UUID, KeyedCommandInput>[] branchedStreams = keyedCommandInputKStream.branch((k, v) -> v.aggregateKey.isSuccess());
 
         KStream<K, CommandInterpreterContext> successStream = branchedStreams[0].map((k, v) -> {
-                    CommandInterpreterContext d = v.interpreter().fold(e -> null, r -> r);
-                    return KeyValue.pair(d.aggregateKey(), d);
+            CommandInterpreterContext interpreterContext = v.aggregateKey.fold(e -> null, r -> new CommandInterpreterContext(r, v.request()));
+                    return KeyValue.pair(interpreterContext.aggregateKey(), interpreterContext);
                 }
         );
 
         KStream<UUID, AggregateUpdateResult<A>> failureStream = branchedStreams[1].map((k, v) -> {
-            NonEmptyList<CommandError> c = v.interpreter().fold(e -> e, r -> null);
+            NonEmptyList<CommandError> c = v.aggregateKey().fold(e -> e, r -> null);
             return KeyValue.pair(v.commandId(), new AggregateUpdateResult<>(v.commandId(), v.request().readSequence(), Result.failure(c)));
         });
 
@@ -281,8 +280,8 @@ final class EventSourcedTopology<K, C, E, A> {
         }
 
         @Override
-        public CommandEvents transform(final K readOnlyKey, final CommandInterpreterContext keyedCommandInterpreter) {
-            CommandRequest<C> request = keyedCommandInterpreter.request();
+        public CommandEvents transform(final K readOnlyKey, final CommandInterpreterContext context) {
+            CommandRequest<C> request = context.request();
 
             AggregateUpdate<A> currentUpdatePre;
 
@@ -307,8 +306,8 @@ final class EventSourcedTopology<K, C, E, A> {
 
                 commandResult = maybeReject.<Result<CommandError, NonEmptyList<E>>>map(
                         commandErrorReason -> Result.failure(commandErrorReason)).orElseGet(
-                        () -> keyedCommandInterpreter.interpreter().interpretCommand(
-                                currentUpdate.aggregate()));
+                        () -> aggregateSpec.generation().commandHandler().interpretCommand(readOnlyKey,
+                                currentUpdate.aggregate(), context.request.command()));
             } catch (final Exception e) {
                 logger.warn("[{} aggregate] Failed to apply command handler on key {} to request {}",
                         aggregateSpec.aggregateName(), readOnlyKey, request, e);

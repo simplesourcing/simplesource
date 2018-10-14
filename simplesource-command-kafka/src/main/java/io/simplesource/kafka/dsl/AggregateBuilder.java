@@ -1,11 +1,8 @@
 package io.simplesource.kafka.dsl;
 
-import io.simplesource.api.CommandHandler;
-import io.simplesource.api.InvalidSequenceHandler;
+import io.simplesource.api.*;
 import io.simplesource.kafka.api.AggregateResources.TopicEntity;
-import io.simplesource.api.Aggregator;
 import io.simplesource.kafka.api.AggregateSerdes;
-import io.simplesource.api.InitialValue;
 import io.simplesource.kafka.api.ResourceNamingStrategy;
 import io.simplesource.kafka.internal.streams.InvalidSequenceHandlerProvider;
 import io.simplesource.kafka.internal.util.RetryDelay;
@@ -27,6 +24,7 @@ public final class AggregateBuilder<K, C, E, A> {
     private WindowedStateStoreSpec commandResponseStoreSpec;
     private InitialValue<K, A> initialValue;
     private RetryDelay retryDelay = (startTime, timeoutMillis, spinCount) -> 15L;
+    private CommandAggregateKey<K, C> commandAggregateKey;
     private CommandHandler<K, C, E, A> commandHandler;
     private Aggregator<E, A> aggregator;
     private InvalidSequenceHandler<K, C, A> invalidSequenceHandler;
@@ -80,6 +78,11 @@ public final class AggregateBuilder<K, C, E, A> {
         return this;
     }
 
+    public AggregateBuilder<K, C, E, A> withCommandAggregateKey(final CommandAggregateKey<K, C> commandAggregateKey) {
+        this.commandAggregateKey = commandAggregateKey;
+        return this;
+    }
+
     public AggregateBuilder<K, C, E, A> withCommandHandler(final CommandHandler<K, C, E, A> commandHandler) {
         this.commandHandler = commandHandler;
         return this;
@@ -108,7 +111,7 @@ public final class AggregateBuilder<K, C, E, A> {
         final AggregateSpec.Serialization<K, C, E, A> serialization =
             new AggregateSpec.Serialization<>(resourceNamingStrategy, aggregateSerdes);
         final AggregateSpec.Generation<K, C, E, A> generation =
-            new AggregateSpec.Generation<>(topicConfig, commandResponseStoreSpec, retryDelay, commandHandler, invalidSequenceHandler, aggregator, initialValue);
+            new AggregateSpec.Generation<>(topicConfig, commandResponseStoreSpec, retryDelay, commandAggregateKey, commandHandler, invalidSequenceHandler, aggregator, initialValue);
 
         return new AggregateSpec<>(name, serialization, generation);
     }

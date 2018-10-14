@@ -1,5 +1,6 @@
 package io.simplesource.api;
 
+import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 
 /**
@@ -20,9 +21,15 @@ public interface CommandHandler<K, C, E, A> {
      * Determine if you will accept or reject the given command given the current aggregate aggregate and
      * transform into events.
      *
+     * @param key              the aggregate key the command applies to
+     * @param currentAggregate the aggregate for this aggregate guaranteed to be up to date with all events seen to date
      * @param command          the command to validate and convert into events
      * @return If rejecting, return a failed <code>Result</code> providing one or more <code>Reasons</code> for the
      * rejection. If accepting return one or more events that represent the command.
      */
-    Result<CommandError, CommandInterpreter<K, E, A>> handleCommand(C command);
+    Result<CommandError, NonEmptyList<E>> interpretCommand(
+            K key,
+            A currentAggregate,
+            C command);
 }
+
