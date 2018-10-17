@@ -57,6 +57,7 @@ public final class EventSourcedTopology<K, C, E, A> {
     private final Consumed<K, CommandRequest<C>> commandEventsConsumed;
     private final Produced<K, ValueWithSequence<E>> eventsConsumedProduced;
     private final Produced<K, AggregateUpdate<A>> aggregatedUpdateProduced;
+    private final Produced<K, CommandResponse> commandResponseProduced;
     private final Serialized<UUID, AggregateUpdateResult<A>> serializedAggregateUpdate;
 
     public EventSourcedTopology(
@@ -71,7 +72,9 @@ public final class EventSourcedTopology<K, C, E, A> {
         commandEventsConsumed = Consumed.with(serdes.aggregateKey(), serdes.commandRequest());
         eventsConsumedProduced = Produced.with(serdes.aggregateKey(), serdes.valueWithSequence());
         aggregatedUpdateProduced = Produced.with(serdes.aggregateKey(), serdes.aggregateUpdate());
+        commandResponseProduced = Produced.with(serdes.aggregateKey(), serdes.commandResponse());
         serializedAggregateUpdate = Serialized.with(serdes.commandResponseKey(), serdes.updateResult());
+
     }
 
     public void addTopology(final StreamsBuilder builder) {
@@ -85,6 +88,7 @@ public final class EventSourcedTopology<K, C, E, A> {
 
         updateAggregateStateStore(aggregateUpdateStream);
         updateCommandResultStore(aggregateUpdateStream);
+        publishCommandResponse(aggregateUpdateStream);
     }
 
     private void addStateStores(final StreamsBuilder builder) {
@@ -148,6 +152,15 @@ public final class EventSourcedTopology<K, C, E, A> {
         aggregateStream.to(topicName(aggregate), aggregatedUpdateProduced);
     }
 
+    private  void publishCommandResponse(final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream) {
+        final KStream<K, CommandResponse> aggregateStream = aggregateUpdateStream
+                .mapValues((key, update) ->
+                        new CommandResponse(update.commandId(), update.readSequence(), update.updatedAggregateResult().map(x -> x.sequence()))
+                );
+        aggregateStream.to(topicName(AggregateResources.TopicEntity.command_response), commandResponseProduced);
+    }
+
+
     /**
      * Update the state store with the latest aggregate_update value on successful updates.
      */
@@ -173,6 +186,8 @@ public final class EventSourcedTopology<K, C, E, A> {
             }
         }, storeName(aggregate_update));
     }
+
+
 
     private void updateCommandResultStore(final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream) {
 

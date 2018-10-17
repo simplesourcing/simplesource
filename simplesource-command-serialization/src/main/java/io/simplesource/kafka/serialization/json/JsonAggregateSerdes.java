@@ -34,6 +34,7 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     private final Serde<ValueWithSequence<E>> vws;
     private final Serde<AggregateUpdate<A>> au;
     private final Serde<AggregateUpdateResult<A>> aur;
+    private final Serde<CommandResponse> cr2;
 
     public JsonAggregateSerdes() {
         this(jsonDomainMapper(), jsonDomainMapper(), jsonDomainMapper(), jsonDomainMapper());
@@ -55,6 +56,7 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
         gsonBuilder.registerTypeAdapter(ValueWithSequence.class, new ValueWithSequenceAdapter());
         gsonBuilder.registerTypeAdapter(AggregateUpdate.class, new AggregateUpdateAdapter());
         gsonBuilder.registerTypeAdapter(AggregateUpdateResult.class, new AggregateUpdateResultAdapter());
+        gsonBuilder.registerTypeAdapter(CommandResponse.class, new CommandResponseAdapter());
         gson = gsonBuilder.create();
         parser = new JsonParser();
 
@@ -80,6 +82,10 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
         aur = GenericSerde.of(serde,
                 gson::toJson,
                 s -> gson.fromJson(s, new TypeToken<AggregateUpdateResult<A>>() {
+                }.getType()));
+        cr2 = GenericSerde.of(serde,
+                gson::toJson,
+                s -> gson.fromJson(s, new TypeToken<CommandResponse>() {
                 }.getType()));
     }
 
@@ -111,6 +117,11 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     @Override
     public Serde<AggregateUpdateResult<A>> updateResult() {
         return aur;
+    }
+
+    @Override
+    public Serde<CommandResponse> commandResponse() {
+        return cr2;
     }
 
     private class CommandRequestAdapter implements JsonSerializer<CommandRequest<C>>, JsonDeserializer<CommandRequest<C>> {
@@ -309,5 +320,83 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
 
     }
 
+    private class CommandResponseAdapter implements JsonSerializer<CommandResponse>, JsonDeserializer<CommandResponse> {
 
+
+        private static final String READ_SEQUENCE = "readSequence";
+        private static final String COMMAND_ID = "commandId";
+        private static final String RESULT = "result";
+        private static final String REASON = "reason";
+        private static final String ADDITIONAL_REASONS = "additionalReasons";
+        private static final String ERROR_MESSAGE = "errorMessage";
+        private static final String ERROR_CODE = "errorCode";
+        private static final String WRITE_SEQUENCE = "writeSequence";
+
+        @Override
+        public JsonElement serialize(
+                final CommandResponse commandResponse,
+                final Type type,
+                final JsonSerializationContext jsonSerializationContext
+        ) {
+            final JsonObject wrapper = new JsonObject();
+            wrapper.addProperty(READ_SEQUENCE, commandResponse.readSequence().getSeq());
+            wrapper.addProperty(COMMAND_ID, commandResponse.commandId().toString());
+            wrapper.add(RESULT, commandResponse.sequenceResult().fold(
+                    reasons -> {
+                        final JsonObject failureWrapper = new JsonObject();
+                        failureWrapper.add(REASON, serializeReason(reasons.head()));
+                        final JsonArray additionalReasons = new JsonArray();
+                        reasons.tail().forEach(reason -> additionalReasons.add(serializeReason(reason)));
+                        failureWrapper.add(ADDITIONAL_REASONS, additionalReasons);
+                        return failureWrapper;
+                    },
+                    sequence -> {
+                        final JsonObject successWrapper = new JsonObject();
+                        successWrapper.addProperty(WRITE_SEQUENCE, sequence.getSeq());
+                        return successWrapper;
+                    }
+            ));
+            return wrapper;
+        }
+
+        private JsonElement serializeReason(final CommandError commandError) {
+            final JsonObject wrapper = new JsonObject();
+            wrapper.addProperty(ERROR_MESSAGE, commandError.getMessage());
+            wrapper.addProperty(ERROR_CODE, commandError.getReason().name());
+            return wrapper;
+        }
+
+        @Override
+        public CommandResponse deserialize(
+                final JsonElement jsonElement, final Type type, final JsonDeserializationContext jsonDeserializationContext
+        ) throws JsonParseException {
+            final JsonObject wrapper = jsonElement.getAsJsonObject();
+            final Sequence readSequence = Sequence.position(wrapper.getAsJsonPrimitive(READ_SEQUENCE).getAsLong());
+            final UUID commandId = UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString());
+            final JsonObject resultWrapper = wrapper.getAsJsonObject(RESULT);
+            final Result result;
+            if (resultWrapper.has(REASON)) {
+                final CommandError headCommandError = deserializeReason(resultWrapper.getAsJsonObject(REASON));
+                final List<CommandError> tailCommandErrors = new ArrayList<>();
+                resultWrapper.getAsJsonArray(ADDITIONAL_REASONS)
+                        .forEach(reason -> tailCommandErrors.add(deserializeReason(reason.getAsJsonObject())));
+                result = Result.<CommandError, Sequence>failure(new NonEmptyList(headCommandError, tailCommandErrors));
+            } else {
+                result = Result.success(
+                        Sequence.position(resultWrapper.getAsJsonPrimitive(WRITE_SEQUENCE).getAsLong()
+                        )
+                );
+            }
+            return new CommandResponse(
+                    commandId,
+                    readSequence,
+                    result);
+        }
+
+        private CommandError deserializeReason(final JsonObject element) {
+            return CommandError.of(
+                    Reason.valueOf(element.getAsJsonPrimitive(ERROR_CODE).getAsString()),
+                    element.getAsJsonPrimitive(ERROR_MESSAGE).getAsString());
+        }
+    }
 }

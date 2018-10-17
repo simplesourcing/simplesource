@@ -131,8 +131,14 @@ public final class AggregateBuilder<K, C, E, A> {
         final Map<String, String> eventTopic = new HashMap<>();
         eventTopic.put(TopicConfig.RETENTION_MS_CONFIG, "-1"); // never delete old log segments
         config.put(
-            TopicEntity.event,
-            new TopicSpec(8, (short)1, eventTopic));
+                TopicEntity.event,
+                new TopicSpec(8, (short)1, eventTopic));
+
+        final Map<String, String> commandResponseTopic = new HashMap<>();
+        aggregateTopic.put(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(TimeUnit.DAYS.toMillis(1)));
+        config.put(
+                TopicEntity.command_response,
+                new TopicSpec(1, (short)1, commandResponseTopic));
 
         return config;
     }
