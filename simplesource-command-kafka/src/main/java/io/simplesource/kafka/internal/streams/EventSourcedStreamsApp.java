@@ -2,6 +2,8 @@ package io.simplesource.kafka.internal.streams;
 
 import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.ResourceNamingStrategy;
+import io.simplesource.kafka.internal.streams.topologies.EventSourcedTopology;
+import io.simplesource.kafka.internal.streams.topologies.EventSourcedTopologyBuilder;
 import io.simplesource.kafka.spec.AggregateSetSpec;
 import io.simplesource.kafka.spec.TopicSpec;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -95,7 +97,7 @@ public final class EventSourcedStreamsApp {
         final StreamsBuilder builder = new StreamsBuilder();
         aggregateSetSpec.aggregateConfigMap()
                 .values()
-                .forEach(aggregateSpec -> new EventSourcedTopology<>(aggregateSpec).addTopology(builder));
+                .forEach(aggregateSpec -> new EventSourcedTopologyBuilder<>(aggregateSpec).build().addTopology(builder));
         return builder.build();
     }
 
