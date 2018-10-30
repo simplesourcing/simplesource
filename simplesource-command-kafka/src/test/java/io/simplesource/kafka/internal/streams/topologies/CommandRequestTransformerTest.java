@@ -3,11 +3,11 @@ package io.simplesource.kafka.internal.streams.topologies;
 import io.simplesource.api.CommandError;
 import io.simplesource.api.CommandHandler;
 import io.simplesource.api.InitialValue;
-import io.simplesource.api.InvalidSequenceHandler;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
-import io.simplesource.kafka.internal.MockedInMemorySerde;
+import io.simplesource.kafka.api.AggregateResources.StateStoreEntity;
+import io.simplesource.kafka.internal.MockInMemorySerde;
 import io.simplesource.kafka.internal.streams.model.TestAggregate;
 import io.simplesource.kafka.internal.streams.model.TestCommand;
 import io.simplesource.kafka.internal.streams.model.TestEvent;
@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,39 +37,37 @@ import java.util.Comparator;
 import java.util.Optional;
 import java.util.UUID;
 
-import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.aggregate_update;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @SuppressWarnings("unchecked")
 class CommandRequestTransformerTest {
-    private static final String AGGREGATE_UPDATE_STORE_NAME = "AggregateUpdateStoreName";
     private static final String NAME = "Name1";
     private static final String AGGREGATE_KEY = "key";
-
     @Mock
     private InitialValue<String, Optional<TestAggregate>> initialValue;
     @Mock
-    private InvalidSequenceHandler<String, TestCommand, Optional<TestAggregate>> invalidSequenceHandler;
-    @Mock
     private CommandHandler<String, TestCommand, TestEvent, Optional<TestAggregate>> commandHandler;
-    @Mock
-    private AggregateStreamResourceNames aggregateResourceNames;
     private KeyValueStore<String, AggregateUpdate<Optional<TestAggregate>>> stateStore;
     private ProcessorContext processorContext;
 
     private CommandRequestTransformer<String, TestCommand, TestEvent, Optional<TestAggregate>> target;
     private Sequence claimedAggregateSequence = Sequence.position(200);
     private Sequence actualAggregateSequence = Sequence.position(100);
-    private Optional<TestAggregate> currentAggregate = Optional.empty();
+    private Optional<TestAggregate> currentAggregate = Optional.of(new TestAggregate("Aggregate name"));
+    private final String aggregateUpdateStoreName = TestAggregateBuilder.stateStoreName(StateStoreEntity.aggregate_update);
 
     @BeforeEach
     void setUp() {
-        target = new CommandRequestTransformer<>(initialValue, invalidSequenceHandler, commandHandler,
-                aggregateResourceNames);
+        AggregateTopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> topologyContext =
+                new TestAggregateBuilder()
+                        .withCommandHandler(commandHandler)
+                        .withInitialValue(initialValue)
+                        .buildContext();
 
-        when(aggregateResourceNames.stateStoreName(aggregate_update)).thenReturn(AGGREGATE_UPDATE_STORE_NAME);
+        target = new CommandRequestTransformer<>(topologyContext);
         processorContext = new MockProcessorContext();
         setupStateStore();
 
@@ -78,7 +78,7 @@ class CommandRequestTransformerTest {
     void tearDown() throws IOException {
         stateStore.close();
         //RocksDBStore does not expose the file path or even ability to clean up the store
-        Files.walk(Paths.get("rocksdb", AGGREGATE_UPDATE_STORE_NAME))
+        Files.walk(Paths.get("rocksdb", aggregateUpdateStoreName))
                 .sorted(Comparator.reverseOrder())
                 .map(Path::toFile)
                 .forEach(File::delete);
@@ -86,21 +86,33 @@ class CommandRequestTransformerTest {
 
     @Test
     void initShouldRetrieveStateStoreOfAggregateUpdate() {
-        assertThat(processorContext.getStateStore(AGGREGATE_UPDATE_STORE_NAME)).isEqualTo(stateStore);
+        assertThat(processorContext.getStateStore(aggregateUpdateStoreName)).isEqualTo(stateStore);
     }
 
     @Test
     void transformShouldCallInvalidSequenceHandlerWhenCommandRequestSequenceIsNotTheSameAsCurrentAggregateSequence() {
-        CommandError commandError = CommandError.of(CommandError.Reason.InvalidReadSequence, "Error message");
         TestCommand command = new TestCommand.CreateCommand(NAME);
-        when(invalidSequenceHandler.shouldReject(AGGREGATE_KEY, actualAggregateSequence, claimedAggregateSequence,
-                currentAggregate, command)).thenReturn(Optional.of(commandError));
         stateStore.put(AGGREGATE_KEY, new AggregateUpdate<>(currentAggregate, actualAggregateSequence));
 
         CommandEvents<TestEvent, Optional<TestAggregate>> actualResult = target.transform(AGGREGATE_KEY,
                 new CommandRequest<>(command, claimedAggregateSequence, UUID.randomUUID()));
 
-        assertThat(actualResult.eventValue().failureReasons()).contains(NonEmptyList.of(commandError));
+        assertThat(actualResult.eventValue().failureReasons().map(e -> e.map(CommandError::getReason)))
+                .contains(NonEmptyList.of(CommandError.Reason.InvalidReadSequence));
+    }
+
+    @Test
+    void givenStateStoreDoesNotHaveAggregateKeyShouldFailWhenPassedReadSequenceIsNotFirst() {
+        TestEvent event = new TestEvent.Created(NAME);
+        TestCommand command = new TestCommand.CreateCommand(NAME);
+        when(initialValue.empty(AGGREGATE_KEY)).thenReturn(currentAggregate);
+        configureCommandHandlerWithResultEvents(currentAggregate, command, event);
+
+        CommandEvents<TestEvent, Optional<TestAggregate>> actualResult = target.transform(AGGREGATE_KEY,
+                new CommandRequest<>(command, Sequence.position(100), UUID.randomUUID()));
+
+        assertThat(actualResult.eventValue().failureReasons().map(e -> e.map(CommandError::getReason)))
+                .contains(NonEmptyList.of(CommandError.Reason.InvalidReadSequence));
     }
 
     @Test
@@ -113,7 +125,7 @@ class CommandRequestTransformerTest {
         configureCommandHandlerWithResultEvents(currentAggregate, command, event);
 
         CommandEvents<TestEvent, Optional<TestAggregate>> actualResult = target.transform(AGGREGATE_KEY,
-                new CommandRequest<>(command, claimedAggregateSequence, UUID.randomUUID()));
+                new CommandRequest<>(command, Sequence.first(), UUID.randomUUID()));
 
         assertThat(actualResult.eventValue().getOrElse(null)).containsExactly(valueWithSequence);
     }
@@ -134,10 +146,9 @@ class CommandRequestTransformerTest {
     }
 
     @Test
-    void transformShouldUseInitialValueForAggregateWhenRetrieveAggregateUpdateFromStateStoreThrowsException() {
+    void transformReturnInvalidStateStoreErrorWhenRetrieveAggregateUpdateFromStateStoreThrowsException() {
         TestEvent event = new TestEvent.Created(NAME);
         TestCommand command = new TestCommand.CreateCommand(NAME);
-        ValueWithSequence<TestEvent> valueWithSequence = new ValueWithSequence<>(event, Sequence.position(1));
         Optional<TestAggregate> initialAggregateUpdate = Optional.of(new TestAggregate(NAME));
 
         stateStore.close();
@@ -145,9 +156,10 @@ class CommandRequestTransformerTest {
         configureCommandHandlerWithResultEvents(initialAggregateUpdate, command, event);
 
         CommandEvents<TestEvent, Optional<TestAggregate>> actualResult = target.transform(AGGREGATE_KEY,
-                new CommandRequest<>(command, claimedAggregateSequence, UUID.randomUUID()));
+                new CommandRequest<>(command, Sequence.first(), UUID.randomUUID()));
 
-        assertThat(actualResult.eventValue().getOrElse(null)).containsExactly(valueWithSequence);
+        assertThat(actualResult.eventValue().failureReasons().map(f -> f.map(CommandError::getReason)))
+                .contains(NonEmptyList.of(CommandError.Reason.InvalidStateStore));
     }
 
     private void configureCommandHandlerWithResultEvents(Optional<TestAggregate> aggregate, TestCommand command, TestEvent event, TestEvent... events) {
@@ -158,9 +170,9 @@ class CommandRequestTransformerTest {
         stateStore =
                 Stores.keyValueStoreBuilder(
                         //We are using RocksDb instead of in-memory to simulate the InvalidStateStore case
-                        Stores.persistentKeyValueStore(AGGREGATE_UPDATE_STORE_NAME),
+                        Stores.persistentKeyValueStore(aggregateUpdateStoreName),
                         Serdes.String(),
-                        new MockedInMemorySerde<AggregateUpdate<Optional<TestAggregate>>>())
+                        new MockInMemorySerde<AggregateUpdate<Optional<TestAggregate>>>())
                         .withLoggingDisabled()
                         .build();
 

@@ -2,9 +2,10 @@ package io.simplesource.kafka.internal.streams;
 
 import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.ResourceNamingStrategy;
+import io.simplesource.kafka.internal.streams.topologies.AggregateTopologyContext;
 import io.simplesource.kafka.internal.streams.topologies.EventSourcedTopology;
-import io.simplesource.kafka.internal.streams.topologies.EventSourcedTopologyBuilder;
 import io.simplesource.kafka.spec.AggregateSetSpec;
+import io.simplesource.kafka.spec.AggregateSpec;
 import io.simplesource.kafka.spec.TopicSpec;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.CreateTopicsOptions;
@@ -97,7 +98,7 @@ public final class EventSourcedStreamsApp {
         final StreamsBuilder builder = new StreamsBuilder();
         aggregateSetSpec.aggregateConfigMap()
                 .values()
-                .forEach(aggregateSpec -> new EventSourcedTopologyBuilder<>(aggregateSpec).build().addTopology(builder));
+                .forEach(aggregateSpec -> addEventSourcedTopology(aggregateSpec, builder));
         return builder.build();
     }
 
@@ -114,5 +115,11 @@ public final class EventSourcedStreamsApp {
         streams.start();
 
         return streams;
+    }
+
+    private static <K, C, E, A> void addEventSourcedTopology(AggregateSpec<K, C, E, A> aggregateSpec, StreamsBuilder builder) {
+        final AggregateTopologyContext<K, C, E, A> aggregateTopologyContext = new AggregateTopologyContext<>(aggregateSpec);
+        new EventSourcedTopology<>(aggregateTopologyContext)
+                .addTopology(builder);
     }
 }

@@ -1,6 +1,6 @@
 package io.simplesource.kafka.internal.streams.topologies;
 
-import io.simplesource.data.NonEmptyList;
+import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.internal.streams.model.TestAggregate;
 import io.simplesource.kafka.internal.streams.model.TestCommand;
@@ -28,30 +28,26 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
 class EventSourcedTopologyTest {
-    private static final String AGGREGATE_UPDATE_STORE = "AggregateUpdateStore";
-    private static final String COMMAND_REQUEST_TOPIC = "CommandRequestTopic";
 
     private EventSourcedTopology<String, TestCommand, TestEvent, Optional<TestAggregate>> target;
-    @Mock
-    private AggregateSerdes<String, TestCommand, TestEvent, Optional<TestAggregate>> aggregateSerdes;
-    @Mock
-    private AggregateStreamResourceNames aggregateStreamResourceNames;
     @Mock
     private CommandProcessingSubTopology<String, TestCommand, TestEvent, Optional<TestAggregate>> commandProcessingSubTopology;
     @Mock
     private EventProcessingSubTopology<String, TestEvent, Optional<TestAggregate>> eventProcessingSubTopology;
     @Mock
-    private AggregateUpdateResultStreamConsumer aggregateUpdateConsumer1;
-    @Mock
-    private AggregateUpdateResultStreamConsumer aggregateUpdateConsumer2;
+    private AggregateUpdatePublisher<String, TestCommand, TestEvent, Optional<TestAggregate>> aggregateUpdatePublisher;
+
+    private String commandRequestTopicName = TestAggregateBuilder.topicName(AggregateResources.TopicEntity.command_request);
+    private String aggregateStateStoreName = TestAggregateBuilder.stateStoreName(AggregateResources.StateStoreEntity.aggregate_update);
 
     @BeforeEach
     void setUp() {
-        target = new EventSourcedTopology<>(aggregateSerdes, aggregateStreamResourceNames, commandProcessingSubTopology,
-                eventProcessingSubTopology, NonEmptyList.of(aggregateUpdateConsumer1, aggregateUpdateConsumer2));
+        AggregateTopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> topologyContext =
+                new TestAggregateBuilder()
+                        .buildContext();
 
-        when(aggregateStreamResourceNames.stateStoreName(aggregate_update)).thenReturn(AGGREGATE_UPDATE_STORE);
-        when(aggregateStreamResourceNames.topicName(command_request)).thenReturn(COMMAND_REQUEST_TOPIC);
+        target = new EventSourcedTopology<>(topologyContext, commandProcessingSubTopology,
+                eventProcessingSubTopology, aggregateUpdatePublisher);
     }
 
     @Test
@@ -60,15 +56,16 @@ class EventSourcedTopologyTest {
         KStream commandRequestStream = mock(KStream.class);
         KStream eventStream = mock(KStream.class);
         KStream aggregateUpdateStream = mock(KStream.class);
-        when(streamsBuilder.stream(eq(COMMAND_REQUEST_TOPIC), any())).thenReturn(commandRequestStream);
+        when(streamsBuilder.stream(eq(commandRequestTopicName), any())).thenReturn(commandRequestStream);
         when(commandProcessingSubTopology.add(commandRequestStream)).thenReturn(eventStream);
         when(eventProcessingSubTopology.add(eventStream)).thenReturn(aggregateUpdateStream);
 
         target.addTopology(streamsBuilder);
 
-        InOrder inOrder = inOrder(aggregateUpdateConsumer1, aggregateUpdateConsumer2);
-        inOrder.verify(aggregateUpdateConsumer1).accept(aggregateUpdateStream);
-        inOrder.verify(aggregateUpdateConsumer2).accept(aggregateUpdateStream);
+        InOrder inOrder = inOrder(aggregateUpdatePublisher);
+        inOrder.verify(aggregateUpdatePublisher).toAggregateStore(aggregateUpdateStream);
+        inOrder.verify(aggregateUpdatePublisher).toCommandResultStore(aggregateUpdateStream);
+        inOrder.verify(aggregateUpdatePublisher).toCommandResponseTopic(aggregateUpdateStream);
     }
 
     @Test
@@ -79,7 +76,6 @@ class EventSourcedTopologyTest {
         target.addTopology(streamsBuilder);
 
         verify(streamsBuilder).addStateStore(storeBuilderArgumentCaptor.capture());
-        assertThat(storeBuilderArgumentCaptor.getValue().name()).isEqualTo(AGGREGATE_UPDATE_STORE);
-
+        assertThat(storeBuilderArgumentCaptor.getValue().name()).isEqualTo(aggregateStateStoreName);
     }
 }

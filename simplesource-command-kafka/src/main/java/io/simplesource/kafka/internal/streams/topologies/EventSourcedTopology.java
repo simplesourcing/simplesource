@@ -1,22 +1,15 @@
 package io.simplesource.kafka.internal.streams.topologies;
 
-import io.simplesource.kafka.api.AggregateSerdes;
+import io.simplesource.kafka.api.AggregateResources.StateStoreEntity;
+import io.simplesource.kafka.api.AggregateResources.TopicEntity;
 import io.simplesource.kafka.model.AggregateUpdate;
 import io.simplesource.kafka.model.AggregateUpdateResult;
 import io.simplesource.kafka.model.CommandRequest;
 import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.state.internals.KeyValueStoreBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.aggregate_update;
-import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_request;
 import static org.apache.kafka.streams.state.Stores.persistentKeyValueStore;
 
 /**
@@ -26,43 +19,48 @@ import static org.apache.kafka.streams.state.Stores.persistentKeyValueStore;
  * @param <K> the aggregate key
  */
 public final class EventSourcedTopology<K, C, E, A> {
-    private static final Logger logger = LoggerFactory.getLogger(EventSourcedTopology.class);
-
-
-    private final AggregateSerdes<K, C, E, A> serdes;
-    private final AggregateStreamResourceNames aggregateResourceNames;
+    private final AggregateTopologyContext<K, C, E, A> aggregateTopologyContext;
     private final CommandProcessingSubTopology<K, C, E, A> commandProcessingSubTopology;
     private final EventProcessingSubTopology<K, E, A> eventProcessingSubTopology;
-    private final List<AggregateUpdateResultStreamConsumer<K, A>> aggregateUpdateResultStreamConsumers;
+    private final AggregateUpdatePublisher<K, C, E, A> aggregateUpdatePublisher;
 
-    EventSourcedTopology(AggregateSerdes<K, C, E, A> serdes, AggregateStreamResourceNames aggregateResourceNames,
-                                CommandProcessingSubTopology<K, C, E, A> commandProcessingSubTopology,
-                                EventProcessingSubTopology<K, E, A> eventProcessingSubTopology,
-                                List<AggregateUpdateResultStreamConsumer<K, A>> aggregateUpdateResultStreamConsumers) {
-        this.serdes = serdes;
-        this.aggregateResourceNames = aggregateResourceNames;
+    public EventSourcedTopology(final AggregateTopologyContext<K, C, E, A> aggregateTopologyContext) {
+        this(aggregateTopologyContext, new CommandProcessingSubTopology<>(aggregateTopologyContext,
+                new CommandRequestTransformer<>(aggregateTopologyContext)),
+                new EventProcessingSubTopology<>(aggregateTopologyContext),
+                new AggregateUpdatePublisher<>(aggregateTopologyContext)
+        );
+    }
+
+    EventSourcedTopology(final AggregateTopologyContext<K, C, E, A> aggregateTopologyContext,
+                         CommandProcessingSubTopology<K, C, E, A> commandProcessingSubTopology,
+                         EventProcessingSubTopology<K, E, A> eventProcessingSubTopology,
+                         AggregateUpdatePublisher<K, C, E, A> aggregateUpdatePublisher) {
+        this.aggregateTopologyContext = aggregateTopologyContext;
         this.commandProcessingSubTopology = commandProcessingSubTopology;
         this.eventProcessingSubTopology = eventProcessingSubTopology;
-        this.aggregateUpdateResultStreamConsumers = new ArrayList<>(aggregateUpdateResultStreamConsumers);
+        this.aggregateUpdatePublisher = aggregateUpdatePublisher;
     }
 
     public void addTopology(final StreamsBuilder builder) {
         addStateStores(builder);
 
         final KStream<K, CommandRequest<C>> requestStream = builder.stream(
-                aggregateResourceNames.topicName(command_request), Consumed.with(serdes.aggregateKey(), serdes.commandRequest()));
+                aggregateTopologyContext.topicName(TopicEntity.command_request), aggregateTopologyContext.commandEventsConsumed());
 
         final KStream<K, CommandEvents<E, A>> eventResultStream = commandProcessingSubTopology.add(requestStream);
         final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream = eventProcessingSubTopology.add(eventResultStream);
 
-        aggregateUpdateResultStreamConsumers.forEach(p -> p.accept(aggregateUpdateStream));
+        aggregateUpdatePublisher.toAggregateStore(aggregateUpdateStream);
+        aggregateUpdatePublisher.toCommandResultStore(aggregateUpdateStream);
+        aggregateUpdatePublisher.toCommandResponseTopic(aggregateUpdateStream);
     }
 
     private void addStateStores(final StreamsBuilder builder) {
         final KeyValueStoreBuilder<K, AggregateUpdate<A>> aggregateStoreBuilder = new KeyValueStoreBuilder<>(
-                persistentKeyValueStore(aggregateResourceNames.stateStoreName(aggregate_update)),
-                serdes.aggregateKey(),
-                serdes.aggregateUpdate(),
+                persistentKeyValueStore(aggregateTopologyContext.stateStoreName(StateStoreEntity.aggregate_update)),
+                aggregateTopologyContext.serdes().aggregateKey(),
+                aggregateTopologyContext.serdes().aggregateUpdate(),
                 Time.SYSTEM);
         builder.addStateStore(aggregateStoreBuilder);
     }

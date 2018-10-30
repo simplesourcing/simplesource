@@ -2,20 +2,23 @@ package io.simplesource.kafka.internal.streams;
 
 import io.simplesource.api.CommandAPI;
 import io.simplesource.api.CommandError;
-import io.simplesource.data.Sequence;
 import io.simplesource.data.FutureResult;
 import io.simplesource.data.NonEmptyList;
+import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.internal.KafkaCommandAPI;
-import io.simplesource.kafka.internal.streams.topologies.EventSourcedTopology;
-import io.simplesource.kafka.internal.streams.topologies.EventSourcedTopologyBuilder;
-import io.simplesource.kafka.model.*;
-import io.simplesource.kafka.internal.streams.statestore.CommandResponseStoreBridge;
 import io.simplesource.kafka.internal.streams.statestore.AggregateStoreBridge;
+import io.simplesource.kafka.internal.streams.statestore.CommandResponseStoreBridge;
+import io.simplesource.kafka.internal.streams.topologies.AggregateTopologyContext;
+import io.simplesource.kafka.internal.streams.topologies.EventSourcedTopology;
 import io.simplesource.kafka.internal.util.NamedThreadFactory;
 import io.simplesource.kafka.internal.util.RetryDelay;
+import io.simplesource.kafka.model.AggregateUpdate;
+import io.simplesource.kafka.model.AggregateUpdateResult;
+import io.simplesource.kafka.model.CommandRequest;
+import io.simplesource.kafka.model.ValueWithSequence;
 import io.simplesource.kafka.spec.AggregateSpec;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.streams.KeyValue;
@@ -33,11 +36,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.StreamSupport;
 
-import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.command_response;
 import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.aggregate_update;
-import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_request;
-import static io.simplesource.kafka.api.AggregateResources.TopicEntity.event;
-import static io.simplesource.kafka.api.AggregateResources.TopicEntity.aggregate;
+import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.command_response;
+import static io.simplesource.kafka.api.AggregateResources.TopicEntity.*;
 
 public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
     private final TopologyTestDriver driver;
@@ -53,7 +54,7 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
         final KafkaConfig kafkaConfig
     ) {
         final StreamsBuilder builder = new StreamsBuilder();
-        final EventSourcedTopology<K, C, E, A> topology = new EventSourcedTopologyBuilder<>(aggregateSpec).build();
+        final EventSourcedTopology<K, C, E, A> topology = new EventSourcedTopology<>(new AggregateTopologyContext<>(aggregateSpec));
         topology.addTopology(builder);
         final TestDriverStoreBridge storeBridge = new TestDriverStoreBridge();
         final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor(

@@ -153,6 +153,7 @@ public abstract class CommandError {
         RemoteLookupFailed,
         CommandPublishError,
         InternalError,
+        InvalidStateStore,
         UnexpectedErrorCode
     }
 }

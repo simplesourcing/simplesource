@@ -3,29 +3,23 @@ package io.simplesource.kafka.internal.streams.topologies;
 import io.simplesource.api.Aggregator;
 import io.simplesource.api.CommandError;
 import io.simplesource.data.Result;
+import io.simplesource.kafka.api.AggregateResources.TopicEntity;
 import io.simplesource.kafka.model.AggregateUpdate;
 import io.simplesource.kafka.model.AggregateUpdateResult;
 import io.simplesource.kafka.model.ValueWithSequence;
-import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Produced;
 
 import java.util.Collections;
 import java.util.function.BiFunction;
 
-import static io.simplesource.kafka.api.AggregateResources.TopicEntity.aggregate;
-
 final class EventProcessingSubTopology<K, E, A> {
 
-    private final AggregateStreamResourceNames aggregateStreamResourceNames;
+    private final AggregateTopologyContext<K, ?, E, A> aggregateTopologyContext;
     private final Aggregator<E, A> aggregator;
-    private final Produced<K, AggregateUpdate<A>> aggregatedUpdateProduced;
 
-    EventProcessingSubTopology(AggregateStreamResourceNames aggregateStreamResourceNames, Aggregator<E, A> aggregator,
-                               Serde<K> keySerde, Serde<AggregateUpdate<A>> aggregateUpdateSerde) {
-        this.aggregateStreamResourceNames = aggregateStreamResourceNames;
-        this.aggregator = aggregator;
-        this.aggregatedUpdateProduced = Produced.with(keySerde, aggregateUpdateSerde);
+    EventProcessingSubTopology(AggregateTopologyContext<K, ?, E, A> aggregateTopologyContext) {
+        this.aggregateTopologyContext = aggregateTopologyContext;
+        this.aggregator = aggregateTopologyContext.aggregateSpec().generation().aggregator();
     }
 
     KStream<K, AggregateUpdateResult<A>> add(KStream<K, CommandEvents<E, A>> eventResultStream) {
@@ -64,6 +58,6 @@ final class EventProcessingSubTopology<K, E, A> {
                         reasons -> Collections.emptyList(),
                         Collections::singletonList
                 ));
-        aggregateStream.to(aggregateStreamResourceNames.topicName(aggregate), aggregatedUpdateProduced);
+        aggregateStream.to(aggregateTopologyContext.topicName(TopicEntity.aggregate), aggregateTopologyContext.aggregatedUpdateProduced());
     }
 }

@@ -4,7 +4,8 @@ import io.simplesource.api.CommandError;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.AggregateResources;
-import io.simplesource.kafka.internal.MockedInMemorySerde;
+import io.simplesource.kafka.api.AggregateResources.StateStoreEntity;
+import io.simplesource.kafka.internal.MockInMemorySerde;
 import io.simplesource.kafka.internal.streams.model.TestAggregate;
 import io.simplesource.kafka.internal.streams.model.TestCommand;
 import io.simplesource.kafka.internal.streams.model.TestEvent;
@@ -30,7 +31,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.aggregate_update;
 import static io.simplesource.kafka.internal.streams.topologies.EventSourcedTopologyTestUtility.buildFailureCommandEvents;
 import static io.simplesource.kafka.internal.streams.topologies.EventSourcedTopologyTestUtility.buildSuccessCommandEvents;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,35 +39,31 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CommandProcessingSubTopologyTest {
-
     private static final String NAME = "Name";
     private static final String AGGREGATE_KEY = "key";
 
     @Mock
     private CommandRequestTransformer<String, TestCommand, TestEvent, Optional<TestAggregate>> commandRequestTransformer;
-    @Mock
-    private AggregateStreamResourceNames aggregateResourceNames;
 
     private Serde<String> keySerde = Serdes.String();
-    private Serde<CommandRequest<TestCommand>> streamValueSerde = new MockedInMemorySerde<>();
-    private Serde<ValueWithSequence<TestEvent>> valueWithSequenceSerde = new MockedInMemorySerde<>();
+    private Serde<CommandRequest<TestCommand>> streamValueSerde = new MockInMemorySerde<>();
+    private Serde<ValueWithSequence<TestEvent>> valueWithSequenceSerde = new MockInMemorySerde<>();
 
     private ConsumerRecordFactory<String, CommandRequest<TestCommand>> consumerRecordFactory;
     private TopologyTestDriver topologyTestDriver;
     private String commandRequestTopicName = "command_request";
-    private String resultEventsTopicName = "command_result_events";
-    private String aggregateUpdateStateStoreName = "aggregateUpdateStore";
+    private String resultEventsTopicName = TestAggregateBuilder.topicName(AggregateResources.TopicEntity.event);
+    private String aggregateUpdateStateStoreName = TestAggregateBuilder.stateStoreName(StateStoreEntity.aggregate_update);
 
     private CommandProcessingSubTopology<String, TestCommand, TestEvent, Optional<TestAggregate>> target;
 
     @BeforeEach
     void setUp() {
-        target = new CommandProcessingSubTopology<>(aggregateResourceNames, commandRequestTransformer,
-                keySerde, valueWithSequenceSerde);
+        AggregateTopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> topologyContext =
+                new TestAggregateBuilder()
+                        .buildContext();
 
-        when(aggregateResourceNames.topicName(AggregateResources.TopicEntity.command_request)).thenReturn(commandRequestTopicName);
-        when(aggregateResourceNames.topicName(AggregateResources.TopicEntity.event)).thenReturn(resultEventsTopicName);
-        when(aggregateResourceNames.stateStoreName(aggregate_update)).thenReturn(aggregateUpdateStateStoreName);
+        target = new CommandProcessingSubTopology<>(topologyContext, commandRequestTransformer);
 
         topologyTestDriver = new TopologyTestDriverInitializer()
                 .withStateStore(aggregateUpdateStateStoreName, keySerde, streamValueSerde)
@@ -81,7 +77,7 @@ class CommandProcessingSubTopologyTest {
     @AfterEach
     void tearDown() {
         topologyTestDriver.close();
-        MockedInMemorySerde.resetCache();
+        MockInMemorySerde.resetCache();
     }
 
     @Test

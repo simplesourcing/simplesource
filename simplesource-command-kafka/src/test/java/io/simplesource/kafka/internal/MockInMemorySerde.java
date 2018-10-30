@@ -10,7 +10,7 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MockedInMemorySerde<T> implements Serde<T> {
+public class MockInMemorySerde<T> implements Serde<T> {
     private final ByteArraySerde serde = new ByteArraySerde();
     private final static Map<Tuple<String, Integer>, Object> serialisedObjectCache = new ConcurrentHashMap<>();
 
@@ -46,6 +46,7 @@ public class MockedInMemorySerde<T> implements Serde<T> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Deserializer<T> deserializer() {
         return new Deserializer<T>() {
             @Override
