@@ -14,12 +14,10 @@ import java.util.function.BiFunction;
 
 final class EventProcessingSubTopology<K, E, A> {
 
-    private final AggregateTopologyContext<K, ?, E, A> aggregateTopologyContext;
-    private final Aggregator<E, A> aggregator;
+    private final TopologyContext<K, ?, E, A> context;
 
-    EventProcessingSubTopology(AggregateTopologyContext<K, ?, E, A> aggregateTopologyContext) {
-        this.aggregateTopologyContext = aggregateTopologyContext;
-        this.aggregator = aggregateTopologyContext.aggregateSpec().generation().aggregator();
+    EventProcessingSubTopology(TopologyContext<K, ?, E, A> context) {
+        this.context = context;
     }
 
     KStream<K, AggregateUpdateResult<A>> add(KStream<K, CommandEvents<E, A>> eventResultStream) {
@@ -29,6 +27,7 @@ final class EventProcessingSubTopology<K, E, A> {
     }
 
     private KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream(final KStream<K, CommandEvents<E, A>> eventResultStream) {
+        final Aggregator<E, A> aggregator = context.aggregateSpec().generation().aggregator();
         return eventResultStream
                 .mapValues((serializedKey, result) -> {
                     final Result<CommandError, AggregateUpdate<A>> aggregateUpdateResult = result.eventValue().map(events -> {
@@ -58,6 +57,6 @@ final class EventProcessingSubTopology<K, E, A> {
                         reasons -> Collections.emptyList(),
                         Collections::singletonList
                 ));
-        aggregateStream.to(aggregateTopologyContext.topicName(TopicEntity.aggregate), aggregateTopologyContext.aggregatedUpdateProduced());
+        aggregateStream.to(context.topicName(TopicEntity.aggregate), context.aggregatedUpdateProduced());
     }
 }

@@ -2,7 +2,7 @@ package io.simplesource.kafka.internal.streams;
 
 import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.ResourceNamingStrategy;
-import io.simplesource.kafka.internal.streams.topologies.AggregateTopologyContext;
+import io.simplesource.kafka.internal.streams.topologies.TopologyContext;
 import io.simplesource.kafka.internal.streams.topologies.EventSourcedTopology;
 import io.simplesource.kafka.spec.AggregateSetSpec;
 import io.simplesource.kafka.spec.AggregateSpec;
@@ -118,8 +118,8 @@ public final class EventSourcedStreamsApp {
     }
 
     private static <K, C, E, A> void addEventSourcedTopology(AggregateSpec<K, C, E, A> aggregateSpec, StreamsBuilder builder) {
-        final AggregateTopologyContext<K, C, E, A> aggregateTopologyContext = new AggregateTopologyContext<>(aggregateSpec);
-        new EventSourcedTopology<>(aggregateTopologyContext)
+        final TopologyContext<K, C, E, A> context = new TopologyContext<>(aggregateSpec);
+        new EventSourcedTopology<>(context)
                 .addTopology(builder);
     }
 }

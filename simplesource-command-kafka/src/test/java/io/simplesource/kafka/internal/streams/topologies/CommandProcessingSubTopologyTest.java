@@ -59,11 +59,11 @@ class CommandProcessingSubTopologyTest {
 
     @BeforeEach
     void setUp() {
-        AggregateTopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> topologyContext =
+        TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> context =
                 new TestAggregateBuilder()
                         .buildContext();
 
-        target = new CommandProcessingSubTopology<>(topologyContext, commandRequestTransformer);
+        target = new CommandProcessingSubTopology<>(context, commandRequestTransformer);
 
         topologyTestDriver = new TopologyTestDriverInitializer()
                 .withStateStore(aggregateUpdateStateStoreName, keySerde, streamValueSerde)

@@ -21,18 +21,15 @@ import java.util.concurrent.TimeUnit;
 
 final class AggregateUpdatePublisher<K, C, E, A> {
     private static final long HOPPING_WINDOW_FACTOR = 3L;
-    private final AggregateTopologyContext<K, C, E, A> aggregateTopologyContext;
-    private final TimeWindows commandResultTimeWindow;
+    private final TopologyContext<K, C, E, A> context;
 
-    AggregateUpdatePublisher(AggregateTopologyContext<K, C, E, A> aggregateTopologyContext) {
-        this.aggregateTopologyContext = aggregateTopologyContext;
-        final long retentionMillis = TimeUnit.SECONDS.toMillis(aggregateTopologyContext.aggregateSpec().generation().stateStoreSpec().retentionInSeconds());
-        commandResultTimeWindow = TimeWindows.of(retentionMillis).advanceBy(retentionMillis / HOPPING_WINDOW_FACTOR);
+    AggregateUpdatePublisher(TopologyContext<K, C, E, A> context) {
+        this.context = context;
     }
 
     @SuppressWarnings("unchecked")
     void toAggregateStore(final KStream<K, AggregateUpdateResult<A>> stream) {
-        final String storeName = aggregateTopologyContext.stateStoreName(StateStoreEntity.aggregate_update);
+        final String storeName = context.stateStoreName(StateStoreEntity.aggregate_update);
         stream.process(() -> new Processor<K, AggregateUpdateResult<A>>() {
             private KeyValueStore<K, AggregateUpdate<A>> stateStore;
 
@@ -60,22 +57,24 @@ final class AggregateUpdatePublisher<K, C, E, A> {
                         new CommandResponse(update.commandId(), update.readSequence(),
                                 update.updatedAggregateResult().map(AggregateUpdate::sequence))
                 );
-        aggregateStream.to(aggregateTopologyContext.topicName(TopicEntity.command_response), aggregateTopologyContext.commandResponseProduced());
+        aggregateStream.to(context.topicName(TopicEntity.command_response), context.commandResponseProduced());
     }
 
     void toCommandResultStore(KStream<K, AggregateUpdateResult<A>> stream) {
+        final long retentionMillis = TimeUnit.SECONDS.toMillis(context.aggregateSpec().generation().stateStoreSpec().retentionInSeconds());
+        TimeWindows         commandResultTimeWindow = TimeWindows.of(retentionMillis).advanceBy(retentionMillis / HOPPING_WINDOW_FACTOR);
         stream
                 .map((k, v) -> KeyValue.pair(v.commandId(), v))
-                .groupByKey(aggregateTopologyContext.serializedAggregateUpdate())
+                .groupByKey(context.serializedAggregateUpdate())
                 .windowedBy(commandResultTimeWindow)
-                .reduce((current, latest) -> latest, materializedWindow(aggregateTopologyContext.stateStoreName(StateStoreEntity.command_response)));
+                .reduce((current, latest) -> latest, materializedWindow(context.stateStoreName(StateStoreEntity.command_response)));
     }
 
 
     private Materialized<UUID, AggregateUpdateResult<A>, WindowStore<Bytes, byte[]>> materializedWindow(final String storeName) {
         return Materialized
                 .<UUID, AggregateUpdateResult<A>, WindowStore<Bytes, byte[]>>as(storeName)
-                .withKeySerde(aggregateTopologyContext.serdes().commandResponseKey())
-                .withValueSerde(aggregateTopologyContext.serdes().updateResult());
+                .withKeySerde(context.serdes().commandResponseKey())
+                .withValueSerde(context.serdes().updateResult());
     }
 }

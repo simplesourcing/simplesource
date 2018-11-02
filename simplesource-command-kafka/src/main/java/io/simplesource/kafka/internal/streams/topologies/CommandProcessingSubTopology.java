@@ -14,12 +14,12 @@ import java.util.Collections;
 
 final class CommandProcessingSubTopology<K, C, E, A> {
     private static final Logger logger = LoggerFactory.getLogger(CommandProcessingSubTopology.class);
-    private final AggregateTopologyContext<K, C, E, A> aggregateTopologyContext;
+    private final TopologyContext<K, C, E, A> context;
     private final ValueTransformerWithKey<K, CommandRequest<C>, CommandEvents<E, A>> commandRequestTransformer;
 
-    CommandProcessingSubTopology(AggregateTopologyContext<K, C, E, A> aggregateTopologyContext,
+    CommandProcessingSubTopology(TopologyContext<K, C, E, A> context,
                                  ValueTransformerWithKey<K, CommandRequest<C>, CommandEvents<E, A>> commandRequestTransformer) {
-        this.aggregateTopologyContext = aggregateTopologyContext;
+        this.context = context;
         this.commandRequestTransformer = commandRequestTransformer;
     }
 
@@ -30,7 +30,8 @@ final class CommandProcessingSubTopology<K, C, E, A> {
     }
 
     private KStream<K, CommandEvents<E, A>> eventResultStream(final KStream<K, CommandRequest<C>> requestStream) {
-        return requestStream.transformValues(() -> commandRequestTransformer, aggregateTopologyContext.stateStoreName(StateStoreEntity.aggregate_update));
+        return requestStream.transformValues(() ->
+                commandRequestTransformer, context.stateStoreName(StateStoreEntity.aggregate_update));
     }
 
     private void publishEvents(final KStream<K, CommandEvents<E, A>> eventResultStream) {
@@ -38,10 +39,10 @@ final class CommandProcessingSubTopology<K, C, E, A> {
                 .flatMapValues(result -> result.eventValue()
                         .fold(reasons -> Collections.emptyList(), ArrayList::new));
 
-        String topicName = aggregateTopologyContext.topicName(TopicEntity.event);
+        String topicName = context.topicName(TopicEntity.event);
         if (logger.isDebugEnabled()) {
             eventStream = eventStream.peek((k, v) -> logger.debug("Writing event ({},{}) to {}", k, v, topicName));
         }
-        eventStream.to(topicName, aggregateTopologyContext.eventsConsumedProduced());
+        eventStream.to(topicName, context.eventsConsumedProduced());
     }
 }

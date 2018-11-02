@@ -59,11 +59,11 @@ class AggregateUpdatePublisherTest {
 
     @BeforeEach
     void setUp() {
-        AggregateTopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> topologyContext =
+        TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> context =
                 new TestAggregateBuilder()
                         .buildContext();
 
-        target = new AggregateUpdatePublisher<>(topologyContext);
+        target = new AggregateUpdatePublisher<>(context);
 
         topologyTestDriver = new TopologyTestDriverInitializer()
                 .withStateStore(stateStoreName(StateStoreEntity.aggregate_update), aggregateKeySerde, aggregateUpdateResultValueSerde)

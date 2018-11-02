@@ -23,31 +23,32 @@ import java.util.Optional;
 
 import static io.simplesource.data.Result.failure;
 
-final class CommandRequestTransformer<K, C, E, A> implements ValueTransformerWithKey<K, CommandRequest<C>, CommandEvents<E, A>> {
+final class CommandRequestTransformer<K, C, E, A>
+        implements ValueTransformerWithKey<K, CommandRequest<C>, CommandEvents<E, A>> {
     private static final Logger logger = LoggerFactory.getLogger(CommandRequestTransformer.class);
 
-    private final AggregateTopologyContext<K, C, E, A> aggregateTopologyContext;
+    private final TopologyContext<K, C, E, A> context;
     private final InvalidSequenceHandler<K, C, A> invalidSequenceHandler;
     private final CommandHandler<K, C, E, A> commandHandler;
 
     private ReadOnlyKeyValueStore<K, AggregateUpdate<A>> stateStore;
 
-    CommandRequestTransformer(AggregateTopologyContext<K, C, E, A> aggregateTopologyContext) {
-        this.aggregateTopologyContext = aggregateTopologyContext;
-        this.commandHandler = aggregateTopologyContext.aggregateSpec().generation().commandHandler();
-        this.invalidSequenceHandler = aggregateTopologyContext.aggregateSpec().generation().invalidSequenceHandler();
+    CommandRequestTransformer(TopologyContext<K, C, E, A> context) {
+        this.context = context;
+        this.commandHandler = context.aggregateSpec().generation().commandHandler();
+        this.invalidSequenceHandler = context.aggregateSpec().generation().invalidSequenceHandler();
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public void init(final ProcessorContext context) {
-        stateStore = (ReadOnlyKeyValueStore<K, AggregateUpdate<A>>) context.getStateStore(
-                aggregateTopologyContext.stateStoreName(StateStoreEntity.aggregate_update));
+    public void init(final ProcessorContext processorContext) {
+        stateStore = (ReadOnlyKeyValueStore<K, AggregateUpdate<A>>) processorContext.getStateStore(
+                context.stateStoreName(StateStoreEntity.aggregate_update));
     }
 
     @Override
     public CommandEvents<E, A> transform(final K readOnlyKey, final CommandRequest<C> request) {
-        InitialValue<K, A> initialValue = aggregateTopologyContext.aggregateSpec().generation().initialValue();
+        InitialValue<K, A> initialValue = context.aggregateSpec().generation().initialValue();
 
         AggregateUpdate<A> currentUpdatePre;
         try {
@@ -55,7 +56,7 @@ final class CommandRequestTransformer<K, C, E, A> implements ValueTransformerWit
                     .orElse(AggregateUpdate.of(initialValue.empty(readOnlyKey)));
         } catch (InvalidStateStoreException e) {
             logger.warn("[{} aggregate] Failed to get aggregate with key {} from state store, it might be in middle of rebalance",
-                    aggregateTopologyContext.aggregateName(), readOnlyKey, e);
+                    context.aggregateName(), readOnlyKey, e);
 
             return new CommandEvents<>(
                     request.commandId(),
@@ -85,7 +86,7 @@ final class CommandRequestTransformer<K, C, E, A> implements ValueTransformerWit
                             request.command()));
         } catch (final Exception e) {
             logger.warn("[{} aggregate] Failed to apply command handler on key {} to request {}",
-                    aggregateTopologyContext.aggregateName(), readOnlyKey, request, e);
+                    context.aggregateName(), readOnlyKey, request, e);
             commandResult = failure(CommandError.of(CommandError.Reason.CommandHandlerFailed, e));
         }
         final Result<CommandError, NonEmptyList<ValueWithSequence<E>>> eventsResult = commandResult.map(

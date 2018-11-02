@@ -1,7 +1,6 @@
 package io.simplesource.kafka.internal.streams.topologies;
 
 import io.simplesource.kafka.api.AggregateResources;
-import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.internal.streams.model.TestAggregate;
 import io.simplesource.kafka.internal.streams.model.TestCommand;
 import io.simplesource.kafka.internal.streams.model.TestEvent;
@@ -18,8 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
-import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.aggregate_update;
-import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_request;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -42,11 +39,11 @@ class EventSourcedTopologyTest {
 
     @BeforeEach
     void setUp() {
-        AggregateTopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> topologyContext =
+        TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> context =
                 new TestAggregateBuilder()
                         .buildContext();
 
-        target = new EventSourcedTopology<>(topologyContext, commandProcessingSubTopology,
+        target = new EventSourcedTopology<>(context, commandProcessingSubTopology,
                 eventProcessingSubTopology, aggregateUpdatePublisher);
     }
 

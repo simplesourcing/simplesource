@@ -38,7 +38,7 @@ public class TestAggregateBuilder {
         };
         initialValue = k -> Optional.empty();
     }
-    public AggregateTopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> buildContext() {
+    public TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> buildContext() {
         AggregateBuilder<String, TestCommand, TestEvent, Optional<TestAggregate>> aggregateBuilder =
                 AggregateBuilder.<String, TestCommand, TestEvent, Optional<TestAggregate>>newBuilder()
                         .withName(AGGREGATE_NAME)
@@ -50,7 +50,7 @@ public class TestAggregateBuilder {
                         .withResourceNamingStrategy(RESOURCE_NAMING_STRATEGY);
         configureTopicSpec(aggregateBuilder);
 
-        return new AggregateTopologyContext<>(aggregateBuilder.build());
+        return new TopologyContext<>(aggregateBuilder.build());
     }
 
     public TestAggregateBuilder withCommandHandler(CommandHandler<String, TestCommand, TestEvent, Optional<TestAggregate>> commandHandler) {

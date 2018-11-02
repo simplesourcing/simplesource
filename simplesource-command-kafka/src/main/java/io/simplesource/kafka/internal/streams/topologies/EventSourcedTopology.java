@@ -19,24 +19,24 @@ import static org.apache.kafka.streams.state.Stores.persistentKeyValueStore;
  * @param <K> the aggregate key
  */
 public final class EventSourcedTopology<K, C, E, A> {
-    private final AggregateTopologyContext<K, C, E, A> aggregateTopologyContext;
+    private final TopologyContext<K, C, E, A> context;
     private final CommandProcessingSubTopology<K, C, E, A> commandProcessingSubTopology;
     private final EventProcessingSubTopology<K, E, A> eventProcessingSubTopology;
     private final AggregateUpdatePublisher<K, C, E, A> aggregateUpdatePublisher;
 
-    public EventSourcedTopology(final AggregateTopologyContext<K, C, E, A> aggregateTopologyContext) {
-        this(aggregateTopologyContext, new CommandProcessingSubTopology<>(aggregateTopologyContext,
-                new CommandRequestTransformer<>(aggregateTopologyContext)),
-                new EventProcessingSubTopology<>(aggregateTopologyContext),
-                new AggregateUpdatePublisher<>(aggregateTopologyContext)
+    public EventSourcedTopology(final TopologyContext<K, C, E, A> context) {
+        this(context, new CommandProcessingSubTopology<>(context,
+                new CommandRequestTransformer<>(context)),
+                new EventProcessingSubTopology<>(context),
+                new AggregateUpdatePublisher<>(context)
         );
     }
 
-    EventSourcedTopology(final AggregateTopologyContext<K, C, E, A> aggregateTopologyContext,
+    EventSourcedTopology(final TopologyContext<K, C, E, A> context,
                          CommandProcessingSubTopology<K, C, E, A> commandProcessingSubTopology,
                          EventProcessingSubTopology<K, E, A> eventProcessingSubTopology,
                          AggregateUpdatePublisher<K, C, E, A> aggregateUpdatePublisher) {
-        this.aggregateTopologyContext = aggregateTopologyContext;
+        this.context = context;
         this.commandProcessingSubTopology = commandProcessingSubTopology;
         this.eventProcessingSubTopology = eventProcessingSubTopology;
         this.aggregateUpdatePublisher = aggregateUpdatePublisher;
@@ -46,7 +46,7 @@ public final class EventSourcedTopology<K, C, E, A> {
         addStateStores(builder);
 
         final KStream<K, CommandRequest<C>> requestStream = builder.stream(
-                aggregateTopologyContext.topicName(TopicEntity.command_request), aggregateTopologyContext.commandEventsConsumed());
+                context.topicName(TopicEntity.command_request), context.commandEventsConsumed());
 
         final KStream<K, CommandEvents<E, A>> eventResultStream = commandProcessingSubTopology.add(requestStream);
         final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream = eventProcessingSubTopology.add(eventResultStream);
@@ -58,9 +58,9 @@ public final class EventSourcedTopology<K, C, E, A> {
 
     private void addStateStores(final StreamsBuilder builder) {
         final KeyValueStoreBuilder<K, AggregateUpdate<A>> aggregateStoreBuilder = new KeyValueStoreBuilder<>(
-                persistentKeyValueStore(aggregateTopologyContext.stateStoreName(StateStoreEntity.aggregate_update)),
-                aggregateTopologyContext.serdes().aggregateKey(),
-                aggregateTopologyContext.serdes().aggregateUpdate(),
+                persistentKeyValueStore(context.stateStoreName(StateStoreEntity.aggregate_update)),
+                context.serdes().aggregateKey(),
+                context.serdes().aggregateUpdate(),
                 Time.SYSTEM);
         builder.addStateStore(aggregateStoreBuilder);
     }

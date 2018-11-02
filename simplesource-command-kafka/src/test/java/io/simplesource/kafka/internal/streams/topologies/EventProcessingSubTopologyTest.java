@@ -51,12 +51,12 @@ class EventProcessingSubTopologyTest {
 
     @BeforeEach
     void setUp() {
-        AggregateTopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> topologyContext =
+        TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> context =
                 new TestAggregateBuilder()
                         .withAggregator(accumulatedEventNamesAggregator())
                         .buildContext();
 
-        target = new EventProcessingSubTopology<>(topologyContext);
+        target = new EventProcessingSubTopology<>(context);
 
         topologyTestDriver = new TopologyTestDriverInitializer()
                 .withSourceTopicName(sourceEventsTopicName)

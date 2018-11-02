@@ -13,7 +13,7 @@ import org.apache.kafka.streams.kstream.Serialized;
 import java.util.UUID;
 
 @Value
-public class AggregateTopologyContext<K, C, E, A> {
+public class TopologyContext<K, C, E, A> {
     private final AggregateSpec<K, C, E, A> aggregateSpec;
 
     private Consumed<K, CommandRequest<C>> commandEventsConsumed;
@@ -22,7 +22,7 @@ public class AggregateTopologyContext<K, C, E, A> {
     private Produced<K, CommandResponse> commandResponseProduced;
     private Serialized<UUID, AggregateUpdateResult<A>> serializedAggregateUpdate;
 
-    public AggregateTopologyContext(AggregateSpec<K, C, E, A> aggregateSpec) {
+    public TopologyContext(AggregateSpec<K, C, E, A> aggregateSpec) {
         this.aggregateSpec = aggregateSpec;
 
         commandEventsConsumed = Consumed.with(serdes().aggregateKey(), serdes().commandRequest());

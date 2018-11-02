@@ -61,13 +61,13 @@ class CommandRequestTransformerTest {
 
     @BeforeEach
     void setUp() {
-        AggregateTopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> topologyContext =
+        TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> context =
                 new TestAggregateBuilder()
                         .withCommandHandler(commandHandler)
                         .withInitialValue(initialValue)
                         .buildContext();
 
-        target = new CommandRequestTransformer<>(topologyContext);
+        target = new CommandRequestTransformer<>(context);
         processorContext = new MockProcessorContext();
         setupStateStore();
 
