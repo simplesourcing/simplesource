@@ -14,15 +14,13 @@ import java.util.function.Consumer;
 
 class TopologyTestDriverInitializer {
     private StreamsBuilder streamsBuilder;
-    private Topology topology;
 
     TopologyTestDriverInitializer() {
         streamsBuilder = new StreamsBuilder();
-        topology = streamsBuilder.build();
     }
 
     TopologyTestDriverInitializer withStateStore(String stateStoreName, Serde<?> keySerde, Serde<?> valueSerde) {
-        topology.addStateStore(
+        streamsBuilder.addStateStore(
                 Stores.keyValueStoreBuilder(Stores.inMemoryKeyValueStore(stateStoreName),
                         keySerde, valueSerde)
                         .withLoggingDisabled());
@@ -33,8 +31,6 @@ class TopologyTestDriverInitializer {
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "dummy:1234");
-        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.StringSerde.class);
-        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, MockInMemorySerde.class);
         props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 0);
         props.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0);
 

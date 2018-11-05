@@ -52,15 +52,15 @@
 //    private ConsumerRecordFactory<String, CommandRequest<TestCommand>> consumerRecordFactory;
 //    private TopologyTestDriver topologyTestDriver;
 //    private String commandRequestTopicName = "command_request";
-//    private String resultEventsTopicName = TestAggregateBuilder.topicName(AggregateResources.TopicEntity.event);
-//    private String aggregateUpdateStateStoreName = TestAggregateBuilder.stateStoreName(StateStoreEntity.aggregate_update);
+//    private String resultEventsTopicName = TestContextBuilder.topicName(AggregateResources.TopicEntity.event);
+//    private String aggregateUpdateStateStoreName = TestContextBuilder.stateStoreName(StateStoreEntity.aggregate_update);
 //
 //    private CommandProcessingSubTopology<String, TestCommand, TestEvent, Optional<TestAggregate>> target;
 //
 //    @BeforeEach
 //    void setUp() {
 //        TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> context =
-//                new TestAggregateBuilder()
+//                new TestContextBuilder()
 //                        .buildContext();
 //
 //        target = new CommandProcessingSubTopology<>(context, commandRequestTransformer);

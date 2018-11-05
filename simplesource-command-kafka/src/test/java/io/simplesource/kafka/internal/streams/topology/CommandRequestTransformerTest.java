@@ -57,12 +57,12 @@
 //    private Sequence claimedAggregateSequence = Sequence.position(200);
 //    private Sequence actualAggregateSequence = Sequence.position(100);
 //    private Optional<TestAggregate> currentAggregate = Optional.of(new TestAggregate("Aggregate name"));
-//    private final String aggregateUpdateStoreName = TestAggregateBuilder.stateStoreName(StateStoreEntity.aggregate_update);
+//    private final String aggregateUpdateStoreName = TestContextBuilder.stateStoreName(StateStoreEntity.aggregate_update);
 //
 //    @BeforeEach
 //    void setUp() {
 //        TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> context =
-//                new TestAggregateBuilder()
+//                new TestContextBuilder()
 //                        .withCommandHandler(commandHandler)
 //                        .withInitialValue(initialValue)
 //                        .buildContext();

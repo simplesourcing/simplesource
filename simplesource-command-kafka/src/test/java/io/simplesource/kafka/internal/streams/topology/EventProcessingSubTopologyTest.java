@@ -43,8 +43,8 @@
 //    private TopologyTestDriver topologyTestDriver;
 //    private Serde<String> keySerde = Serdes.String();
 //    private Serde<AggregateUpdate<Optional<TestAggregate>>> aggregateUpdateSerde = new MockInMemorySerde<>();
-//    private String resultTopicName = TestAggregateBuilder.topicName(AggregateResources.TopicEntity.aggregate);
-//    private String sourceEventsTopicName = TestAggregateBuilder.topicName(AggregateResources.TopicEntity.event);
+//    private String resultTopicName = TestContextBuilder.topicName(AggregateResources.TopicEntity.aggregate);
+//    private String sourceEventsTopicName = TestContextBuilder.topicName(AggregateResources.TopicEntity.event);
 //
 //    private EventProcessingSubTopology<String, TestEvent, Optional<TestAggregate>> target;
 //
@@ -52,7 +52,7 @@
 //    @BeforeEach
 //    void setUp() {
 //        TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> context =
-//                new TestAggregateBuilder()
+//                new TestContextBuilder()
 //                        .withAggregator(accumulatedEventNamesAggregator())
 //                        .buildContext();
 //

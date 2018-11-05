@@ -1,71 +1,76 @@
 package io.simplesource.kafka.internal.streams.topology;
 
+import io.simplesource.data.NonEmptyList;
+import io.simplesource.data.Result;
+import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.AggregateResources;
+import io.simplesource.kafka.internal.streams.MockInMemorySerde;
 import io.simplesource.kafka.internal.streams.model.TestAggregate;
 import io.simplesource.kafka.internal.streams.model.TestCommand;
 import io.simplesource.kafka.internal.streams.model.TestEvent;
+import io.simplesource.kafka.model.CommandRequest;
+import io.simplesource.kafka.model.CommandResponse;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.state.internals.KeyValueStoreBuilder;
+import org.apache.kafka.streams.TopologyTestDriver;
+import org.apache.kafka.streams.test.ConsumerRecordFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
+import static org.assertj.core.api.Assertions.*;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
 class EventSourcedTopologyTest {
-    TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> context
+
+    TopologyTestDriver driver = null;
+    TestContextBuilder ctxBuilder = null;
 
     @BeforeEach
     void setUp() {
-        context = new TestAggregateBuilder().buildContext();
+        ctxBuilder = new TestContextBuilder()
+                .withAggregator((currentAggregate, event) -> Optional.of(new TestAggregate("NAME")))
+                .withCommandHandler((
+                        key,
+                        currentAggregate,
+                        command) -> Result.success(NonEmptyList.of(new TestEvent.Created("name"))))
+                .withInitialValue(key -> Optional.empty());
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (driver != null) driver.close();
+        MockInMemorySerde.resetCache();
     }
 
     @Test
-    void ShouldDoSomething() {
-        b = new TestAggregateBuilder()
-                .withAggregator(accumulatedEventNamesAggregator())
+    void testSuccessfulCommandResponse() {
+        TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> ctx = ctxBuilder.buildContext();
+        TopologyTestDriver driver = new TopologyTestDriverInitializer().build(builder -> {
+            EventSourcedTopology.addTopology(ctx, builder);
+        });
 
-        b.withAggregator()
+        CommandRequest<TestCommand> commandRequest = new CommandRequest<>(
+                new TestCommand.CreateCommand("name"), Sequence.first(), UUID.randomUUID());
+
+        new TestDriverPublisher<>(driver, ctx.serdes().aggregateKey(), ctx.serdes().commandRequest()).publish(
+                ctx.topicName(AggregateResources.TopicEntity.command_request), "key", commandRequest);
+
+        ProducerRecord<String, CommandResponse> response = driver.readOutput(ctx.topicName(AggregateResources.TopicEntity.command_response),
+                ctx.serdes().aggregateKey().deserializer(),
+                ctx.serdes().commandResponse().deserializer());
+
+        assertThat(response.key()).isEqualTo("key");
+        assertThat(response.value().sequenceResult().isSuccess()).isEqualTo(true);
+        assertThat(response.value().sequenceResult().getOrElse(Sequence.position(1000)).getSeq()).isEqualTo(Sequence.first().next().getSeq());
     }
 
-//    @Test
-//    void shouldBuildTopologyFromSubTopologiesAndAggregateUpdateConsumers() {
-//        StreamsBuilder streamsBuilder = mock(StreamsBuilder.class);
-//        KStream commandRequestStream = mock(KStream.class);
-//        KStream eventStream = mock(KStream.class);
-//        KStream aggregateUpdateStream = mock(KStream.class);
-//        when(streamsBuilder.stream(eq(commandRequestTopicName), any())).thenReturn(commandRequestStream);
-//        when(commandProcessingSubTopology.add(commandRequestStream)).thenReturn(eventStream);
-//        when(eventProcessingSubTopology.add(eventStream)).thenReturn(aggregateUpdateStream);
-//
-//        target.addTopology(streamsBuilder);
-//
-//        InOrder inOrder = inOrder(aggregateUpdatePublisher);
-//        inOrder.verify(aggregateUpdatePublisher).toAggregateStore(aggregateUpdateStream);
-//        inOrder.verify(aggregateUpdatePublisher).toCommandResultStore(aggregateUpdateStream);
-//        inOrder.verify(aggregateUpdatePublisher).toCommandResponseTopic(aggregateUpdateStream);
-//    }
-//
-//    @Test
-//    void addTopologyShouldAddStateStoreForAggregateUpdate() {
-//        StreamsBuilder streamsBuilder = mock(StreamsBuilder.class);
-//        ArgumentCaptor<KeyValueStoreBuilder> storeBuilderArgumentCaptor = ArgumentCaptor.forClass(KeyValueStoreBuilder.class);
-//
-//        target.addTopology(streamsBuilder);
-//
-//        verify(streamsBuilder).addStateStore(storeBuilderArgumentCaptor.capture());
-//        assertThat(storeBuilderArgumentCaptor.getValue().name()).isEqualTo(aggregateStateStoreName);
-//    }
 }

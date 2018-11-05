@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 
-public class TestAggregateBuilder {
+class TestContextBuilder {
 
     private static final String AGGREGATE_NAME = "testaggregate";
     private static final PrefixResourceNamingStrategy RESOURCE_NAMING_STRATEGY = new PrefixResourceNamingStrategy("", "-");
@@ -29,7 +29,7 @@ public class TestAggregateBuilder {
     private Aggregator<TestEvent, Optional<TestAggregate>> eventAggregator;
     private InitialValue<String, Optional<TestAggregate>> initialValue;
 
-    public TestAggregateBuilder() {
+    TestContextBuilder() {
         eventAggregator = (a, e) -> {
             throw new RuntimeException("Event aggregator is required, yet not configured");
         };
@@ -53,17 +53,17 @@ public class TestAggregateBuilder {
         return new TopologyContext<>(aggregateBuilder.build());
     }
 
-    public TestAggregateBuilder withCommandHandler(CommandHandler<String, TestCommand, TestEvent, Optional<TestAggregate>> commandHandler) {
+    public TestContextBuilder withCommandHandler(CommandHandler<String, TestCommand, TestEvent, Optional<TestAggregate>> commandHandler) {
         this.commandHandler = commandHandler;
         return this;
     }
 
-    public TestAggregateBuilder withInitialValue(InitialValue<String, Optional<TestAggregate>> initialValue) {
+    public TestContextBuilder withInitialValue(InitialValue<String, Optional<TestAggregate>> initialValue) {
         this.initialValue = initialValue;
         return this;
     }
 
-    public TestAggregateBuilder withAggregator(Aggregator<TestEvent, Optional<TestAggregate>> eventAggregator) {
+    public TestContextBuilder withAggregator(Aggregator<TestEvent, Optional<TestAggregate>> eventAggregator) {
         this.eventAggregator = eventAggregator;
         return this;
     }

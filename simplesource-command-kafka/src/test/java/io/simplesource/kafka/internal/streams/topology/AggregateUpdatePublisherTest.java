@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 
 import static io.simplesource.api.CommandError.Reason.UnexpectedErrorCode;
 import static org.assertj.core.api.Assertions.assertThat;
+import static io.simplesource.kafka.internal.streams.topology.EventSourcedTopologyTestUtility.*;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -49,39 +50,27 @@ class AggregateUpdatePublisherTest {
     private Serde<AggregateUpdateResult<Optional<TestAggregate>>> aggregateUpdateResultValueSerde = new MockInMemorySerde<>();
     private Serde<CommandResponse> commandResponseValueSerde = new MockInMemorySerde<>();
     private TopologyTestDriver topologyTestDriver;
+    private TopologyTestDriver topologyTestDriverIn;
     private ConsumerRecordFactory<String, AggregateUpdateResult<Optional<TestAggregate>>> consumerRecordFactory;
 
-    private String consumerResponseTopic = TestAggregateBuilder.topicName(TopicEntity.command_response);
+    private String consumerResponseTopic = TestContextBuilder.topicName(TopicEntity.command_response);
 
     @BeforeEach
     void setUp() {
         TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> context =
-                new TestAggregateBuilder()
+                new TestContextBuilder()
                         .buildContext();
 
         topologyTestDriver = new TopologyTestDriverInitializer()
                 .withStateStore(context.stateStoreName(StateStoreEntity.aggregate_update), aggregateKeySerde, aggregateUpdateResultValueSerde)
-                .withSourceTopicName(AGGREGATE_UPDATE_RESULT_INPUT_TOPIC)
-                .<String, AggregateUpdateResult<Optional<TestAggregate>>>build();
+                .build(builder -> {
+
+                });
 
         consumerRecordFactory = new ConsumerRecordFactory<>(aggregateKeySerde.serializer(), aggregateUpdateResultValueSerde.serializer());
     }
 
-    TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> context
-
-    @BeforeEach
-    void setUp() {
-        context = new TestAggregateBuilder().buildContext();
-    }
-
-    @Test
-    void ShouldDoSomething() {
-        b = new TestAggregateBuilder()
-                .withAggregator(accumulatedEventNamesAggregator())
-
-        b.withAggregator()
-    }
-
+    TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> context;
 
     @AfterEach
     void tearDown() {
@@ -180,7 +169,7 @@ class AggregateUpdatePublisherTest {
 
     private void verifyEmptyWindowStore(long windowStartTime, StateStoreEntity stateStoreEntity) {
         assertThat(
-                topologyTestDriver.getWindowStore(TestAggregateBuilder.stateStoreName(stateStoreEntity))
+                topologyTestDriver.getWindowStore(TestContextBuilder.stateStoreName(stateStoreEntity))
                         .fetchAll(windowStartTime, Long.MAX_VALUE))
                 .hasSize(0);
 
@@ -194,7 +183,7 @@ class AggregateUpdatePublisherTest {
     private <V> void verifyWindowStoreContains(List<Tuple<UUID, V>> records, long windowStartTime, long windowEndTime,
                                                StateStoreEntity stateStoreEntity) {
         WindowStore<UUID, V> windowStore = topologyTestDriver
-                .getWindowStore(TestAggregateBuilder.stateStoreName(stateStoreEntity));
+                .getWindowStore(TestContextBuilder.stateStoreName(stateStoreEntity));
 
         records.forEach(r -> windowStore.fetch(r.v1(), windowStartTime, windowEndTime)
                 .forEachRemaining(kv -> assertThat(kv.value).isEqualTo(r.v2())));
@@ -208,6 +197,6 @@ class AggregateUpdatePublisherTest {
     @SuppressWarnings("unchecked")
     private KeyValueStore<String, AggregateUpdate<Optional<TestAggregate>>> keyValueStore(StateStoreEntity stateStoreEntity) {
         return (KeyValueStore<String, AggregateUpdate<Optional<TestAggregate>>>)
-                topologyTestDriver.getStateStore(TestAggregateBuilder.stateStoreName(stateStoreEntity));
+                topologyTestDriver.getStateStore(TestContextBuilder.stateStoreName(stateStoreEntity));
     }
 }
