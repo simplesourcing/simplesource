@@ -48,8 +48,7 @@ public final class TopologyContext<K, C, E, A> {
         aggregator = aggregateSpec.generation().aggregator();
         initialValue = aggregateSpec.generation().initialValue();
     }
-
-
+    
     public AggregateSerdes<K, C, E, A> serdes() {
         return aggregateSpec.serialization().serdes();
     }
