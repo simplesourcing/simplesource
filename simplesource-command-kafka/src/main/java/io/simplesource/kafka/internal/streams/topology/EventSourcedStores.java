@@ -37,7 +37,7 @@ final class EventSourcedStores {
     /**
      * Update the state store with the latest aggregate_update value on successful updates.
      */
-    static <K, C, E, A> void updateAggregateStateStore(TopologyContext<K, C, E, A> ctx, final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream) {
+    static <K, A> void updateAggregateStateStore(TopologyContext<K, ?, ?, A> ctx, final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream) {
         aggregateUpdateStream.process(() -> new Processor<K, AggregateUpdateResult<A>>() {
             private KeyValueStore<K, AggregateUpdate<A>> stateStore;
 
@@ -60,7 +60,7 @@ final class EventSourcedStores {
         }, ctx.stateStoreName(aggregate_update));
     }
 
-    static <K, C, E, A> void updateCommandResultStore(TopologyContext<K, C, E, A> ctx, final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream) {
+    static <K, A> void updateCommandResultStore(TopologyContext<K, ?, ?, A> ctx, final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream) {
         final long retentionMillis = TimeUnit.SECONDS.toMillis(ctx.commandResponseRetentionInSeconds());
         aggregateUpdateStream
                 .map((k, v) -> KeyValue.pair(
@@ -74,7 +74,7 @@ final class EventSourcedStores {
                 .reduce((current, latest) -> latest, materializedWindow(ctx, ctx.stateStoreName(command_response)));
     }
 
-    private static <K, C, E, A> Materialized<UUID, AggregateUpdateResult<A>, WindowStore<Bytes, byte[]>> materializedWindow(TopologyContext<K, C, E, A> ctx, final String storeName) {
+    private static <A> Materialized<UUID, AggregateUpdateResult<A>, WindowStore<Bytes, byte[]>> materializedWindow(TopologyContext<?, ?, ?, A> ctx, final String storeName) {
         return Materialized
                 .<UUID, AggregateUpdateResult<A>, WindowStore<Bytes, byte[]>>as(storeName)
                 .withKeySerde(ctx.serdes().commandResponseKey())

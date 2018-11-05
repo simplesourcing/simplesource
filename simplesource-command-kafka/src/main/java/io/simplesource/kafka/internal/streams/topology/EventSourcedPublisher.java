@@ -20,11 +20,11 @@ final class EventSourcedPublisher {
                 .to(ctx.topicName(event), ctx.eventsConsumedProduced());
     }
 
-    static <K, C, E, A> void publishAggregateUpdates(TopologyContext<K, C, E, A> ctx, final KStream<K, AggregateUpdate<A>> aggregateUpdateStream) {
+    static <K, A> void publishAggregateUpdates(TopologyContext<K, ?, ?, A> ctx, final KStream<K, AggregateUpdate<A>> aggregateUpdateStream) {
         aggregateUpdateStream.to(ctx.topicName(aggregate), ctx.aggregatedUpdateProduced());
     }
 
-    static <K, C, E, A> void publishCommandResponses(TopologyContext<K, C, E, A> ctx, final KStream<K, CommandResponse> responseStream) {
+    static <K> void publishCommandResponses(TopologyContext<K, ?, ?, ?> ctx, final KStream<K, CommandResponse> responseStream) {
         responseStream.to(ctx.topicName(AggregateResources.TopicEntity.command_response), ctx.commandResponseProduced());
     }
 }

@@ -15,11 +15,11 @@ public final class EventSourcedTopology {
 
         // Transformations
         final KStream<K, CommandEvents<E, A>> eventResultStream = EventSourcedStreams.eventResultStream(ctx, commandRequestStream);
-        KStream<K, ValueWithSequence<E>> eventsWithSequence = EventSourcedStreams.getEventsWithSequence(ctx, eventResultStream);
+        KStream<K, ValueWithSequence<E>> eventsWithSequence = EventSourcedStreams.getEventsWithSequence(eventResultStream);
 
         final KStream<K, AggregateUpdateResult<A>> aggregateUpdateResults = EventSourcedStreams.getAggregateUpdateResults(ctx, eventResultStream);
-        final KStream<K, AggregateUpdate<A>> aggregateUpdates = EventSourcedStreams.getAggregateUpdates(ctx, aggregateUpdateResults);
-        final KStream<K, CommandResponse>commandResponses = EventSourcedStreams.getCommandResponses(ctx, aggregateUpdateResults);
+        final KStream<K, AggregateUpdate<A>> aggregateUpdates = EventSourcedStreams.getAggregateUpdates(aggregateUpdateResults);
+        final KStream<K, CommandResponse>commandResponses = EventSourcedStreams.getCommandResponses(aggregateUpdateResults);
 
         // Produce to topics
         EventSourcedPublisher.publishEvents(ctx, eventsWithSequence);
