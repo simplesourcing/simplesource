@@ -9,6 +9,8 @@ import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.internal.KafkaCommandAPI;
+import io.simplesource.kafka.internal.streams.topology.EventSourcedTopology;
+import io.simplesource.kafka.internal.streams.topology.TopologyContext;
 import io.simplesource.kafka.model.*;
 import io.simplesource.kafka.internal.streams.statestore.CommandResponseStoreBridge;
 import io.simplesource.kafka.internal.streams.statestore.AggregateStoreBridge;
@@ -51,8 +53,8 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
         final KafkaConfig kafkaConfig
     ) {
         final StreamsBuilder builder = new StreamsBuilder();
-        final EventSourcedTopology<K, C, E, A> topology = new EventSourcedTopology<>(aggregateSpec);
-        topology.addTopology(builder);
+        final TopologyContext<K, C, E, A> ctx = new TopologyContext<>(aggregateSpec);
+        EventSourcedTopology.addTopology(ctx, builder);
         final TestDriverStoreBridge storeBridge = new TestDriverStoreBridge();
         final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor(
             new NamedThreadFactory("QueryAPI-scheduler"));

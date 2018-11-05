@@ -1,4 +1,4 @@
-package io.simplesource.kafka.internal.streams;
+package io.simplesource.kafka.internal.streams.topology;
 
 import io.simplesource.api.CommandError;
 import io.simplesource.data.Sequence;
