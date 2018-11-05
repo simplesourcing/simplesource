@@ -5,11 +5,12 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
 
 public final class EventSourcedTopology {
+
     public static <K, C, E, A> void addTopology(TopologyContext<K, C, E, A> ctx, final StreamsBuilder builder) {
         // Create stores
         EventSourcedStores.addStateStores(ctx, builder);
 
-        // Comsume from topics
+        // Consume from topics
         final KStream<K, CommandRequest<C>> commandRequestStream = EventSourcedConsumer.commandRequestStream(ctx, builder);
 
         // Transformations

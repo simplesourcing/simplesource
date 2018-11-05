@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.aggregate;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.event;
 
-public final class EventSourcedPublisher {
+final class EventSourcedPublisher {
     private static final Logger logger = LoggerFactory.getLogger(EventSourcedPublisher.class);
 
     static <K, C, E, A> void publishEvents(TopologyContext<K, C, E, A> ctx, final KStream<K, ValueWithSequence<E>> eventStream) {
