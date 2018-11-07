@@ -7,4 +7,13 @@ public interface TestEvent {
     class Created implements TestEvent {
         private final String name;
     }
+
+    @Value
+    class Updated implements TestEvent {
+        private final String name;
+    }
+
+    @Value
+    class DoesNothing implements TestEvent {
+    }
 }

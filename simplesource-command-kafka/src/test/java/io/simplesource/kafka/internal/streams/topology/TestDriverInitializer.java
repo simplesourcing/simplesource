@@ -1,8 +1,6 @@
 package io.simplesource.kafka.internal.streams.topology;
 
-import io.simplesource.kafka.internal.streams.MockInMemorySerde;
 import org.apache.kafka.common.serialization.Serde;
-import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
@@ -12,14 +10,14 @@ import org.apache.kafka.streams.state.Stores;
 import java.util.Properties;
 import java.util.function.Consumer;
 
-class TopologyTestDriverInitializer {
+class TestDriverInitializer {
     private StreamsBuilder streamsBuilder;
 
-    TopologyTestDriverInitializer() {
+    TestDriverInitializer() {
         streamsBuilder = new StreamsBuilder();
     }
 
-    TopologyTestDriverInitializer withStateStore(String stateStoreName, Serde<?> keySerde, Serde<?> valueSerde) {
+    TestDriverInitializer withStateStore(String stateStoreName, Serde<?> keySerde, Serde<?> valueSerde) {
         streamsBuilder.addStateStore(
                 Stores.keyValueStoreBuilder(Stores.inMemoryKeyValueStore(stateStoreName),
                         keySerde, valueSerde)

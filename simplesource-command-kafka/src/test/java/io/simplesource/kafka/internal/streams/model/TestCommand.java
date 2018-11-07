@@ -7,4 +7,18 @@ public interface TestCommand {
     class CreateCommand implements TestCommand {
         private final String name;
     }
+
+    @Value
+    class UpdateCommand implements TestCommand {
+        private final String name;
+    }
+
+    @Value
+    class UpdateWithNothingCommand implements TestCommand {
+        private final String name;
+    }
+
+    @Value
+    class UnsupportedCommand implements TestCommand {
+    }
 }

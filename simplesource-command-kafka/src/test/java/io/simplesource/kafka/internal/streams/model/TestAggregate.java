@@ -6,3 +6,5 @@ import lombok.Value;
 public class TestAggregate {
     private final String name;
 }
+
+

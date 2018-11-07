@@ -6,6 +6,7 @@ import io.simplesource.api.InitialValue;
 import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.dsl.AggregateBuilder;
+import io.simplesource.kafka.dsl.InvalidSequenceStrategy;
 import io.simplesource.kafka.internal.streams.MockInMemorySerde;
 import io.simplesource.kafka.internal.streams.PrefixResourceNamingStrategy;
 import io.simplesource.kafka.internal.streams.model.TestAggregate;
@@ -28,6 +29,7 @@ class TestContextBuilder {
     private CommandHandler<String, TestCommand, TestEvent, Optional<TestAggregate>> commandHandler;
     private Aggregator<TestEvent, Optional<TestAggregate>> eventAggregator;
     private InitialValue<String, Optional<TestAggregate>> initialValue;
+    private InvalidSequenceStrategy invalidSequenceStrategy = InvalidSequenceStrategy.Strict;
 
     TestContextBuilder() {
         eventAggregator = (a, e) -> {
@@ -47,6 +49,7 @@ class TestContextBuilder {
                         .withInitialValue(initialValue)
                         .withCommandHandler(commandHandler)
                         .withAggregator(eventAggregator)
+                        .withInvalidSequenceStrategy(invalidSequenceStrategy)
                         .withResourceNamingStrategy(RESOURCE_NAMING_STRATEGY);
         configureTopicSpec(aggregateBuilder);
 
@@ -65,6 +68,11 @@ class TestContextBuilder {
 
     public TestContextBuilder withAggregator(Aggregator<TestEvent, Optional<TestAggregate>> eventAggregator) {
         this.eventAggregator = eventAggregator;
+        return this;
+    }
+
+    public TestContextBuilder withInvalidSequenceStrategy(InvalidSequenceStrategy invalidSequenceStrategy) {
+        this.invalidSequenceStrategy = invalidSequenceStrategy;
         return this;
     }
 
