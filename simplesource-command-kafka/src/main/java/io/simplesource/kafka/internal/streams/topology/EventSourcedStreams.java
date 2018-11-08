@@ -8,9 +8,8 @@ import org.apache.kafka.streams.kstream.Joined;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Serialized;
-import org.apache.kafka.streams.processor.Processor;
-import org.apache.kafka.streams.processor.ProcessorContext;
-import org.apache.kafka.streams.state.KeyValueStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,34 +19,35 @@ import java.util.function.BiFunction;
 import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.aggregate_update;
 
 final class EventSourcedStreams {
+    private static final Logger logger = LoggerFactory.getLogger(EventSourcedStreams.class);
+
     private static <K> long getResponseSequence(CommandResponse response) {
         return response.sequenceResult().getOrElse(response.readSequence()).getSeq();
     }
 
-    static <K, C, E, A> KTable<UUID, CommandResponse> commandResponseTable(TopologyContext<K, C, E, A> ctx, final KStream<K, CommandResponse> commandResponseStream) {
+    static <K, C, E, A> Tuple<KStream<K, CommandRequest<K, C>>, KStream<K, CommandResponse>> getProcessedCommands(
+            TopologyContext<K, C, E, A> ctx,
+            final KStream<K, CommandRequest<K, C>> commandRequestStream,
+            final KStream<K, CommandResponse> commandResponseStream) {
 
-
-
-        return null        ;
-    }
-
-    static <K, C, E, A> void getProcessedCommands(TopologyContext<K, C, E, A> ctx,
-                                                  final KStream<K, CommandRequest<K, C>> commandRequestStream,
-                                                  final KStream<K, CommandResponse> commandResponseStream) {
-
-        KTable<UUID, CommandResponse> commandResponseById = commandResponseStream
+        final KTable<UUID, CommandResponse> commandResponseById = commandResponseStream
                 .selectKey((key, response) -> response.commandId())
                 .groupByKey(Serialized.with(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()))
                 .reduce((r1, r2) -> getResponseSequence(r1) > getResponseSequence(r2) ? r1 : r2);
 
-        KTable<K, CommandResponse> commandResponseByAggKey = commandResponseStream
-                .groupByKey(Serialized.with(ctx.serdes().aggregateKey(), ctx.serdes().commandResponse()))
-                .reduce((r1, r2) -> getResponseSequence(r1) > getResponseSequence(r2) ? r1 : r2);
-
-        commandRequestStream
+        final KStream<K, Tuple<CommandRequest<K, C>, CommandResponse>> reqResp = commandRequestStream
                 .selectKey((k, v) -> v.commandId())
                 .leftJoin(commandResponseById, Tuple::new, Joined.with(ctx.serdes().commandResponseKey(), ctx.serdes().commandRequest(), ctx.serdes().commandResponse()))
-                .selectKey((k, v) -> v.v1());
+                .selectKey((k, v) -> v.v1().aggregateKey());
+
+        KStream<K, Tuple<CommandRequest<K, C>, CommandResponse>>[] branches = reqResp.branch((k, tuple) -> tuple.v2() == null, (k, tuple) -> tuple.v2() != null);
+        KStream<K, CommandRequest<K, C>> unProcessed = branches[0].mapValues((k, tuple) -> tuple.v1())
+                        .peek((k, r) -> logger.info("Unprocessed: {}={}", k, r));
+
+        KStream<K, CommandResponse> processed = branches[1].mapValues((k, tuple) -> tuple.v2())
+                .peek((k, r) -> logger.info("Preprocessed: {}={}", k, r));
+
+        return new Tuple<>(unProcessed, processed);
     }
 
 

@@ -32,8 +32,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("unchecked")
 class EventSourcedTopologyTest {
 
-    TopologyTestDriver driver = null;
-    TestContextBuilder ctxBuilder = null;
+    private TopologyTestDriver driver = null;
+    private TestContextBuilder ctxBuilder = null;
+    private static final String key = "key";
 
     @BeforeEach
     void setUp() {
@@ -57,10 +58,10 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                "key", new TestCommand.CreateCommand("Name"), Sequence.first().next(), UUID.randomUUID());
+                key, new TestCommand.CreateCommand("Name"), Sequence.first().next(), UUID.randomUUID());
 
-        ctxDriver.publishCommand( "key", commandRequest);
-        ctxDriver.verifyCommandResponse("key", r -> {
+        ctxDriver.publishCommand( key, commandRequest);
+        ctxDriver.verifyCommandResponse(key, r -> {
             assertThat(r.sequenceResult().isSuccess()).isEqualTo(false);
             assertThat(r.sequenceResult().failureReasons()).isEqualTo(
                     Optional.of(NonEmptyList.of(CommandError.of(CommandError.Reason.InvalidReadSequence, "Command received with read sequence 1 when expecting 0"))));
@@ -77,10 +78,10 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                "key", new TestCommand.UnsupportedCommand(), Sequence.first(), UUID.randomUUID());
+                key, new TestCommand.UnsupportedCommand(), Sequence.first(), UUID.randomUUID());
 
-        ctxDriver.publishCommand( "key", commandRequest);
-        ctxDriver.verifyCommandResponse("key", r -> {
+        ctxDriver.publishCommand( key, commandRequest);
+        ctxDriver.verifyCommandResponse(key, r -> {
             assertThat(r.sequenceResult().isSuccess()).isEqualTo(false);
             assertThat(r.sequenceResult().failureReasons()).isEqualTo(
                     Optional.of(NonEmptyList.of(CommandError.of(CommandError.Reason.InvalidCommand, "Command not supported"))));
@@ -96,10 +97,9 @@ class EventSourcedTopologyTest {
         driver = new TestDriverInitializer().build(builder -> EventSourcedTopology.addTopology(ctx, builder));
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
-        String key = "key";
         String name = "name";
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                "key", new TestCommand.CreateCommand(name), Sequence.first(), UUID.randomUUID());
+                key, new TestCommand.CreateCommand(name), Sequence.first(), UUID.randomUUID());
 
         ctxDriver.publishCommand( key, commandRequest);
         ctxDriver.verifyCommandResponse(key, v -> {
@@ -143,9 +143,8 @@ class EventSourcedTopologyTest {
         driver = new TestDriverInitializer().build(builder -> EventSourcedTopology.addTopology(ctx, builder));
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
-        String key = "key";
         ctxDriver.publishCommand( key, new CommandRequest<>(
-                "key", new TestCommand.CreateCommand("firstName"), Sequence.first(), UUID.randomUUID()));
+                key, new TestCommand.CreateCommand("firstName"), Sequence.first(), UUID.randomUUID()));
         ctxDriver.verifyAggregateUpdate(key, null);
         CommandResponse response = ctxDriver.verifyCommandResponse(key, null);
         ctxDriver.verifyEvents(key, null);
@@ -154,7 +153,7 @@ class EventSourcedTopologyTest {
             String newName = String.format("firstName %d", i);
             Sequence lastSequence = response.sequenceResult().getOrElse(Sequence.first());
             CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                    "key", new TestCommand.UpdateWithNothingCommand(newName), lastSequence, UUID.randomUUID());
+                    key, new TestCommand.UpdateWithNothingCommand(newName), lastSequence, UUID.randomUUID());
             ctxDriver.publishCommand(key, commandRequest);
 
             List<ValueWithSequence<TestEvent>> events = ctxDriver.verifyEvents(key, iV -> {
@@ -177,6 +176,7 @@ class EventSourcedTopologyTest {
 
             ctxDriver.verifyAggregateUpdate(key, update -> {
                 assertThat(update.sequence().getSeq()).isEqualTo(maxSequence);
+                assertThat(update.aggregate().isPresent()).isEqualTo(true);
                 assertThat(update.aggregate().get().name()).isEqualTo(newName);
             });
 
@@ -200,11 +200,45 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                "key", new TestCommand.CreateCommand("Name 2"), Sequence.first().next().next(), UUID.randomUUID());
+                key, new TestCommand.CreateCommand("Name 2"), Sequence.position(1000), UUID.randomUUID());
 
-        ctxDriver.publishCommand( "key", commandRequest);
-        ctxDriver.verifyCommandResponse("key", r -> {
+        ctxDriver.publishCommand( key, commandRequest);
+        ctxDriver.verifyCommandResponse(key, r -> {
             assertThat(r.sequenceResult().isSuccess()).isEqualTo(true);
+            assertThat(r.sequenceResult().getOrElse(Sequence.position(2000))).isEqualTo(Sequence.first().next());
         });
+        ctxDriver.verifyAggregateUpdate(key, r -> {
+            assertThat(r.aggregate().get().name()).isEqualTo("Name 2");
+        });
+    }
+    
+    @Test
+    void testIdempotence() {
+        TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> ctx = ctxBuilder.buildContext();
+        driver = new TestDriverInitializer().build(builder -> EventSourcedTopology.addTopology(ctx, builder));
+        TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
+
+        CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
+                key, new TestCommand.CreateCommand("Name"), Sequence.first(), UUID.randomUUID());
+
+        ctxDriver.publishCommand( key, commandRequest);
+
+        CommandResponse response = ctxDriver.verifyCommandResponse(key, r -> {
+            assertThat(r.sequenceResult().getOrElse(Sequence.position(2000))).isEqualTo(Sequence.first().next());
+        });
+
+        ctxDriver.drainEvents();
+        ctxDriver.drainAggregateUpdates();
+        ctxDriver.drainCommandResponses();
+
+        ctxDriver.publishCommand( key, commandRequest);
+        ctxDriver.verifyNoEvent();
+        ctxDriver.verifyNoAggregateUpdate();
+
+        ctxDriver.verifyCommandResponse(key, r -> {
+            assertThat(r.sequenceResult().getOrElse(Sequence.position(2000))).isEqualTo(Sequence.first().next());
+            assertThat(r).isEqualToComparingFieldByField(response);
+        });
+
     }
 }

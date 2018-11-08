@@ -39,7 +39,9 @@ class TestContextDriver<K, C, E, A> {
         }
         if (record == null)
             return null;
-        assertThat(record.key()).isEqualTo(k);
+        if (k != null) {
+            assertThat(record.key()).isEqualTo(k);
+        }
         if (verifier != null) {
             verifier.accept(record.value());
         }
@@ -66,6 +68,13 @@ class TestContextDriver<K, C, E, A> {
         return eventList;
     }
 
+    void drainEvents() {
+        while (true) {
+            if (verifyEvent(null, v -> {}) == null)
+                break;
+        }
+    }
+
     ValueWithSequence<E> verifyNoEvent() {
         return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.event),
                 ctx.serdes().aggregateKey().deserializer(),
@@ -76,6 +85,13 @@ class TestContextDriver<K, C, E, A> {
         return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.command_response),
                 ctx.serdes().aggregateKey().deserializer(),
                 ctx.serdes().commandResponse().deserializer()), false, k, verifier);
+    }
+
+    void drainCommandResponses() {
+        while (true) {
+            if (verifyCommandResponse(null, v -> {}) == null)
+                break;
+        }
     }
 
     CommandResponse verifyNoCommandResponse() {
@@ -94,6 +110,13 @@ class TestContextDriver<K, C, E, A> {
         return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.aggregate),
                 ctx.serdes().aggregateKey().deserializer(),
                 ctx.serdes().aggregateUpdate().deserializer()), true, null, null);
+    }
+
+    void drainAggregateUpdates() {
+        while (true) {
+            if (verifyAggregateUpdate(null, v -> {}) == null)
+                break;
+        }
     }
 
     WindowStore<UUID, AggregateUpdateResult<A>> getCommandResultStore() {
