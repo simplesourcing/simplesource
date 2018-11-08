@@ -41,11 +41,10 @@ final class EventSourcedStreams {
                 .selectKey((k, v) -> v.v1().aggregateKey());
 
         KStream<K, Tuple<CommandRequest<K, C>, CommandResponse>>[] branches = reqResp.branch((k, tuple) -> tuple.v2() == null, (k, tuple) -> tuple.v2() != null);
-        KStream<K, CommandRequest<K, C>> unProcessed = branches[0].mapValues((k, tuple) -> tuple.v1())
-                        .peek((k, r) -> logger.info("Unprocessed: {}={}", k, r));
+        KStream<K, CommandRequest<K, C>> unProcessed = branches[0].mapValues((k, tuple) -> tuple.v1());
 
         KStream<K, CommandResponse> processed = branches[1].mapValues((k, tuple) -> tuple.v2())
-                .peek((k, r) -> logger.info("Preprocessed: {}={}", k, r));
+                .peek((k, r) -> logger.info("Preprocessed: {}=CommandId:{}", k, r.commandId()));
 
         return new Tuple<>(unProcessed, processed);
     }
