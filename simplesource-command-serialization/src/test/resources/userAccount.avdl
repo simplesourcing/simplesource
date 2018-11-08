@@ -1,0 +1,50 @@
+@namespace("io.simplesource.kafka.serialization.avro.generated")
+protocol UserSubsystem {
+
+  record UserAccountId {
+    string id;
+  }
+
+  // 1. Define a basic aggregate model
+  record UserAccount {
+    string name;
+    decimal(12,4) balance;
+  }
+
+  // 2. Define a persistable command structure
+  record CreateAccount {
+    string name;
+    decimal(12,4) balance;
+  }
+
+  record UpdateUserName {
+    string name;
+  }
+
+  record DeleteAccount {
+  }
+
+  record BuggyCommand {
+    boolean throwInCommandHandler;
+    boolean throwInEventHandler;
+  }
+
+  record UnhandledCommand {
+  }
+
+  // 3. Define a persistable event structure
+  record AccountCreated {
+    string name;
+    decimal(12,4) balance;
+  }
+
+  record UserNameUpdated {
+    string name;
+  }
+
+  record AccountDeleted {
+  }
+
+  record BuggyEvent {
+  }
+}

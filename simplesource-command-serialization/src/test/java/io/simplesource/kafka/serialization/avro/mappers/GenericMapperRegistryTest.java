@@ -1,7 +1,8 @@
 package io.simplesource.kafka.serialization.avro.mappers;
 
+import io.simplesource.kafka.serialization.avro.mappers.domain.Money;
 import io.simplesource.kafka.serialization.avro.mappers.domain.UserAccountDomain;
-import io.simplesource.kafka.serialization.test.wire.UserAccount;
+import io.simplesource.kafka.serialization.avro.generated.UserAccount;
 import org.apache.avro.generic.GenericRecord;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,8 +30,8 @@ class GenericMapperRegistryTest {
     void registerShouldOverrideExistingEntryWhenRegisterSameClassesAgain() {
         Function<UserAccountDomain, UserAccount> toSerialized = (UserAccountDomain d) -> new UserAccount();
         Function<UserAccountDomain, UserAccount> toSerialized2 = (UserAccountDomain d) -> new UserAccount();
-        Function<UserAccount, UserAccountDomain> fromSerialized = (UserAccount d) -> new UserAccountDomain("Sarah Jones", BigDecimal.ZERO);
-        Function<UserAccount, UserAccountDomain> fromSerialized2 = (UserAccount d) -> new UserAccountDomain("Sarah Jones 2", BigDecimal.ONE);
+        Function<UserAccount, UserAccountDomain> fromSerialized = (UserAccount d) -> new UserAccountDomain("Sarah Jones", Money.ZERO);
+        Function<UserAccount, UserAccountDomain> fromSerialized2 = (UserAccount d) -> new UserAccountDomain("Sarah Jones 2", Money.valueOf("1"));
         Class<UserAccountDomain> domainClass = UserAccountDomain.class;
         Class<UserAccount> serializedClass = UserAccount.class;
 
@@ -52,7 +53,7 @@ class GenericMapperRegistryTest {
     @Test
     void mapperForShouldReturnSameMapperFunctionsForRegisteredDomainAndSerializedPairs() {
         Function<UserAccountDomain, UserAccount> toSerialized = (UserAccountDomain d) -> new UserAccount();
-        Function<UserAccount, UserAccountDomain> fromSerialized = (UserAccount d) -> new UserAccountDomain("Sarah Jones", BigDecimal.ZERO);
+        Function<UserAccount, UserAccountDomain> fromSerialized = (UserAccount d) -> new UserAccountDomain("Sarah Jones", Money.ZERO);
         Class<UserAccountDomain> domainClass = UserAccountDomain.class;
         Class<UserAccount> serializedClass = UserAccount.class;
         registry.register(domainClass, serializedClass, toSerialized, fromSerialized);

@@ -89,7 +89,6 @@
                         </goals>
 
                         <configuration>
-                            <sourceDirectory>${project.basedir}/src/main/avro</sourceDirectory>
                             <testSourceDirectory>${project.basedir}/src/test/resources</testSourceDirectory>
                             <stringType>String</stringType>
                             <enableDecimalLogicalType>true</enableDecimalLogicalType>
