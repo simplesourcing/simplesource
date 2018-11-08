@@ -1,7 +1,8 @@
 package io.simplesource.kafka.serialization.avro.mappers;
 
+import io.simplesource.kafka.serialization.avro.mappers.domain.Money;
 import io.simplesource.kafka.serialization.avro.mappers.domain.UserAccountDomain;
-import io.simplesource.kafka.serialization.test.wire.UserAccount;
+import io.simplesource.kafka.serialization.avro.generated.UserAccount;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,7 +59,7 @@ class DomainSerializedClassMapperImplTest {
     @Test
     void registerShouldAddMapperAndClassesToRegistry() {
         Function<UserAccountDomain, UserAccount> toSerialized = (UserAccountDomain d) -> new UserAccount();
-        Function<UserAccount, UserAccountDomain> fromSerialized = (UserAccount d) -> new UserAccountDomain("Sarah Jones", BigDecimal.ZERO);
+        Function<UserAccount, UserAccountDomain> fromSerialized = (UserAccount d) -> new UserAccountDomain("Sarah Jones", Money.ZERO);
         Class<UserAccountDomain> domainClass = UserAccountDomain.class;
         Class<UserAccount> serializedClass = UserAccount.class;
 

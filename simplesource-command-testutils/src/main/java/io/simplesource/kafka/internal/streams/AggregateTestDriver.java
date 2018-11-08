@@ -78,7 +78,8 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
 
     @Override
     public FutureResult<CommandError, UUID> publishCommand(final Request<K, C> request) {
-        publisher.publish(topicName(command_request), request.key(), new CommandRequest<>(request.command(), request.readSequence(), request.commandId()));
+        publisher.publish(topicName(command_request), request.key(), new CommandRequest<>(
+                request.key(),request.command(), request.readSequence(), request.commandId()));
         return FutureResult.of(request.commandId());
     }
 
@@ -133,17 +134,17 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
     }
 
     private class TestDriverPublisher {
-        private final ConsumerRecordFactory<K, CommandRequest<C>> factory;
+        private final ConsumerRecordFactory<K, CommandRequest<K, C>> factory;
 
         TestDriverPublisher(final AggregateSerdes<K, C, E, A> aggregateSerdes) {
             factory = new ConsumerRecordFactory<>(aggregateSerdes.aggregateKey().serializer(), aggregateSerdes.commandRequest().serializer());
         }
 
-        private ConsumerRecordFactory<K, CommandRequest<C>> recordFactory() {
+        private ConsumerRecordFactory<K, CommandRequest<K, C>> recordFactory() {
             return factory;
         }
 
-        void publish(final String topic, final K key, final CommandRequest<C> value) {
+        void publish(final String topic, final K key, final CommandRequest<K, C> value) {
             driver.pipeInput(recordFactory().create(topic, key, value));
         }
 

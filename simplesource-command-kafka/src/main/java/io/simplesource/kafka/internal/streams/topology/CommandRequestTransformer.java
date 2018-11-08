@@ -19,7 +19,7 @@ import java.util.Optional;
 import static io.simplesource.data.Result.failure;
 import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.aggregate_update;
 
-final class CommandRequestTransformer<K, C, E, A> implements ValueTransformerWithKey<K, CommandRequest<C>, CommandEvents<E, A>> {
+final class CommandRequestTransformer<K, C, E, A> implements ValueTransformerWithKey<K, CommandRequest<K, C>, CommandEvents<E, A>> {
     private static final Logger logger = LoggerFactory.getLogger(CommandRequestTransformer.class);
 
     private ReadOnlyKeyValueStore<K, AggregateUpdate<A>> stateStore;
@@ -35,7 +35,7 @@ final class CommandRequestTransformer<K, C, E, A> implements ValueTransformerWit
     }
 
     @Override
-    public CommandEvents<E, A> transform(final K readOnlyKey, final CommandRequest<C> request) {
+    public CommandEvents<E, A> transform(final K readOnlyKey, final CommandRequest<K, C> request) {
 
         AggregateUpdate<A> currentUpdatePre;
         try {

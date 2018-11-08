@@ -29,7 +29,8 @@ public final class TopologyContext<K, C, E, A> {
     final Aggregator<E, A> aggregator;
     final InitialValue<K, A> initialValue;
 
-    final Consumed<K, CommandRequest<C>> commandEventsConsumed;
+    final Consumed<K, CommandRequest<K, C>> commandRequestConsumed;
+    final Consumed<K, CommandResponse> commandResponseConsumed;
     final Produced<K, ValueWithSequence<E>> eventsConsumedProduced;
     final Produced<K, AggregateUpdate<A>> aggregatedUpdateProduced;
     final Produced<K, CommandResponse> commandResponseProduced;
@@ -40,7 +41,8 @@ public final class TopologyContext<K, C, E, A> {
         this.commandResponseRetentionInSeconds = aggregateSpec.generation().stateStoreSpec().retentionInSeconds();
         serdes = aggregateSpec.serialization().serdes();
 
-        commandEventsConsumed = Consumed.with(serdes().aggregateKey(), serdes().commandRequest());
+        commandRequestConsumed = Consumed.with(serdes().aggregateKey(), serdes().commandRequest());
+        commandResponseConsumed = Consumed.with(serdes().aggregateKey(), serdes().commandResponse());
         eventsConsumedProduced = Produced.with(serdes().aggregateKey(), serdes().valueWithSequence());
         aggregatedUpdateProduced = Produced.with(serdes().aggregateKey(), serdes().aggregateUpdate());
         commandResponseProduced = Produced.with(serdes().aggregateKey(), serdes().commandResponse());

@@ -8,10 +8,17 @@ public interface UserAccountDomainCommand {
     @Value
     class CreateAccount implements UserAccountDomainCommand {
         final String name;
-        final BigDecimal balance;
+        final Money balance;
     }
     @Value
     class UpdateUserName implements UserAccountDomainCommand {
         final String name;
     }
+    @Value
+    class DeleteAccount implements UserAccountDomainCommand {
+    }
+    @Value
+    class BuggyCommand implements UserAccountDomainCommand {
+    }
 }
+

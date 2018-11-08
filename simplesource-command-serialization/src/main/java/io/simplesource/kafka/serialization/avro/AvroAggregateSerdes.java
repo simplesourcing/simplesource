@@ -29,7 +29,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     private final Serde<GenericRecord> valueSerde;
 
     private final Serde<K> ak;
-    private final Serde<CommandRequest<C>> crq;
+    private final Serde<CommandRequest<K, C>> crq;
     private final Serde<UUID> crk;
     private final Serde<ValueWithSequence<E>> vws;
     private final Serde<AggregateUpdate<A>> au;
@@ -75,8 +75,8 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
 
         ak = GenericSerde.of(keySerde, keyMapper::toGeneric, keyMapper::fromGeneric);
         crq = GenericSerde.of(valueSerde,
-                v -> CommandRequestAvroHelper.toGenericRecord(v.map(commandMapper::toGeneric)),
-                s -> CommandRequestAvroHelper.fromGenericRecord(s).map(commandMapper::fromGeneric));
+                v -> CommandRequestAvroHelper.toGenericRecord(v.map2(keyMapper::toGeneric, commandMapper::toGeneric)),
+                s -> CommandRequestAvroHelper.fromGenericRecord(s).map2(x -> keyMapper.fromGeneric(x), x -> commandMapper.fromGeneric(x)));
         crk = GenericSerde.of(valueSerde,
                 CommandResponseKeyAvroHelper::toGenericRecord,
                 CommandResponseKeyAvroHelper::fromGenericRecord);
@@ -102,7 +102,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     }
 
     @Override
-    public Serde<CommandRequest<C>> commandRequest() {
+    public Serde<CommandRequest<K, C>> commandRequest() {
         return crq;
     }
 
@@ -134,34 +134,41 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     private static class CommandRequestAvroHelper {
         private static final Map<Schema, Schema> schemaCache = new ConcurrentHashMap<>();
 
+        private static final String AGGREGATE_KEY = "key";
         private static final String READ_SEQUENCE = "readSequence";
         private static final String COMMAND_ID = "commandId";
         private static final String COMMAND = "command";
 
         static GenericRecord toGenericRecord(
-                final CommandRequest<GenericRecord> commandRequest
+                final CommandRequest<GenericRecord, GenericRecord> commandRequest
         ) {
             final GenericRecord command = commandRequest.command();
+            final GenericRecord key = commandRequest.aggregateKey();
             final Schema schema = schemaCache.computeIfAbsent(command.getSchema(),
-                    k -> commandRequestSchema(command));
+                    k -> commandRequestSchema(command, key));
+
             final GenericRecordBuilder builder = new GenericRecordBuilder(schema);
-            return builder.set(READ_SEQUENCE, commandRequest.readSequence().getSeq())
+            return builder
+                    .set(AGGREGATE_KEY, commandRequest.aggregateKey())
+                    .set(READ_SEQUENCE, commandRequest.readSequence().getSeq())
                     .set(COMMAND_ID, commandRequest.commandId().toString())
                     .set(COMMAND, command)
                     .build();
         }
 
-        static CommandRequest<GenericRecord> fromGenericRecord(final GenericRecord record) {
+        static CommandRequest<GenericRecord, GenericRecord> fromGenericRecord(final GenericRecord record) {
+            final GenericRecord aggregateKey = (GenericRecord) record.get(AGGREGATE_KEY);
             final Sequence readSequence = Sequence.position((Long) record.get(READ_SEQUENCE));
             final UUID commandId = UUID.fromString(String.valueOf(record.get(COMMAND_ID)));
             final GenericRecord command = (GenericRecord) record.get(COMMAND);
-            return new CommandRequest<>(command, readSequence, commandId);
+            return new CommandRequest<>(aggregateKey, command, readSequence, commandId);
         }
 
-        private static Schema commandRequestSchema(final GenericRecord command) {
+        private static Schema commandRequestSchema(final GenericRecord command, final GenericRecord key) {
             return SchemaBuilder
                     .record(command.getSchema().getName() + "CommandRequest").namespace(command.getClass().getPackage().getName())
                     .fields()
+                    .name(AGGREGATE_KEY).type(key.getSchema()).noDefault()
                     .name(READ_SEQUENCE).type().longType().noDefault()
                     .name(COMMAND_ID).type().stringType().noDefault()
                     .name(COMMAND).type(command.getSchema()).noDefault()

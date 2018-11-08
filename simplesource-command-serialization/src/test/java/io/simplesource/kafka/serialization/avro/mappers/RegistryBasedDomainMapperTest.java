@@ -1,10 +1,10 @@
 package io.simplesource.kafka.serialization.avro.mappers;
 
 import io.simplesource.kafka.serialization.avro.AvroSpecificGenericMapper;
+import io.simplesource.kafka.serialization.avro.mappers.domain.Money;
 import io.simplesource.kafka.serialization.avro.mappers.domain.UserAccountDomainCommand;
-import io.simplesource.kafka.serialization.avro.mappers.domain.UserAccountDomainCommand.CreateAccount;
 import io.simplesource.kafka.serialization.avro.mappers.domain.UserAccountDomainCommand.UpdateUserName;
-import io.simplesource.kafka.serialization.test.wire.CreateUserAccount;
+import io.simplesource.kafka.serialization.avro.generated.CreateAccount;
 import io.simplesource.kafka.serialization.util.GenericMapper;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class RegistryBasedDomainMapperTest {
 
-    private static final BigDecimal BALANCE = BigDecimal.ZERO.setScale(4, RoundingMode.CEILING);
+    private static final Money BALANCE = Money.ZERO;
     private static final String USERNAME = "Sarah Jones";
 
     @Mock
@@ -45,22 +45,22 @@ class RegistryBasedDomainMapperTest {
 
     @Test
     void fromDomainShouldThrowDefaultExceptionWhenDomainObjHasTypeThatNotInTheRegistry() {
-        UserAccountDomainCommand domainCommand = new CreateAccount(USERNAME, BALANCE);
+        UserAccountDomainCommand domainCommand = new UserAccountDomainCommand.CreateAccount(USERNAME, BALANCE);
 
         assertThrows(IllegalArgumentException.class, () -> mapper.toGeneric(domainCommand), "Class not supported");
     }
 
     @Test
     void toDomainShouldThrowDefaultExceptionWhenDomainObjHasTypeThatNotInTheRegistry() {
-        CreateUserAccount serializedClass = new CreateUserAccount(USERNAME, BALANCE);
+        CreateAccount serializedClass = new CreateAccount(USERNAME, BALANCE.getAmount());
 
         assertThrows(IllegalArgumentException.class, () -> mapper.fromGeneric(serializedClass), "Class not supported");
     }
 
     @Test
     void fromDomainShouldUseRegisteredMapperFunction() {
-        UserAccountDomainCommand domainCommand = new CreateAccount(USERNAME, BALANCE);
-        CreateUserAccount serializedClass = new CreateUserAccount(USERNAME, BALANCE);
+        UserAccountDomainCommand domainCommand = new UserAccountDomainCommand.CreateAccount(USERNAME, BALANCE);
+        CreateAccount serializedClass = new CreateAccount(USERNAME, BALANCE.getAmount());
         givenDomainAndSerializedObjsInitializeRegistry(domainCommand, serializedClass);
 
         GenericRecord actualResult = mapper.toGeneric(domainCommand);
@@ -70,8 +70,8 @@ class RegistryBasedDomainMapperTest {
 
     @Test
     void toDomainShouldUseRegisteredMapperFunction() {
-        UserAccountDomainCommand domainCommand = new CreateAccount(USERNAME, BALANCE);
-        CreateUserAccount serializedClass = new CreateUserAccount(USERNAME, BALANCE);
+        UserAccountDomainCommand domainCommand = new UserAccountDomainCommand.CreateAccount(USERNAME, BALANCE);
+        CreateAccount serializedClass = new CreateAccount(USERNAME, BALANCE.getAmount());
         givenDomainAndSerializedObjsInitializeRegistry(domainCommand, serializedClass);
 
         UserAccountDomainCommand actualResult = mapper.fromGeneric(serializedClass);
@@ -81,8 +81,8 @@ class RegistryBasedDomainMapperTest {
 
     @Test
     void toDomainShouldConvertSerializedObjToAvroSpecificRecordBeforeMappingToDomain() {
-        UserAccountDomainCommand domainCommand = new CreateAccount(USERNAME, BALANCE);
-        CreateUserAccount serializedCommand = new CreateUserAccount(USERNAME, BALANCE);
+        UserAccountDomainCommand domainCommand = new UserAccountDomainCommand.CreateAccount(USERNAME, BALANCE);
+        CreateAccount serializedCommand = new CreateAccount(USERNAME, BALANCE.getAmount());
         doReturn(serializedCommand).when(avroSpecificGenericMapper).fromGeneric(any(GenericRecord.class));
         when(registry.mapperFor(serializedCommand.getClass())).thenReturn(Optional.of(new DomainMapperRegistry.RegisterMapper<>(s -> serializedCommand, s -> domainCommand)));
 
@@ -93,7 +93,7 @@ class RegistryBasedDomainMapperTest {
 
     @Test
     void fromDomainShouldUseSuppliedExceptionSupplierWhenPassNotRegisteredClass() {
-        UserAccountDomainCommand domainCommand = new CreateAccount(USERNAME, BALANCE);
+        UserAccountDomainCommand domainCommand = new UserAccountDomainCommand.CreateAccount(USERNAME, BALANCE);
         mapper.withExceptionSupplier(() -> new DomainMapperNotRegistered("Not registered domain mapper"));
 
         assertThrows(DomainMapperNotRegistered.class, () -> mapper.toGeneric(domainCommand),
@@ -102,7 +102,7 @@ class RegistryBasedDomainMapperTest {
 
     @Test
     void toDomainShouldUseSuppliedExceptionSupplierWhenPassNotRegisteredClass() {
-        CreateUserAccount serializedCommand = new CreateUserAccount(USERNAME, BALANCE);
+        CreateAccount serializedCommand = new CreateAccount(USERNAME, BALANCE.getAmount());
         mapper.withExceptionSupplier(() -> new DomainMapperNotRegistered("Not registered domain mapper"));
 
         assertThrows(DomainMapperNotRegistered.class, () -> mapper.fromGeneric(serializedCommand),
@@ -114,9 +114,9 @@ class RegistryBasedDomainMapperTest {
         Class<?> domainValueType = UpdateUserName.class;
         Function<UserAccountDomainCommand, Class<?>> domainValueToType = (v) -> domainValueType;
         mapper = new RegistryBasedDomainMapper<>(registry, avroSpecificGenericMapper, domainValueToType);
-        UserAccountDomainCommand domainCommand = new CreateAccount(USERNAME, BALANCE);
-        CreateUserAccount serializedCommand = new CreateUserAccount(USERNAME, BALANCE);
-        DomainMapperRegistry.RegisterMapper<UserAccountDomainCommand, CreateUserAccount> registerMapper =
+        UserAccountDomainCommand domainCommand = new UserAccountDomainCommand.CreateAccount(USERNAME, BALANCE);
+        CreateAccount serializedCommand = new CreateAccount(USERNAME, BALANCE.getAmount());
+        DomainMapperRegistry.RegisterMapper<UserAccountDomainCommand, CreateAccount> registerMapper =
                 new DomainMapperRegistry.RegisterMapper<>(s -> serializedCommand, s -> domainCommand);
         Mockito.lenient().doReturn(Optional.of(registerMapper)).when(registry).mapperFor(domainValueType);
 
@@ -126,8 +126,8 @@ class RegistryBasedDomainMapperTest {
     }
 
     private void givenDomainAndSerializedObjsInitializeRegistry(UserAccountDomainCommand domainCommand,
-                                                                CreateUserAccount serializedClass) {
-        DomainMapperRegistry.RegisterMapper<UserAccountDomainCommand, CreateUserAccount> registerMapper =
+                                                                CreateAccount serializedClass) {
+        DomainMapperRegistry.RegisterMapper<UserAccountDomainCommand, CreateAccount> registerMapper =
                 new DomainMapperRegistry.RegisterMapper<>(s -> serializedClass, s -> domainCommand);
         Mockito.lenient().doReturn(Optional.of(registerMapper)).when(registry).mapperFor(domainCommand.getClass());
         Mockito.lenient().doReturn(Optional.of(registerMapper)).when(registry).mapperFor(serializedClass.getClass());
