@@ -21,6 +21,7 @@ import static io.simplesource.kafka.serialization.json.JsonGenericMapper.jsonDom
 
 public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K, C, E, A> {
 
+    private final GenericMapper<K, JsonElement> keyMapper;
     private final GenericMapper<A, JsonElement> aggregateMapper;
     private final GenericMapper<E, JsonElement> eventMapper;
     private final GenericMapper<C, JsonElement> commandMapper;
@@ -29,7 +30,7 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     private final JsonParser parser;
 
     private final Serde<K> ak;
-    private final Serde<CommandRequest<C>> cr;
+    private final Serde<CommandRequest<K, C>> cr;
     private final Serde<UUID> crk;
     private final Serde<ValueWithSequence<E>> vws;
     private final Serde<AggregateUpdate<A>> au;
@@ -45,6 +46,7 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
             final GenericMapper<E, JsonElement> eventMapper,
             final GenericMapper<C, JsonElement> commandMapper,
             final GenericMapper<K, JsonElement> keyMapper) {
+        this.keyMapper = keyMapper;
         this.aggregateMapper = aggregateMapper;
         this.eventMapper = eventMapper;
         this.commandMapper = commandMapper;
@@ -65,7 +67,7 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
                 s -> keyMapper.fromGeneric(parser.parse(s)));
         cr = GenericSerde.of(serde,
                 gson::toJson,
-                s -> gson.fromJson(s, new TypeToken<CommandRequest<C>>() {
+                s -> gson.fromJson(s, new TypeToken<CommandRequest<K, C>>() {
                 }.getType()));
         crk = GenericSerde.of(serde,
                 gson::toJson,
@@ -95,7 +97,7 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     }
 
     @Override
-    public Serde<CommandRequest<C>> commandRequest() {
+    public Serde<CommandRequest<K, C>> commandRequest() {
         return cr;
     }
 
@@ -124,19 +126,21 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
         return cr2;
     }
 
-    private class CommandRequestAdapter implements JsonSerializer<CommandRequest<C>>, JsonDeserializer<CommandRequest<C>> {
+    private class CommandRequestAdapter implements JsonSerializer<CommandRequest<K, C>>, JsonDeserializer<CommandRequest<K, C>> {
 
+        private static final String AGGREGATE_KEY = "key";
         private static final String READ_SEQUENCE = "readSequence";
         private static final String COMMAND_ID = "commandId";
         private static final String COMMAND = "command";
 
         @Override
         public JsonElement serialize(
-                final CommandRequest<C> commandRequest,
+                final CommandRequest<K, C> commandRequest,
                 final Type type,
                 final JsonSerializationContext jsonSerializationContext
         ) {
             final JsonObject wrapper = new JsonObject();
+            wrapper.add(AGGREGATE_KEY, keyMapper.toGeneric(commandRequest.aggregateKey()));
             wrapper.addProperty(READ_SEQUENCE, commandRequest.readSequence().getSeq());
             wrapper.addProperty(COMMAND_ID, commandRequest.commandId().toString());
             wrapper.add(COMMAND, commandMapper.toGeneric(commandRequest.command()));
@@ -144,11 +148,12 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
         }
 
         @Override
-        public CommandRequest<C> deserialize(
+        public CommandRequest<K, C> deserialize(
                 final JsonElement jsonElement, final Type type, final JsonDeserializationContext jsonDeserializationContext
         ) throws JsonParseException {
             final JsonObject wrapper = jsonElement.getAsJsonObject();
             return new CommandRequest<>(
+                    keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
                     commandMapper.fromGeneric(wrapper.get(COMMAND)),
                     Sequence.position(wrapper.getAsJsonPrimitive(READ_SEQUENCE).getAsLong()),
                     UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString()));

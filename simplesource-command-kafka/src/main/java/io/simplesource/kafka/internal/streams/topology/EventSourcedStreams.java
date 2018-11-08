@@ -32,7 +32,7 @@ final class EventSourcedStreams {
     }
 
     static <K, C, E, A> void getProcessedCommands(TopologyContext<K, C, E, A> ctx,
-                                                  final KStream<K, CommandRequest<C>> commandRequestStream,
+                                                  final KStream<K, CommandRequest<K, C>> commandRequestStream,
                                                   final KStream<K, CommandResponse> commandResponseStream) {
 
         KTable<UUID, CommandResponse> commandResponseById = commandResponseStream
@@ -52,7 +52,7 @@ final class EventSourcedStreams {
 
 
 
-    static <K, C, E, A> KStream<K, CommandEvents<E, A>> eventResultStream(TopologyContext<K, C, E, A> ctx, final KStream<K, CommandRequest<C>> commandRequestStream) {
+    static <K, C, E, A> KStream<K, CommandEvents<E, A>> eventResultStream(TopologyContext<K, C, E, A> ctx, final KStream<K, CommandRequest<K, C>> commandRequestStream) {
         return commandRequestStream
                 .transformValues(() -> new CommandRequestTransformer<>(ctx), ctx.stateStoreName(aggregate_update));
     }

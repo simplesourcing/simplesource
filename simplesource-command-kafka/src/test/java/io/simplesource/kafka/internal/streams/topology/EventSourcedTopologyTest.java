@@ -56,8 +56,8 @@ class EventSourcedTopologyTest {
 
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
-        CommandRequest<TestCommand> commandRequest = new CommandRequest<>(
-                new TestCommand.CreateCommand("Name"), Sequence.first().next(), UUID.randomUUID());
+        CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
+                "key", new TestCommand.CreateCommand("Name"), Sequence.first().next(), UUID.randomUUID());
 
         ctxDriver.publishCommand( "key", commandRequest);
         ctxDriver.verifyCommandResponse("key", r -> {
@@ -76,8 +76,8 @@ class EventSourcedTopologyTest {
         driver = new TestDriverInitializer().build(builder -> EventSourcedTopology.addTopology(ctx, builder));
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
-        CommandRequest<TestCommand> commandRequest = new CommandRequest<>(
-                new TestCommand.UnsupportedCommand(), Sequence.first(), UUID.randomUUID());
+        CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
+                "key", new TestCommand.UnsupportedCommand(), Sequence.first(), UUID.randomUUID());
 
         ctxDriver.publishCommand( "key", commandRequest);
         ctxDriver.verifyCommandResponse("key", r -> {
@@ -98,8 +98,8 @@ class EventSourcedTopologyTest {
 
         String key = "key";
         String name = "name";
-        CommandRequest<TestCommand> commandRequest = new CommandRequest<>(
-                new TestCommand.CreateCommand(name), Sequence.first(), UUID.randomUUID());
+        CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
+                "key", new TestCommand.CreateCommand(name), Sequence.first(), UUID.randomUUID());
 
         ctxDriver.publishCommand( key, commandRequest);
         ctxDriver.verifyCommandResponse(key, v -> {
@@ -145,7 +145,7 @@ class EventSourcedTopologyTest {
 
         String key = "key";
         ctxDriver.publishCommand( key, new CommandRequest<>(
-                new TestCommand.CreateCommand("firstName"), Sequence.first(), UUID.randomUUID()));
+                "key", new TestCommand.CreateCommand("firstName"), Sequence.first(), UUID.randomUUID()));
         ctxDriver.verifyAggregateUpdate(key, null);
         CommandResponse response = ctxDriver.verifyCommandResponse(key, null);
         ctxDriver.verifyEvents(key, null);
@@ -153,8 +153,8 @@ class EventSourcedTopologyTest {
         for (int i = 0; i < 10; i++) {
             String newName = String.format("firstName %d", i);
             Sequence lastSequence = response.sequenceResult().getOrElse(Sequence.first());
-            CommandRequest<TestCommand> commandRequest = new CommandRequest<>(
-                    new TestCommand.UpdateWithNothingCommand(newName), lastSequence, UUID.randomUUID());
+            CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
+                    "key", new TestCommand.UpdateWithNothingCommand(newName), lastSequence, UUID.randomUUID());
             ctxDriver.publishCommand(key, commandRequest);
 
             List<ValueWithSequence<TestEvent>> events = ctxDriver.verifyEvents(key, iV -> {
@@ -199,8 +199,8 @@ class EventSourcedTopologyTest {
 
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
-        CommandRequest<TestCommand> commandRequest = new CommandRequest<>(
-                new TestCommand.CreateCommand("Name 2"), Sequence.first().next().next(), UUID.randomUUID());
+        CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
+                "key", new TestCommand.CreateCommand("Name 2"), Sequence.first().next().next(), UUID.randomUUID());
 
         ctxDriver.publishCommand( "key", commandRequest);
         ctxDriver.verifyCommandResponse("key", r -> {

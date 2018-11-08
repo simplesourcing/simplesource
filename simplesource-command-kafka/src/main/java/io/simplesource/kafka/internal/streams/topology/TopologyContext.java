@@ -29,7 +29,7 @@ public final class TopologyContext<K, C, E, A> {
     final Aggregator<E, A> aggregator;
     final InitialValue<K, A> initialValue;
 
-    final Consumed<K, CommandRequest<C>> commandRequestConsumed;
+    final Consumed<K, CommandRequest<K, C>> commandRequestConsumed;
     final Consumed<K, CommandResponse> commandResponseConsumed;
     final Produced<K, ValueWithSequence<E>> eventsConsumedProduced;
     final Produced<K, AggregateUpdate<A>> aggregatedUpdateProduced;

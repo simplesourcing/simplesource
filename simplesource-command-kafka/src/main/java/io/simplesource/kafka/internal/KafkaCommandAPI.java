@@ -34,7 +34,7 @@ public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
 
     private final String aggregateName;
     private final String commandRequestTopic;
-    private final Producer<K, CommandRequest<C>> commandProducer;
+    private final Producer<K, CommandRequest<K, C>> commandProducer;
     private final AggregateSerdes<K, C, ?, A> aggregateSerdes;
     private final HostInfo currentHost;
     private final CommandResponseStoreBridge<A> storeBridge;
@@ -69,9 +69,9 @@ public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
 
     @Override
     public FutureResult<CommandError, UUID> publishCommand(final Request<K, C> request) {
-        final CommandRequest<C> commandRequest = new CommandRequest<>(
-            request.command(), request.readSequence(), request.commandId());
-        final ProducerRecord<K, CommandRequest<C>> record = new ProducerRecord<>(
+        final CommandRequest<K, C> commandRequest = new CommandRequest<>(
+                request.key(), request.command(), request.readSequence(), request.commandId());
+        final ProducerRecord<K, CommandRequest<K, C>> record = new ProducerRecord<>(
             commandRequestTopic,
             request.key(),
             commandRequest);

@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TestContextDriver<K, C, E, A> {
     final TopologyContext<K, C, E, A> ctx;
     final TopologyTestDriver driver;
-    private TestDriverPublisher<K, CommandRequest<C>> commandPublisher;
+    private TestDriverPublisher<K, CommandRequest<K, C>> commandPublisher;
 
     TestContextDriver(final TopologyContext<K, C, E, A> ctx, final TopologyTestDriver driver) {
         this.driver = driver;
@@ -28,7 +28,7 @@ class TestContextDriver<K, C, E, A> {
         commandPublisher = new TestDriverPublisher<>(driver, ctx.serdes().aggregateKey(), ctx.serdes().commandRequest());
     }
 
-    void publishCommand(K key, CommandRequest<C> commandRequest) {
+    void publishCommand(K key, CommandRequest<K, C> commandRequest) {
         commandPublisher.publish(ctx.topicName(TopicEntity.command_request), key, commandRequest);
     }
 

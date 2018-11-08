@@ -91,7 +91,7 @@ class TestContextBuilder {
             }
 
             @Override
-            public Serde<CommandRequest<TestCommand>> commandRequest() {
+            public Serde<CommandRequest<String, TestCommand>> commandRequest() {
                 return new MockInMemorySerde<>();
             }
 

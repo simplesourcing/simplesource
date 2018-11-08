@@ -11,7 +11,7 @@ public final class EventSourcedTopology {
         EventSourcedStores.addStateStores(ctx, builder);
 
         // Consume from topics
-        final KStream<K, CommandRequest<C>> commandRequestStream = EventSourcedConsumer.commandRequestStream(ctx, builder);
+        final KStream<K, CommandRequest<K, C>> commandRequestStream = EventSourcedConsumer.commandRequestStream(ctx, builder);
 
         // Transformations
         final KStream<K, CommandEvents<E, A>> eventResultStream = EventSourcedStreams.eventResultStream(ctx, commandRequestStream);
