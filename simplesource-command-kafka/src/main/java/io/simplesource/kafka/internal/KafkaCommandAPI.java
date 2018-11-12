@@ -11,6 +11,7 @@ import io.simplesource.kafka.model.AggregateUpdateResult;
 import io.simplesource.kafka.internal.streams.statestore.CommandResponseStoreBridge;
 import io.simplesource.kafka.internal.streams.statestore.StateStoreUtils;
 import io.simplesource.kafka.internal.util.RetryDelay;
+import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.spec.AggregateSpec;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -30,22 +31,22 @@ import java.util.stream.StreamSupport;
 import static io.simplesource.api.CommandError.Reason.*;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_request;
 
-public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
+public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
 
     private final String aggregateName;
     private final String commandRequestTopic;
     private final Producer<K, CommandRequest<K, C>> commandProducer;
-    private final AggregateSerdes<K, C, ?, A> aggregateSerdes;
+    private final AggregateSerdes<K, C, ?, ?> aggregateSerdes;
     private final HostInfo currentHost;
-    private final CommandResponseStoreBridge<A> storeBridge;
+    private final CommandResponseStoreBridge storeBridge;
     private final RemoteCommandResponseStore remoteStore;
     private final ScheduledExecutorService scheduledExecutor;
     private final RetryDelay retryDelay;
 
     public KafkaCommandAPI(
-        final AggregateSpec<K, C, ?, A> aggregateSpec,
+        final AggregateSpec<K, C, ?, ?> aggregateSpec,
         final KafkaConfig kafkaConfig,
-        final CommandResponseStoreBridge<A> storeBridge,
+        final CommandResponseStoreBridge storeBridge,
         final RemoteCommandResponseStore remoteStore,
         final ScheduledExecutorService scheduledExecutor,
         final RetryDelay retryDelay
@@ -53,7 +54,7 @@ public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
         commandRequestTopic = aggregateSpec.serialization().resourceNamingStrategy().topicName(
             aggregateSpec.aggregateName(),
             command_request.name());
-        AggregateSpec.Serialization<K, C, ?, A> serialization = aggregateSpec.serialization();
+        AggregateSpec.Serialization<K, C, ?, ?> serialization = aggregateSpec.serialization();
         aggregateSerdes = serialization.serdes();
         commandProducer = new KafkaProducer<>(
             kafkaConfig.producerConfig(),
@@ -94,25 +95,25 @@ public final class KafkaCommandAPI<K, C, A> implements CommandAPI<K, C> {
     }
 
     private Optional<Result<CommandError, NonEmptyList<Sequence>>> getLocalAggregate(final UUID commandId) {
-        final ReadOnlyWindowStore<UUID, AggregateUpdateResult<A>> commandResponseStore = storeBridge.getCommandResponseStore();
-        final WindowStoreIterator<AggregateUpdateResult<A>> iterator =
+        final ReadOnlyWindowStore<UUID, CommandResponse> commandResponseStore = storeBridge.getCommandResponseStore();
+        final WindowStoreIterator<CommandResponse> iterator =
             commandResponseStore
                 .fetch(
                     commandId,
                     0L,
                     System.currentTimeMillis());
 
-        final Iterable<KeyValue<Long, AggregateUpdateResult<A>>> iterable = () -> iterator;
-        final Optional<AggregateUpdateResult<A>> response = StreamSupport.stream(iterable.spliterator(), false)
+        final Iterable<KeyValue<Long, CommandResponse>> iterable = () -> iterator;
+        final Optional<CommandResponse> response = StreamSupport.stream(iterable.spliterator(), false)
             .max(Comparator.comparingLong(kv -> kv.key))
             .map(kv -> kv.value);
 
         return response.map(
-            result -> result.updatedAggregateResult().map(
-                aggregateUpdate -> {
+            result -> result.sequenceResult().map(
+                sequence -> {
                     final Sequence head = result.readSequence().next();
                     final List<Sequence> tail = new ArrayList<>();
-                    for (Sequence seq = head.next(); seq.isLessThanOrEqual(aggregateUpdate.sequence()); seq = seq.next()) {
+                    for (Sequence seq = head.next(); seq.isLessThanOrEqual(sequence); seq = seq.next()) {
                         tail.add(seq);
                     }
                     return new NonEmptyList<>(head, tail);

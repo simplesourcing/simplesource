@@ -37,7 +37,7 @@ public final class EventSourcedTopology {
 
         // Update stores
         EventSourcedStores.updateAggregateStateStore(ctx, aggregateUpdateResults);
-        EventSourcedStores.updateCommandResultStore(ctx, aggregateUpdateResults);
+        EventSourcedStores.updateCommandResponseStore(ctx, commandResponses);
     }
 }
 

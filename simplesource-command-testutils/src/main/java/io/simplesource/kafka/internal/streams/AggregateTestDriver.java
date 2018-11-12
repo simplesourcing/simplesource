@@ -150,7 +150,7 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
 
     }
 
-    private class TestDriverStoreBridge implements AggregateStoreBridge<K, A>, CommandResponseStoreBridge<A> {
+    private class TestDriverStoreBridge implements AggregateStoreBridge<K, A>, CommandResponseStoreBridge {
 
         @Override
         public ReadOnlyKeyValueStore<K, AggregateUpdate<A>> getAggregateStateStore() {
@@ -158,7 +158,7 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
         }
 
         @Override
-        public ReadOnlyWindowStore<UUID, AggregateUpdateResult<A>> getCommandResponseStore() {
+        public ReadOnlyWindowStore<UUID, CommandResponse> getCommandResponseStore() {
             return driver.getWindowStore(storeName(command_response));
         }
 

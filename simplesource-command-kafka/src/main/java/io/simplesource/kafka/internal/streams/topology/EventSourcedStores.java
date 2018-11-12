@@ -2,6 +2,7 @@ package io.simplesource.kafka.internal.streams.topology;
 
 import io.simplesource.kafka.model.AggregateUpdate;
 import io.simplesource.kafka.model.AggregateUpdateResult;
+import io.simplesource.kafka.model.CommandResponse;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.streams.KeyValue;
@@ -60,13 +61,13 @@ final class EventSourcedStores {
         }, ctx.stateStoreName(aggregate_update));
     }
 
-    static <K, A> void updateCommandResultStore(TopologyContext<K, ?, ?, A> ctx, final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream) {
+    static <K> void updateCommandResponseStore(TopologyContext<K, ?, ?, ?> ctx, final KStream<K, CommandResponse> commandResponseStream) {
         final long retentionMillis = TimeUnit.SECONDS.toMillis(ctx.commandResponseRetentionInSeconds());
-        aggregateUpdateStream
+        commandResponseStream
                 .map((k, v) -> KeyValue.pair(
                         v.commandId(),
                         v))
-                .groupByKey(ctx.serializedAggregateUpdate())
+                .groupByKey(ctx.serializedCommandResponse())
                 .windowedBy(
                         TimeWindows
                                 .of(retentionMillis)
@@ -74,10 +75,10 @@ final class EventSourcedStores {
                 .reduce((current, latest) -> latest, materializedWindow(ctx, ctx.stateStoreName(command_response)));
     }
 
-    private static <A> Materialized<UUID, AggregateUpdateResult<A>, WindowStore<Bytes, byte[]>> materializedWindow(TopologyContext<?, ?, ?, A> ctx, final String storeName) {
+    private static <A> Materialized<UUID, CommandResponse, WindowStore<Bytes, byte[]>> materializedWindow(TopologyContext<?, ?, ?, A> ctx, final String storeName) {
         return Materialized
-                .<UUID, AggregateUpdateResult<A>, WindowStore<Bytes, byte[]>>as(storeName)
+                .<UUID, CommandResponse, WindowStore<Bytes, byte[]>>as(storeName)
                 .withKeySerde(ctx.serdes().commandResponseKey())
-                .withValueSerde(ctx.serdes().updateResult());
+                .withValueSerde(ctx.serdes().commandResponse());
     }
 }

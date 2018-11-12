@@ -37,7 +37,7 @@ public final class AggregateSetBuilder {
             final ScheduledExecutorService scheduledExecutor
     ) {
         return aggregateSpec -> {
-            final CommandResponseStoreBridge<?> commandResponseStoreBridge = new KafkaStreamCommandResponseStoreBridge<>(
+            final CommandResponseStoreBridge commandResponseStoreBridge = new KafkaStreamCommandResponseStoreBridge<>(
                     aggregateSpec,
                     kafkaStreams);
             final CommandAPI commandAPI = new KafkaCommandAPI(

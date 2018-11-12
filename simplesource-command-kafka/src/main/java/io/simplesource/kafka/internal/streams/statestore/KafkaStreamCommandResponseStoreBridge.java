@@ -2,6 +2,7 @@ package io.simplesource.kafka.internal.streams.statestore;
 
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.model.AggregateUpdateResult;
+import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.spec.AggregateSpec;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.state.HostInfo;
@@ -15,7 +16,7 @@ import java.util.UUID;
 import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.command_response;
 
 
-public final class KafkaStreamCommandResponseStoreBridge<K, A> implements CommandResponseStoreBridge<A> {
+public final class KafkaStreamCommandResponseStoreBridge<K> implements CommandResponseStoreBridge {
 
     private final KafkaStreams kafkaStreams;
     private final AggregateSerdes<K, ?, ?, ?> aggregateSerdes;
@@ -33,7 +34,7 @@ public final class KafkaStreamCommandResponseStoreBridge<K, A> implements Comman
     }
 
     @Override
-    public ReadOnlyWindowStore<UUID, AggregateUpdateResult<A>> getCommandResponseStore() {
+    public ReadOnlyWindowStore<UUID, CommandResponse> getCommandResponseStore() {
         return kafkaStreams.store(commandResponseStoreName, QueryableStoreTypes.windowStore());
     }
 
