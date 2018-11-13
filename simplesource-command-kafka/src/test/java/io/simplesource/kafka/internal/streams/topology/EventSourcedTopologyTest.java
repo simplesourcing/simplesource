@@ -120,20 +120,22 @@ class EventSourcedTopologyTest {
         });
         ctxDriver.verifyNoAggregateUpdate();
 
-        int[] count = new int[1];
-        KeyValueIterator<Windowed<UUID>, AggregateUpdateResult<Optional<TestAggregate>>> resultStoreUpdates = ctxDriver.getCommandResultStore().all();
+        Map<UUID, CommandResponse> storeResponses = ctxDriver.getCommandResponses();
+        assertThat(storeResponses).isNotEmpty();
 
-        resultStoreUpdates.forEachRemaining(kv -> {
-            count[0] = count[0] + 1;
-            UUID k = kv.key.key();
+        storeResponses.forEach((k, v) -> {
             assertThat(k).isEqualTo(commandRequest.commandId());
-            Result<CommandError, AggregateUpdate<Optional<TestAggregate>>> result = kv.value.updatedAggregateResult();
+            Result<CommandError, Sequence> result = v.sequenceResult();
             assertThat(result.isSuccess()).isEqualTo(true);
-            AggregateUpdate<Optional<TestAggregate>> aggUpdate = result.getOrElse(AggregateUpdate.of(Optional.empty()));
-            assertThat(aggUpdate.aggregate().isPresent()).isEqualTo(true);
-            assertThat(aggUpdate.aggregate().get().name()).isEqualTo(name);
         });
-        assertThat(count[0]).isGreaterThan(0);
+
+        Map<String, AggregateUpdate<Optional<TestAggregate>>> storeUpdates = ctxDriver.getAggegateUpdates();
+        assertThat(storeUpdates).isNotEmpty();
+
+        storeUpdates.forEach((k, v) -> {
+            assertThat(k).isEqualTo(key);
+            assertThat(v.aggregate().get().name()).isEqualTo(name);
+        });
     }
 
     @Test
@@ -183,10 +185,13 @@ class EventSourcedTopologyTest {
             ctxDriver.verifyNoCommandResponse();
             ctxDriver.verifyNoAggregateUpdate();
 
-            Map<UUID, AggregateUpdateResult<Optional<TestAggregate>>> results = ctxDriver.getCommandResults();
-            AggregateUpdateResult<Optional<TestAggregate>> result = results.get(commandRequest.commandId());
-            assertThat(result.updatedAggregateResult().isSuccess()).isEqualTo(true);
-            result.updatedAggregateResult().ifSuccessful(res -> assertThat(res.aggregate().get().name()).isEqualTo(newName));
+            Map<UUID, CommandResponse> results = ctxDriver.getCommandResponses();
+            CommandResponse result = results.get(commandRequest.commandId());
+            assertThat(result.sequenceResult().isSuccess()).isEqualTo(true);
+
+            Map<String, AggregateUpdate<Optional<TestAggregate>>> updates = ctxDriver.getAggegateUpdates();
+            AggregateUpdate<Optional<TestAggregate>> update = updates.get(key);
+            assertThat(update.aggregate().get().name()).isEqualTo(newName);
         }
     }
 

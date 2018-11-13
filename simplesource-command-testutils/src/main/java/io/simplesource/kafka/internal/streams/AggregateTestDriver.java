@@ -17,6 +17,7 @@ import io.simplesource.kafka.internal.streams.statestore.AggregateStoreBridge;
 import io.simplesource.kafka.internal.util.NamedThreadFactory;
 import io.simplesource.kafka.internal.util.RetryDelay;
 import io.simplesource.kafka.spec.AggregateSpec;
+import io.simplesource.kafka.spec.CommandSpec;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -49,8 +50,9 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
     private final CommandAPI<K, C> commandAPI;
 
     public AggregateTestDriver(
+        final CommandSpec<K, C> commandSpec,
         final AggregateSpec<K, C, E, A> aggregateSpec,
-        final KafkaConfig kafkaConfig
+            final KafkaConfig kafkaConfig
     ) {
         final StreamsBuilder builder = new StreamsBuilder();
         final TopologyContext<K, C, E, A> ctx = new TopologyContext<>(aggregateSpec);
@@ -68,7 +70,7 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
         driver = new TopologyTestDriver(builder.build(), streamConfig, 0L);
         publisher = new TestDriverPublisher(aggregateSerdes);
         commandAPI = new KafkaCommandAPI<>(
-            aggregateSpec,
+            commandSpec,
             kafkaConfig,
             storeBridge,
             null,

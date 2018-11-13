@@ -1,12 +1,12 @@
 package io.simplesource.kafka.internal.streams.topology;
 
-import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.internal.util.Tuple;
 import io.simplesource.kafka.model.*;
 import lombok.Value;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.kstream.Windowed;
+import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.WindowStore;
 
 import java.util.*;
@@ -119,18 +119,32 @@ class TestContextDriver<K, C, E, A> {
         }
     }
 
-    WindowStore<UUID, AggregateUpdateResult<A>> getCommandResultStore() {
-        WindowStore<UUID, AggregateUpdateResult<A>> store = driver.getWindowStore(ctx.stateStoreName(StateStoreEntity.command_response));
+    KeyValueStore<K, AggregateUpdate<A>> getAggegateUpdateStore() {
+        KeyValueStore<K, AggregateUpdate<A>> store = driver.getKeyValueStore(ctx.stateStoreName(StateStoreEntity.aggregate_update));
         return store;
     }
 
-    Map<UUID, AggregateUpdateResult<A>> getCommandResults() {
-        HashMap<UUID, AggregateUpdateResult<A>> map = new HashMap<>();
+    Map<K, AggregateUpdate<A>> getAggegateUpdates() {
+        HashMap<K, AggregateUpdate<A>> map = new HashMap<>();
 
-        getCommandResultStore().all().forEachRemaining(kv -> {
+        getAggegateUpdateStore().all().forEachRemaining(kv -> {
+            map.put(kv.key, kv.value);
+        });
+        return map;
+    }
+
+    WindowStore<UUID, CommandResponse> getCommandResponseStore() {
+        WindowStore<UUID, CommandResponse> store = driver.getWindowStore(ctx.stateStoreName(StateStoreEntity.command_response));
+        return store;
+    }
+
+    Map<UUID, CommandResponse> getCommandResponses() {
+        HashMap<UUID, CommandResponse> map = new HashMap<>();
+
+        getCommandResponseStore().all().forEachRemaining(kv -> {
             Windowed<UUID> wKey = kv.key;
-            AggregateUpdateResult<A> update = kv.value;
-            map.put(wKey.key(), update);
+            CommandResponse response = kv.value;
+            map.put(wKey.key(), response);
         });
         return map;
     }

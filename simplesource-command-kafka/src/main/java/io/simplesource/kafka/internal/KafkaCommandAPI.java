@@ -3,16 +3,15 @@ package io.simplesource.kafka.internal;
 import io.simplesource.api.CommandAPI;
 import io.simplesource.api.CommandError;
 import io.simplesource.data.*;
-import io.simplesource.kafka.api.AggregateSerdes;
+import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.api.RemoteCommandResponseStore;
 import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.model.CommandRequest;
-import io.simplesource.kafka.model.AggregateUpdateResult;
 import io.simplesource.kafka.internal.streams.statestore.CommandResponseStoreBridge;
 import io.simplesource.kafka.internal.streams.statestore.StateStoreUtils;
 import io.simplesource.kafka.internal.util.RetryDelay;
 import io.simplesource.kafka.model.CommandResponse;
-import io.simplesource.kafka.spec.AggregateSpec;
+import io.simplesource.kafka.spec.CommandSpec;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -36,7 +35,6 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
     private final String aggregateName;
     private final String commandRequestTopic;
     private final Producer<K, CommandRequest<K, C>> commandProducer;
-    private final AggregateSerdes<K, C, ?, ?> aggregateSerdes;
     private final HostInfo currentHost;
     private final CommandResponseStoreBridge storeBridge;
     private final RemoteCommandResponseStore remoteStore;
@@ -44,24 +42,23 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
     private final RetryDelay retryDelay;
 
     public KafkaCommandAPI(
-        final AggregateSpec<K, C, ?, ?> aggregateSpec,
+        final CommandSpec<K, C> commandSpec,
         final KafkaConfig kafkaConfig,
         final CommandResponseStoreBridge storeBridge,
         final RemoteCommandResponseStore remoteStore,
         final ScheduledExecutorService scheduledExecutor,
         final RetryDelay retryDelay
     ) {
-        commandRequestTopic = aggregateSpec.serialization().resourceNamingStrategy().topicName(
-            aggregateSpec.aggregateName(),
+        commandRequestTopic = commandSpec.resourceNamingStrategy().topicName(
+            commandSpec.aggregateName(),
             command_request.name());
-        AggregateSpec.Serialization<K, C, ?, ?> serialization = aggregateSpec.serialization();
-        aggregateSerdes = serialization.serdes();
+        CommandSerdes<K, C> commandSerdes = commandSpec.serdes();
         commandProducer = new KafkaProducer<>(
             kafkaConfig.producerConfig(),
-            aggregateSerdes.aggregateKey().serializer(),
-            aggregateSerdes.commandRequest().serializer());
+                commandSerdes.aggregateKey().serializer(),
+                commandSerdes.commandRequest().serializer());
         currentHost = kafkaConfig.currentHostInfo();
-        this.aggregateName = aggregateSpec.aggregateName();
+        this.aggregateName = commandSpec.aggregateName();
         this.storeBridge = storeBridge;
         this.remoteStore = remoteStore;
         this.scheduledExecutor = scheduledExecutor;

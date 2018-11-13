@@ -13,9 +13,12 @@ import io.simplesource.kafka.internal.streams.statestore.AggregateStoreBridge;
 import io.simplesource.kafka.internal.util.NamedThreadFactory;
 import io.simplesource.kafka.spec.AggregateSetSpec;
 import io.simplesource.kafka.spec.AggregateSpec;
+import io.simplesource.kafka.spec.CommandSpec;
 import io.simplesource.kafka.spec.KafkaExecutionSpec;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.StreamsConfig;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,21 +40,20 @@ public final class AggregateSetBuilder {
             final ScheduledExecutorService scheduledExecutor
     ) {
         return aggregateSpec -> {
+            CommandSpec<?, ?> commandSpec = aggregateSpec.getCommandSpec();
             final CommandResponseStoreBridge commandResponseStoreBridge = new KafkaStreamCommandResponseStoreBridge<>(
-                    aggregateSpec,
+                    commandSpec,
                     kafkaStreams);
-            final CommandAPI commandAPI = new KafkaCommandAPI(
-                    aggregateSpec,
+            final CommandAPI commandAPI =
+                    new KafkaCommandAPI(
+                            commandSpec,
                     kafkaConfig,
                     commandResponseStoreBridge,
                     remoteCommandResponseStore,
                     scheduledExecutor,
-                    aggregateSpec.generation().retryDelay());
+                    commandSpec.retryDelay());
 
-            final AggregateStoreBridge<?, ?> aggregateStoreBridge = new KafkaStreamAggregateStoreBridge<>(
-                    aggregateSpec, kafkaStreams);
-
-            return KeyValue.pair(aggregateSpec.aggregateName(), commandAPI);
+            return KeyValue.pair(commandSpec.aggregateName(), commandAPI);
         };
     }
 
@@ -92,10 +94,11 @@ public final class AggregateSetBuilder {
         final EventSourcedStreamsApp app =
                 new EventSourcedStreamsApp(aggregateSetSpec);
 
-
         app.start();
-        final KafkaStreams kafkaStreams = app.getStreams();
-
+        // final KafkaStreams kafkaStreams = app.getStreams();
+        
+        final KafkaStreams kafkaStreams = new KafkaStreams(
+                new StreamsBuilder().build(), new StreamsConfig(aggregateSetSpec.executionSpec().kafkaConfig().streamsConfig()));
 
         //Hack to get round circular ref
         final CommandAPISet[] aggregatesRef = new CommandAPISet[1];
@@ -103,7 +106,7 @@ public final class AggregateSetBuilder {
         final ClusterSubsystem clusterSubsystem =
                 new ClusterSubsystem((aggName) -> aggregatesRef[0].getCommandAPI(aggName), kafkaConfig.clusterConfig(), scheduledExecutor);
 
-        final Map<String, CommandAPI<?, ?>> aggregates = aggregateSetSpec.aggregateConfigMap().values()
+        final Map<String, CommandAPI<?, ?>> commandApis = aggregateSetSpec.aggregateConfigMap().values()
                 .stream()
                 .map(createAggregate(
                         aggregateSetSpec.executionSpec().kafkaConfig(),
@@ -116,7 +119,7 @@ public final class AggregateSetBuilder {
         CommandAPISet commandAPISet = new CommandAPISet() {
             @Override
             public <K, C> CommandAPI<K, C> getCommandAPI(final String aggregateName) {
-                return (CommandAPI<K, C>) aggregates.get(aggregateName);
+                return (CommandAPI<K, C>) commandApis.get(aggregateName);
             }
         };
 
@@ -125,5 +128,4 @@ public final class AggregateSetBuilder {
 
         return commandAPISet;
     }
-
 }

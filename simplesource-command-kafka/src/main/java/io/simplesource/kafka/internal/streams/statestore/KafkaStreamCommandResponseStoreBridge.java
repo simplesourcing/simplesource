@@ -1,9 +1,11 @@
 package io.simplesource.kafka.internal.streams.statestore;
 
 import io.simplesource.kafka.api.AggregateSerdes;
+import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.model.AggregateUpdateResult;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.spec.AggregateSpec;
+import io.simplesource.kafka.spec.CommandSpec;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.state.HostInfo;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
@@ -19,18 +21,17 @@ import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.comm
 public final class KafkaStreamCommandResponseStoreBridge<K> implements CommandResponseStoreBridge {
 
     private final KafkaStreams kafkaStreams;
-    private final AggregateSerdes<K, ?, ?, ?> aggregateSerdes;
+    private final CommandSerdes<K, ?> commandSerdes;
     private final String commandResponseStoreName;
 
     public KafkaStreamCommandResponseStoreBridge(
-        final AggregateSpec<K, ?, ?, ?> aggregateSpec,
+        final CommandSpec<K, ?> commandSpec,
         final KafkaStreams kafkaStreams) {
         this.kafkaStreams = kafkaStreams;
-        aggregateSerdes = aggregateSpec.serialization().serdes();
-        commandResponseStoreName = aggregateSpec
-            .serialization()
+        this.commandSerdes = commandSpec.serdes();
+        commandResponseStoreName = commandSpec
             .resourceNamingStrategy()
-            .storeName(aggregateSpec.aggregateName(), command_response.name());
+            .storeName(commandSpec.aggregateName(), command_response.name());
     }
 
     @Override
@@ -43,8 +44,7 @@ public final class KafkaStreamCommandResponseStoreBridge<K> implements CommandRe
         return Optional
             .ofNullable(kafkaStreams.metadataForKey(
                 commandResponseStoreName,
-                key,
-                aggregateSerdes.commandResponseKey().serializer()))
+                key, commandSerdes.commandResponseKey().serializer()))
             .map(StreamsMetadata::hostInfo);
     }
 }

@@ -20,12 +20,8 @@ import java.util.UUID;
  * @param <E> base type of all events generated for this aggregate
  * @param <C> base type of all commands for this aggregate
  */
-public interface AggregateSerdes<K, C, E, A> {
-    Serde<K> aggregateKey();
-    Serde<CommandRequest<K, C>> commandRequest();
-    Serde<UUID> commandResponseKey();
+public interface AggregateSerdes<K, C, E, A> extends CommandSerdes<K, C> {
     Serde<ValueWithSequence<E>> valueWithSequence();
     Serde<AggregateUpdate<A>> aggregateUpdate();
     Serde<AggregateUpdateResult<A>> updateResult();
-    Serde<CommandResponse> commandResponse();
 }

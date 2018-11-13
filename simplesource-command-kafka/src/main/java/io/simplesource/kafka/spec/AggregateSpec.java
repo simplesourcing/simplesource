@@ -10,6 +10,7 @@ import lombok.Value;
 
 import java.util.Map;
 
+
 @Value
 public final class AggregateSpec<K, C, E, A>  {
     private final String aggregateName;
@@ -31,5 +32,9 @@ public final class AggregateSpec<K, C, E, A>  {
         private final InvalidSequenceHandler<K, C, A> invalidSequenceHandler;
         private final Aggregator<E, A> aggregator;
         private final InitialValue<K, A> initialValue;
+    }
+
+    public CommandSpec<K, C> getCommandSpec() {
+       return new CommandSpec<>(aggregateName, serialization.resourceNamingStrategy, serialization.serdes, generation.retryDelay);
     }
 }
