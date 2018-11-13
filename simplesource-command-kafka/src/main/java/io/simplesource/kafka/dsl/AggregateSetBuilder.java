@@ -95,10 +95,7 @@ public final class AggregateSetBuilder {
                 new EventSourcedStreamsApp(aggregateSetSpec);
 
         app.start();
-        // final KafkaStreams kafkaStreams = app.getStreams();
-
-        final KafkaStreams kafkaStreams = new KafkaStreams(
-                new StreamsBuilder().build(), new StreamsConfig(aggregateSetSpec.executionSpec().kafkaConfig().streamsConfig()));
+        final KafkaStreams kafkaStreams = app.getStreams();
 
         //Hack to get round circular ref
         final CommandAPISet[] aggregatesRef = new CommandAPISet[1];
