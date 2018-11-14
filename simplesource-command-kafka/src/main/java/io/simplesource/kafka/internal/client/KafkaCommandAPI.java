@@ -98,7 +98,6 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                         }
                 )
         );
-
     }
 
     @Override
