@@ -1,7 +1,7 @@
 package io.simplesource.kafka.dsl;
 
-import io.simplesource.kafka.internal.client.ClientConfig;
 import lombok.Value;
+import io.simplesource.kafka.internal.client.ClientConfig;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.streams.StreamsConfig;

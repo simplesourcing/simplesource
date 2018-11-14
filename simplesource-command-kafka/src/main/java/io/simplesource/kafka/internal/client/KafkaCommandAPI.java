@@ -25,7 +25,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 
-
 import static io.simplesource.api.CommandError.Reason.*;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_request;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_response;
@@ -98,7 +97,6 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                         }
                 )
         );
-
     }
 
     @Override

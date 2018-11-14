@@ -8,6 +8,4 @@ import java.util.concurrent.ScheduledExecutorService;
 
 @Value
 public final class KafkaExecutionSpec {
-    private final ScheduledExecutorService scheduledExecutor;
-    private final KafkaConfig kafkaConfig;
 }
