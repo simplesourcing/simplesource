@@ -121,10 +121,9 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                     metaData ->
                         FutureResult.ofFuture(commandProducer.send(record), e -> CommandError.of(CommandPublishError, e)))
                 .map(meta -> {
-                    if (!handlerMap.containsKey(request.commandId())) {
-                        handlerMap.put(request.commandId(), new ResponseHandlers(Lists.newArrayList()));
-                    }
-                    return request.commandId();
+                    UUID commandId = request.commandId();
+                    handlerMap.computeIfAbsent(commandId, uuid -> new ResponseHandlers(Lists.newArrayList()));
+                    return commandId;
                 });
     }
 

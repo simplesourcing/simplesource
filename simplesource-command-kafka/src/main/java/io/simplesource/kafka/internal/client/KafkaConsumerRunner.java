@@ -55,13 +55,10 @@ class KafkaConsumerRunner implements Runnable {
                 records.iterator().forEachRemaining( record -> {
                     String recordKey = record.key();
                     UUID id = UUID.fromString(record.key().substring(recordKey.length() - 36));
-                    KafkaCommandAPI.ResponseHandlers responseHandler = handlerMap.getOrDefault(id, null);
-                    if (responseHandler != null) {
-                        responseHandler.handlers().forEach(future -> {
-                            future.complete(record.value());
-                        });
-                        handlerMap.remove(id);
-                    }
+                    handlerMap.computeIfPresent(id, (uuid, handlers) -> {
+                        handlers.handlers().forEach(future -> future.complete(record.value()));
+                        return null;
+                    });
                 });
             }
         } catch (WakeupException e) {
