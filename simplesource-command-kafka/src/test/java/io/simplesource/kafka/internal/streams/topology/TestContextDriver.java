@@ -4,6 +4,7 @@ import io.simplesource.kafka.internal.util.Tuple;
 import io.simplesource.kafka.model.*;
 import lombok.Value;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.state.KeyValueStore;
@@ -30,6 +31,10 @@ class TestContextDriver<K, C, E, A> {
 
     void publishCommand(K key, CommandRequest<K, C> commandRequest) {
         commandPublisher.publish(ctx.topicName(TopicEntity.command_request), key, commandRequest);
+    }
+
+    public <KP, VP> TestDriverPublisher<KP, VP> getPublisher(final Serde<KP> keySerde, final Serde<VP> valueSerde) {
+        return new TestDriverPublisher<>(driver, keySerde, valueSerde);
     }
 
     <V> V verifyAndReturn(ProducerRecord<K, V> record, boolean isNull, K k, Consumer<V> verifier) {

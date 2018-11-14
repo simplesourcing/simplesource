@@ -140,6 +140,12 @@ public final class AggregateBuilder<K, C, E, A> {
                 TopicEntity.command_response,
                 new TopicSpec(1, (short)1, commandResponseTopic));
 
+        final Map<String, String> commandResponseTopicMapTopic = new HashMap<>();
+        aggregateTopic.put(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(TimeUnit.DAYS.toMillis(1)));
+        config.put(
+                TopicEntity.command_response_topic_map,
+                new TopicSpec(1, (short)1, commandResponseTopicMapTopic));
+
         return config;
     }
 }

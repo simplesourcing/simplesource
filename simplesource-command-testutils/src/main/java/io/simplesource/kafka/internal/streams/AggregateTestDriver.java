@@ -50,7 +50,6 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
     private final CommandAPI<K, C> commandAPI;
 
     public AggregateTestDriver(
-        final CommandSpec<K, C> commandSpec,
         final AggregateSpec<K, C, E, A> aggregateSpec,
             final KafkaConfig kafkaConfig
     ) {
@@ -70,7 +69,7 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
         driver = new TopologyTestDriver(builder.build(), streamConfig, 0L);
         publisher = new TestDriverPublisher(aggregateSerdes);
         commandAPI = new KafkaCommandAPI<>(
-            commandSpec,
+            aggregateSpec.getCommandSpec(),
             kafkaConfig,
             storeBridge,
             null,

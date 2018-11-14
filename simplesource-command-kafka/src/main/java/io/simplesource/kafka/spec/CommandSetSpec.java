@@ -5,8 +5,7 @@ import lombok.Value;
 import java.util.Map;
 
 @Value
-public final class AggregateSetSpec {
+public final class CommandSetSpec {
     private final KafkaExecutionSpec executionSpec;
-    private final Map<String, AggregateSpec<?, ?, ?, ?>> aggregateConfigMap;
+    private final Map<String, CommandSpec<?, ?>> commandConfigMap;
 }
-

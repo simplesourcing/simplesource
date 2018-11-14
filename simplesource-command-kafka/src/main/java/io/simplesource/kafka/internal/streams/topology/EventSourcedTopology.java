@@ -1,19 +1,31 @@
 package io.simplesource.kafka.internal.streams.topology;
 
+import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.internal.util.Tuple;
 import io.simplesource.kafka.model.*;
+import lombok.Value;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
 
+import java.util.UUID;
+
 public final class EventSourcedTopology {
 
-    public static <K, C, E, A> void addTopology(TopologyContext<K, C, E, A> ctx, final StreamsBuilder builder) {
+    @Value
+    static final class InputStreams<K, C> {
+        public final KStream<K, CommandRequest<K, C>> commandRequest;
+        public final KStream<K, CommandResponse> commandResponse;
+    }
+
+    public static <K, C, E, A> InputStreams<K, C> addTopology(TopologyContext<K, C, E, A> ctx, final StreamsBuilder builder) {
         // Create stores
         EventSourcedStores.addStateStores(ctx, builder);
 
         // Consume from topics
         final KStream<K, CommandRequest<K, C>> commandRequestStream = EventSourcedConsumer.commandRequestStream(ctx, builder);
         final KStream<K, CommandResponse> commandResponseStream = EventSourcedConsumer.commandResponseStream(ctx, builder);
+        DistributorContext<CommandResponse> distCtx = getDistributorContext(ctx);
+        final KStream<UUID, String> resultsTopicMapStream = ResultDistributor.resultTopicMapStream(distCtx,  builder);
 
         // Handle idempotence by splitting stream into processed and unprocessed
         Tuple<KStream<K, CommandRequest<K, C>>, KStream<K, CommandResponse>> reqResp = EventSourcedStreams.getProcessedCommands(
@@ -38,6 +50,19 @@ public final class EventSourcedTopology {
         // Update stores
         EventSourcedStores.updateAggregateStateStore(ctx, aggregateUpdateResults);
         EventSourcedStores.updateCommandResponseStore(ctx, commandResponses);
+
+        // Distribute command results
+        ResultDistributor.distribute(distCtx, commandResponseStream, resultsTopicMapStream);
+
+        // return input streams
+        return new InputStreams<>(commandRequestStream, commandResponseStream);
+    }
+
+    private static  DistributorContext<CommandResponse> getDistributorContext(TopologyContext<?, ?, ?, ?> ctx) {
+        return new DistributorContext<>(
+                ctx.aggregateSpec().serialization().resourceNamingStrategy().topicName(ctx.aggregateSpec().aggregateName(), AggregateResources.TopicEntity.command_response_topic_map.toString()),
+                new DistributorSerdes<>(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()),
+                CommandResponse::commandId);
     }
 }
 

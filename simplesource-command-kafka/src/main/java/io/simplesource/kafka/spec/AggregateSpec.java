@@ -35,6 +35,6 @@ public final class AggregateSpec<K, C, E, A>  {
     }
 
     public CommandSpec<K, C> getCommandSpec() {
-       return new CommandSpec<>(aggregateName, serialization.resourceNamingStrategy, serialization.serdes, generation.retryDelay);
+       return new CommandSpec<>(aggregateName, serialization.resourceNamingStrategy, serialization.serdes, generation.retryDelay, generation.topicConfig.get(AggregateResources.TopicEntity.command_response));
     }
 }

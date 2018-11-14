@@ -49,8 +49,6 @@ final class EventSourcedStreams {
         return new Tuple<>(unProcessed, processed);
     }
 
-
-
     static <K, C, E, A> KStream<K, CommandEvents<E, A>> eventResultStream(TopologyContext<K, C, E, A> ctx, final KStream<K, CommandRequest<K, C>> commandRequestStream) {
         return commandRequestStream
                 .transformValues(() -> new CommandRequestTransformer<>(ctx), ctx.stateStoreName(aggregate_update));

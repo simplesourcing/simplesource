@@ -6,7 +6,8 @@ public final class AggregateResources {
         command_request,
         event,
         aggregate,
-        command_response
+        command_response,
+        command_response_topic_map,
     }
 
     public enum StateStoreEntity {

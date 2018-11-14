@@ -11,4 +11,5 @@ public final class CommandSpec<K, C> {
     private final ResourceNamingStrategy resourceNamingStrategy;
     private final CommandSerdes<K, C> serdes;
     private final RetryDelay retryDelay;
+    private final TopicSpec outputTopicConfig;
 }
