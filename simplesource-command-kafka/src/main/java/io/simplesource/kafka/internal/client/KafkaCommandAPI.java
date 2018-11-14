@@ -119,18 +119,23 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                     metaData ->
                         FutureResult.ofFuture(commandProducer.send(record), e -> CommandError.of(CommandPublishError, e)))
                 .map(meta -> {
-                    if (!handlerMap.containsKey(request.commandId())) {
-                        handlerMap.put(request.commandId(), new ResponseHandlers(Lists.newArrayList()));
-                    }
-                    return request.commandId();
+                    UUID commandId = request.commandId();
+                    handlerMap.computeIfAbsent(commandId, uuid -> new ResponseHandlers(Lists.newArrayList()));
+                    return commandId;
                 });
     }
 
     @Override
     public FutureResult<CommandError, NonEmptyList<Sequence>> queryCommandResult(final UUID commandId, final Duration timeout) {
-        ResponseHandlers handlers = handlerMap.get(commandId);
         CompletableFuture<CommandResponse> completableFuture = new CompletableFuture<>();
-        handlers.handlers.add(completableFuture);
+
+        ResponseHandlers h = handlerMap.computeIfPresent(commandId, (id, handlers) -> {
+            handlers.handlers.add(completableFuture);
+            return handlers;
+        });
+        if (h == null) {
+            completableFuture.completeExceptionally(new Exception("Invalid commandId."));
+        }
         return FutureResult.ofCompletableFuture(completableFuture.thenApply(resp -> resp.sequenceResult().map(s -> NonEmptyList.of(s))));
     }
 
