@@ -8,16 +8,11 @@ import io.simplesource.data.NonEmptyList;
 import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.dsl.KafkaConfig;
-import io.simplesource.kafka.internal.KafkaCommandAPI;
+import io.simplesource.kafka.internal.client.KafkaCommandAPI;
 import io.simplesource.kafka.internal.streams.topology.EventSourcedTopology;
 import io.simplesource.kafka.internal.streams.topology.TopologyContext;
 import io.simplesource.kafka.model.*;
-import io.simplesource.kafka.internal.streams.statestore.CommandResponseStoreBridge;
-import io.simplesource.kafka.internal.streams.statestore.AggregateStoreBridge;
-import io.simplesource.kafka.internal.util.NamedThreadFactory;
-import io.simplesource.kafka.internal.util.RetryDelay;
 import io.simplesource.kafka.spec.AggregateSpec;
-import io.simplesource.kafka.spec.CommandSpec;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -30,12 +25,9 @@ import java.util.Comparator;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.StreamSupport;
 
 import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.command_response;
-import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.aggregate_update;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_request;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.event;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.aggregate;
@@ -43,7 +35,6 @@ import static io.simplesource.kafka.api.AggregateResources.TopicEntity.aggregate
 public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
     private final TopologyTestDriver driver;
     private final AggregateSpec<K, C, E, A> aggregateSpec;
-    private final KafkaConfig kafkaConfig;
     private final AggregateSerdes<K, C, E, A> aggregateSerdes;
     private final TestDriverPublisher publisher;
 
@@ -56,25 +47,14 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
         final StreamsBuilder builder = new StreamsBuilder();
         final TopologyContext<K, C, E, A> ctx = new TopologyContext<>(aggregateSpec);
         EventSourcedTopology.addTopology(ctx, builder);
-        final TestDriverStoreBridge storeBridge = new TestDriverStoreBridge();
-        final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor(
-            new NamedThreadFactory("QueryAPI-scheduler"));
-        final RetryDelay retryDelay = (startTime, timeoutMillis, spinCount) -> 15L;
 
         this.aggregateSpec = aggregateSpec;
-        this.kafkaConfig = kafkaConfig;
         aggregateSerdes = aggregateSpec.serialization().serdes();
         final Properties streamConfig = new Properties();
         streamConfig.putAll(kafkaConfig.streamsConfig());
         driver = new TopologyTestDriver(builder.build(), streamConfig, 0L);
         publisher = new TestDriverPublisher(aggregateSerdes);
-        commandAPI = new KafkaCommandAPI<>(
-            aggregateSpec.getCommandSpec(),
-            kafkaConfig,
-            storeBridge,
-            null,
-            scheduledExecutor,
-            retryDelay);
+        commandAPI = new KafkaCommandAPI<>(aggregateSpec.getCommandSpec(), kafkaConfig);
     }
 
     @Override
@@ -149,29 +129,6 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
             driver.pipeInput(recordFactory().create(topic, key, value));
         }
 
-    }
-
-    private class TestDriverStoreBridge implements AggregateStoreBridge<K, A>, CommandResponseStoreBridge {
-
-        @Override
-        public ReadOnlyKeyValueStore<K, AggregateUpdate<A>> getAggregateStateStore() {
-            return driver.getKeyValueStore(storeName(aggregate_update));
-        }
-
-        @Override
-        public ReadOnlyWindowStore<UUID, CommandResponse> getCommandResponseStore() {
-            return driver.getWindowStore(storeName(command_response));
-        }
-
-        @Override
-        public Optional<HostInfo> hostInfoForAggregateStoreKey(final K key) {
-            return Optional.of(kafkaConfig.currentHostInfo());
-        }
-
-        @Override
-        public Optional<HostInfo> hostInfoForCommandResponseStoreKey(final UUID key) {
-            return Optional.of(kafkaConfig.currentHostInfo());
-        }
     }
 
     private String topicName(final AggregateResources.TopicEntity topic) {

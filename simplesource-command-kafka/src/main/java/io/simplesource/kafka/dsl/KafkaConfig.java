@@ -1,7 +1,6 @@
 package io.simplesource.kafka.dsl;
 
-import io.simplesource.kafka.api.AggregateSerdes;
-import io.simplesource.kafka.internal.cluster.ClusterConfig;
+import io.simplesource.kafka.internal.client.ClientConfig;
 import lombok.Value;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -15,10 +14,10 @@ import static java.util.Objects.requireNonNull;
 @Value
 public final class KafkaConfig {
     private final Map<String, Object> config;
-    private final ClusterConfig clusterConfig;
+    private final ClientConfig clientConfig;
 
     public HostInfo currentHostInfo() {
-        return new HostInfo(clusterConfig.iface(),clusterConfig.port());
+        return new HostInfo(clientConfig.iface(), clientConfig.port());
     }
 
     public String applicationId() {
@@ -116,11 +115,11 @@ public final class KafkaConfig {
             final int rpcPort = Integer.parseInt(rpc.substring(index + 1));
 
             //TODO parse rest of cluster properties
-            ClusterConfig clusterConfig = new ClusterConfig();
-            clusterConfig.iface(rpcHost);
-            clusterConfig.port(rpcPort);
+            ClientConfig clientConfig = new ClientConfig();
+            clientConfig.iface(rpcHost);
+            clientConfig.port(rpcPort);
 
-            return new KafkaConfig(config, clusterConfig);
+            return new KafkaConfig(config, clientConfig);
         }
 
         private void validateKafkaConfig() {
