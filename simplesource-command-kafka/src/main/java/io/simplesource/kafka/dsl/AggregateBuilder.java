@@ -8,10 +8,9 @@ import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.api.InitialValue;
 import io.simplesource.kafka.api.ResourceNamingStrategy;
 import io.simplesource.kafka.internal.streams.InvalidSequenceHandlerProvider;
-import io.simplesource.kafka.internal.util.RetryDelay;
 import io.simplesource.kafka.spec.AggregateSpec;
 import io.simplesource.kafka.spec.TopicSpec;
-import io.simplesource.kafka.spec.WindowedStateStoreSpec;
+import io.simplesource.kafka.spec.WindowSpec;
 import org.apache.kafka.common.config.TopicConfig;
 
 import java.util.*;
@@ -24,9 +23,8 @@ public final class AggregateBuilder<K, C, E, A> {
     private ResourceNamingStrategy resourceNamingStrategy;
     private AggregateSerdes<K, C, E, A> aggregateSerdes;
     private Map<TopicEntity, TopicSpec> topicConfig;
-    private WindowedStateStoreSpec commandResponseStoreSpec;
+    private WindowSpec commandResponseStoreSpec;
     private InitialValue<K, A> initialValue;
-    private RetryDelay retryDelay = (startTime, timeoutMillis, spinCount) -> 15L;
     private CommandHandler<K, C, E, A> commandHandler;
     private Aggregator<E, A> aggregator;
     private InvalidSequenceHandler<K, C, A> invalidSequenceHandler;
@@ -37,7 +35,7 @@ public final class AggregateBuilder<K, C, E, A> {
 
     private AggregateBuilder() {
         topicConfig = defaultTopicConfig();
-        commandResponseStoreSpec = new WindowedStateStoreSpec(3600);
+        commandResponseStoreSpec = new WindowSpec(3600);
     }
 
     public AggregateBuilder<K, C, E, A> withName(final String name) {
@@ -61,12 +59,7 @@ public final class AggregateBuilder<K, C, E, A> {
     }
 
     public AggregateBuilder<K, C, E, A> withCommandResponseRetention(final long retentionInSeconds) {
-        commandResponseStoreSpec = new WindowedStateStoreSpec(retentionInSeconds);
-        return this;
-    }
-
-    public AggregateBuilder<K, C, E, A> withRetryDelay(final RetryDelay retryDelay) {
-        this.retryDelay = retryDelay;
+        commandResponseStoreSpec = new WindowSpec(retentionInSeconds);
         return this;
     }
 
@@ -108,7 +101,7 @@ public final class AggregateBuilder<K, C, E, A> {
         final AggregateSpec.Serialization<K, C, E, A> serialization =
             new AggregateSpec.Serialization<>(resourceNamingStrategy, aggregateSerdes);
         final AggregateSpec.Generation<K, C, E, A> generation =
-            new AggregateSpec.Generation<>(topicConfig, commandResponseStoreSpec, retryDelay, commandHandler, invalidSequenceHandler, aggregator, initialValue);
+            new AggregateSpec.Generation<>(topicConfig, commandResponseStoreSpec, commandHandler, invalidSequenceHandler, aggregator, initialValue);
 
         return new AggregateSpec<>(name, serialization, generation);
     }

@@ -129,6 +129,7 @@
                         <include>**/*Tests.java</include>
                         <include>**/*TestCase.java</include>
                     </includes>
+                    <useSystemClassLoader>false</useSystemClassLoader>
                     <properties>
                         <!-- <includeTags>fast</includeTags> -->
                         <excludeTags>slow</excludeTags>

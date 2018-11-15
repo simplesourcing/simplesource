@@ -10,11 +10,11 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 class KafkaConsumerRunner implements Runnable {
@@ -23,7 +23,7 @@ class KafkaConsumerRunner implements Runnable {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final KafkaConsumer<String, CommandResponse> consumer;
     private final String topicName;
-    private final ConcurrentHashMap<UUID, KafkaCommandAPI.ResponseHandlers> handlerMap;
+    private final ExpiringMap<UUID, KafkaCommandAPI.ResponseHandlers> handlerMap;
 
     private Properties copyProperties(Map<String, Object> properties) {
         Properties newProps = new Properties();
@@ -31,7 +31,7 @@ class KafkaConsumerRunner implements Runnable {
         return newProps;
     }
 
-    KafkaConsumerRunner(Map<String, Object> properties, String topicName, CommandSpec<?, ?> commandSpec, ConcurrentHashMap<UUID, KafkaCommandAPI.ResponseHandlers> handlerMap) {
+    KafkaConsumerRunner(Map<String, Object> properties, String topicName, CommandSpec<?, ?> commandSpec, ExpiringMap<UUID, KafkaCommandAPI.ResponseHandlers> handlerMap) {
 
         Properties consumerConfig  = copyProperties(properties);
         //consumerConfig.putAll(spec.config)
@@ -50,14 +50,15 @@ class KafkaConsumerRunner implements Runnable {
         try {
             consumer.subscribe(Collections.singletonList(topicName));
             while (!closed.get()) {
-                ConsumerRecords<String, CommandResponse> records = consumer.poll(10000);
+                ConsumerRecords<String, CommandResponse> records = consumer.poll(Duration.ofSeconds(1));
                 // Handle new records
                 records.iterator().forEachRemaining( record -> {
                     String recordKey = record.key();
                     UUID id = UUID.fromString(record.key().substring(recordKey.length() - 36));
-                    handlerMap.computeIfPresent(id, (uuid, handlers) -> {
+                    handlerMap.computeIfPresent(id, handlers -> {
                         handlers.handlers().forEach(future -> future.complete(record.value()));
-                        return null;
+                        handlers.handlers().clear();
+                        return handlers;
                     });
                 });
             }

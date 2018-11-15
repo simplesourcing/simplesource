@@ -5,7 +5,6 @@ import io.simplesource.api.CommandHandler;
 import io.simplesource.api.InvalidSequenceHandler;
 import io.simplesource.api.InitialValue;
 import io.simplesource.kafka.api.*;
-import io.simplesource.kafka.internal.util.RetryDelay;
 import lombok.Value;
 
 import java.util.Map;
@@ -26,8 +25,7 @@ public final class AggregateSpec<K, C, E, A>  {
     @Value
     public static class Generation<K, C, E, A> {
         private final Map<AggregateResources.TopicEntity, TopicSpec> topicConfig;
-        private final WindowedStateStoreSpec stateStoreSpec;
-        private final RetryDelay retryDelay;
+        private final WindowSpec stateStoreSpec;
         private final CommandHandler<K, C, E, A> commandHandler;
         private final InvalidSequenceHandler<K, C, A> invalidSequenceHandler;
         private final Aggregator<E, A> aggregator;
@@ -35,6 +33,6 @@ public final class AggregateSpec<K, C, E, A>  {
     }
 
     public CommandSpec<K, C> getCommandSpec() {
-       return new CommandSpec<>(aggregateName, serialization.resourceNamingStrategy, serialization.serdes, generation.retryDelay, generation.topicConfig.get(AggregateResources.TopicEntity.command_response));
+       return new CommandSpec<>(aggregateName, serialization.resourceNamingStrategy, serialization.serdes, generation.stateStoreSpec, generation.topicConfig.get(AggregateResources.TopicEntity.command_response));
     }
 }

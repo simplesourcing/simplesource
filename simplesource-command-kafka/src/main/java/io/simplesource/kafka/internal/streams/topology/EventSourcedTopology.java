@@ -62,6 +62,7 @@ public final class EventSourcedTopology {
         return new DistributorContext<>(
                 ctx.aggregateSpec().serialization().resourceNamingStrategy().topicName(ctx.aggregateSpec().aggregateName(), AggregateResources.TopicEntity.command_response_topic_map.toString()),
                 new DistributorSerdes<>(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()),
+                ctx.aggregateSpec().generation().stateStoreSpec(),
                 CommandResponse::commandId);
     }
 }

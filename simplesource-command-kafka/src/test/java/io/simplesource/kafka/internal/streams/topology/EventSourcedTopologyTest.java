@@ -262,6 +262,7 @@ class EventSourcedTopologyTest {
             DistributorContext<CommandResponse> context = new DistributorContext<>(
                     topicNamesTopic,
                     new DistributorSerdes<>(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()),
+                    ctx.aggregateSpec().generation().stateStoreSpec(),
                     CommandResponse::commandId);
 
             KStream<UUID, String> topicNames = builder.stream(topicNamesTopic, Consumed.with(ctx.serdes().commandResponseKey(), Serdes.String()));
