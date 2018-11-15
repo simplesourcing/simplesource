@@ -21,16 +21,15 @@ import org.apache.kafka.streams.state.HostInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
-
 
 import static io.simplesource.api.CommandError.Reason.*;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_request;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_response;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.command_response_topic_map;
-
 
 public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
     private static final Logger logger = LoggerFactory.getLogger(KafkaCommandAPI.class);
@@ -46,7 +45,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
     private final Producer<K, CommandRequest<K, C>> commandProducer;
     private final Producer<UUID, String> responseTopicMapProducer;
     private final KafkaConsumerRunner consumerRunner;
-    private final ConcurrentHashMap<UUID, ResponseHandlers> handlerMap = new ConcurrentHashMap<>();
+    private final ExpiringMap<UUID, ResponseHandlers> handlerMap;
 
     public KafkaCommandAPI(
         final CommandSpec<K, C> commandSpec,
@@ -71,6 +70,9 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 commandSerdes.commandResponseKey().serializer(),
                 Serdes.String().serializer()
         );
+
+        long retentionInSeconds = commandSpec.commandResponseWindowSpec().retentionInSeconds();
+
         HostInfo currentHost = kafkaConfig.currentHostInfo();
         this.commandResponseTopicName = String.format("%s_%s_%d", commandResponseTopicBase, currentHost.host(), currentHost.port());
 
@@ -87,6 +89,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
             throw new RuntimeException("Unable to create", e);
         }
 
+        handlerMap = new ExpiringMap<>(retentionInSeconds, Clock.systemUTC());
         consumerRunner = new KafkaConsumerRunner(kafkaConfig.producerConfig(), commandResponseTopicName, commandSpec, handlerMap);
         new Thread(consumerRunner).start();
 
@@ -114,23 +117,26 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 request.commandId(),
                 commandResponseTopicName);
 
-        return FutureResult.ofFuture(
+        FutureResult<CommandError, UUID> futureResult = FutureResult.ofFuture(
                 responseTopicMapProducer.send(responseTopicRecord), e -> CommandError.of(CommandPublishError, e))
                 .flatMap(
-                    metaData ->
-                        FutureResult.ofFuture(commandProducer.send(record), e -> CommandError.of(CommandPublishError, e)))
+                        metaData ->
+                                FutureResult.ofFuture(commandProducer.send(record), e -> CommandError.of(CommandPublishError, e)))
                 .map(meta -> {
                     UUID commandId = request.commandId();
-                    handlerMap.computeIfAbsent(commandId, uuid -> new ResponseHandlers(Lists.newArrayList()));
+                    handlerMap.createEntry(commandId, () -> new ResponseHandlers(Lists.newArrayList()));
                     return commandId;
                 });
+        handlerMap.removeStale(handlers ->
+                handlers.handlers.forEach(future ->
+                        future.completeExceptionally(new Exception("Request timed out..."))));
+        return futureResult;
     }
 
     @Override
     public FutureResult<CommandError, NonEmptyList<Sequence>> queryCommandResult(final UUID commandId, final Duration timeout) {
         CompletableFuture<CommandResponse> completableFuture = new CompletableFuture<>();
-
-        ResponseHandlers h = handlerMap.computeIfPresent(commandId, (id, handlers) -> {
+        ResponseHandlers h = handlerMap.computeIfPresent(commandId, handlers -> {
             handlers.handlers.add(completableFuture);
             return handlers;
         });

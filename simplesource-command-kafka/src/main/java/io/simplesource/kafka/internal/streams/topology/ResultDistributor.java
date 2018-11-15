@@ -1,6 +1,7 @@
 package io.simplesource.kafka.internal.streams.topology;
 
 import io.simplesource.kafka.internal.util.Tuple;
+import io.simplesource.kafka.spec.WindowSpec;
 import lombok.Value;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
@@ -21,6 +22,7 @@ final class DistributorSerdes<V> {
 final class DistributorContext<V> {
     public final String topicNameMapTopic;
     public final DistributorSerdes<V> serdes;
+    private final WindowSpec commandResponseWindowSpec;
     public final Function<V, UUID> idMapper;
 }
 
@@ -33,13 +35,13 @@ final class ResultDistributor {
     static <V> void distribute(DistributorContext<V> ctx, final KStream<?, V> resultStream, final KStream<UUID, String> topicNameStream) {
 
         DistributorSerdes<V> serdes = ctx.serdes();
-
-        KTable<UUID, String> topicNameTable = topicNameStream
-                .groupByKey(Serialized.with(serdes.uuid(), Serdes.String()))
-                .reduce((t1, t2) -> t2, Materialized.with(serdes.uuid(), Serdes.String()));
+        long retentionMillis = ctx.commandResponseWindowSpec().retentionInSeconds() * 1000L;
 
         KStream<String, V> joined = resultStream.selectKey((k, v) -> ctx.idMapper.apply(v))
-                .join(topicNameTable, Tuple::new, Joined.with(serdes.uuid(), serdes.value(), Serdes.String()))
+                .join(topicNameStream,
+                        Tuple::new,
+                        JoinWindows.of(retentionMillis).until(retentionMillis * 2 + 1),
+                        Joined.with(serdes.uuid(), serdes.value(), Serdes.String()))
                 .map((uuid, tuple) -> KeyValue.pair(String.format("%s:%s", tuple.v2(), uuid.toString()), tuple.v1()));
 
         joined.to((key, value, context) -> key.substring(0, key.length() - 37), Produced.with(Serdes.String(), serdes.value()));
