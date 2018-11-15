@@ -1,18 +1,14 @@
 package io.simplesource.kafka.dsl;
 
 import io.simplesource.api.CommandAPISet;
-import io.simplesource.api.CommandAPI;
-import io.simplesource.kafka.internal.client.KafkaCommandAPI;
 import io.simplesource.kafka.internal.streams.EventSourcedStreamsApp;
 import io.simplesource.kafka.spec.AggregateSetSpec;
 import io.simplesource.kafka.spec.AggregateSpec;
 import io.simplesource.kafka.spec.CommandSpec;
-import org.apache.kafka.streams.KeyValue;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class AggregateSetBuilder {
@@ -58,7 +54,6 @@ public final class AggregateSetBuilder {
      * Creates a CommandAPISet instance from a AggregateSetSpec
      *
      * Used for directly exposing a CommandAPISet from within a Simple Sourcing application
-     *
      * If creating a CommandAPISet from an external application, rather use the CommandAPISetBuilder DSL
      *
      * @param aggregateSetSpec

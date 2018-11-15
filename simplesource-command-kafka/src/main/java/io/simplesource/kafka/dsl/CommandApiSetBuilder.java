@@ -4,13 +4,10 @@ package io.simplesource.kafka.dsl;
 import io.simplesource.api.CommandAPI;
 import io.simplesource.api.CommandAPISet;
 import io.simplesource.kafka.internal.client.KafkaCommandAPI;
-import io.simplesource.kafka.internal.streams.EventSourcedStreamsApp;
 import io.simplesource.kafka.spec.CommandSetSpec;
 import io.simplesource.kafka.spec.CommandSpec;
 import org.apache.kafka.streams.KeyValue;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
