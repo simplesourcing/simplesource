@@ -59,7 +59,7 @@ public final class AggregateSetBuilder {
      * @param aggregateSetSpec
      * @return a CommandAPISet
      */
-    static CommandAPISet getCommandAPISet(AggregateSetSpec aggregateSetSpec) {
+    public static CommandAPISet getCommandAPISet(AggregateSetSpec aggregateSetSpec) {
         Stream<CommandSpec<?, ?>> commandSpecs = aggregateSetSpec
                 .aggregateConfigMap()
                 .values()
@@ -69,5 +69,3 @@ public final class AggregateSetBuilder {
         return CommandApiSetBuilder.getCommandAPISet(commandSpecs, aggregateSetSpec.kafkaConfig());
     }
 }
-
-
