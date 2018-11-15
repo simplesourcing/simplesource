@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class AggregateSetBuilder {
     private KafkaConfig kafkaConfig;
@@ -41,7 +42,7 @@ public final class AggregateSetBuilder {
         return this;
     }
 
-    public CommandAPISet build() {
+    public AggregateSetSpec build() {
         final AggregateSetSpec aggregateSetSpec = new AggregateSetSpec(
                 kafkaConfig,
                 aggregateConfigMap);
@@ -50,41 +51,28 @@ public final class AggregateSetBuilder {
                 new EventSourcedStreamsApp(aggregateSetSpec);
 
         app.start();
-        return getCommandAPISet(aggregateSetSpec);
-
+        return aggregateSetSpec;
     }
 
-    private static CommandAPISet getCommandAPISet(AggregateSetSpec aggregateSetSpec) {
-        //Hack to get round circular ref
-        final CommandAPISet[] aggregatesRef = new CommandAPISet[1];
-
-        final Map<String, CommandAPI<?, ?>> commandApis = aggregateSetSpec.aggregateConfigMap().values()
+    /**
+     * Creates a CommandAPISet instance from a AggregateSetSpec
+     *
+     * Used for directly exposing a CommandAPISet from within a Simple Sourcing application
+     *
+     * If creating a CommandAPISet from an external application, rather use the CommandAPISetBuilder DSL
+     *
+     * @param aggregateSetSpec
+     * @return a CommandAPISet
+     */
+    static CommandAPISet getCommandAPISet(AggregateSetSpec aggregateSetSpec) {
+        Stream<CommandSpec<?, ?>> commandSpecs = aggregateSetSpec
+                .aggregateConfigMap()
+                .values()
                 .stream()
-                .map(AggregateSpec::getCommandSpec)
-                .map(createCommandApi(aggregateSetSpec.kafkaConfig()))
-                .collect(Collectors.toMap(kv -> kv.key, kv -> kv.value));
+                .map(aSpec -> aSpec.getCommandSpec());
 
-        CommandAPISet commandAPISet = new CommandAPISet() {
-            @Override
-            public <K, C> CommandAPI<K, C> getCommandAPI(final String aggregateName) {
-                return (CommandAPI<K, C>) commandApis.get(aggregateName);
-            }
-        };
-
-        aggregatesRef[0] = commandAPISet;
-        return commandAPISet;
-    }
-
-    private static Function<CommandSpec<?, ?>, KeyValue<String, CommandAPI<?, ?>>> createCommandApi(
-            final KafkaConfig kafkaConfig
-    ) {
-        return commandSpec -> {
-            final CommandAPI commandAPI =
-                    new KafkaCommandAPI(
-                            commandSpec,
-                            kafkaConfig);
-
-            return KeyValue.pair(commandSpec.aggregateName(), commandAPI);
-        };
+        return CommandApiSetBuilder.getCommandAPISet(commandSpecs, aggregateSetSpec.kafkaConfig());
     }
 }
+
+
