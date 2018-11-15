@@ -4,26 +4,18 @@ import io.simplesource.api.CommandError;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.AggregateSerdes;
-import io.simplesource.kafka.model.AggregateUpdate;
-import io.simplesource.kafka.model.AggregateUpdateResult;
-import io.simplesource.kafka.model.CommandRequest;
-import io.simplesource.kafka.model.ValueWithSequence;
+import io.simplesource.kafka.model.*;
 import io.simplesource.kafka.serialization.avro.AvroAggregateSerdes;
-import io.simplesource.kafka.serialization.avro.mappers.DomainMapperRegistry.RegisterMapper;
 import io.simplesource.kafka.serialization.avro.mappers.domain.*;
-import io.simplesource.kafka.serialization.avro.mappers.domain.UserAccountDomainCommand.CreateAccount;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
-class AvroSerdeTests {
+public class AvroAggregateSerdeTests {
     private static final String topic = "topic";
     private AggregateSerdes<UserAccountDomainKey, UserAccountDomainCommand, UserAccountDomainEvent, Optional<UserAccountDomain>> serdes;
 
@@ -120,4 +112,29 @@ class AvroSerdeTests {
         ValueWithSequence<UserAccountDomainEvent> deserialised = serdes.valueWithSequence().deserializer().deserialize(topic, serialised);
         assertThat(deserialised).isEqualToComparingFieldByField(eventSeq);
     }
+
+    @Test
+    void commandResponseSuccess() {
+        CommandResponse commandResponse = new CommandResponse(
+                UUID.randomUUID(),
+                Sequence.first(),
+                Result.success(Sequence.first()));
+
+        byte[] serialised = serdes.commandResponse().serializer().serialize(topic, commandResponse);
+        CommandResponse deserialised = serdes.commandResponse().deserializer().deserialize(topic, serialised);
+        assertThat(deserialised).isEqualToComparingFieldByField(commandResponse);
+    }
+
+    @Test
+    void commandResponseFailure() {
+        CommandResponse commandResponse = new CommandResponse(
+                UUID.randomUUID(),
+                Sequence.first(),
+                Result.failure(CommandError.of(CommandError.Reason.InvalidReadSequence, "Invalid sequence")));
+
+        byte[] serialised = serdes.commandResponse().serializer().serialize(topic, commandResponse);
+        CommandResponse deserialised = serdes.commandResponse().deserializer().deserialize(topic, serialised);
+        assertThat(deserialised).isEqualToComparingFieldByField(commandResponse);
+    }
+
 }
