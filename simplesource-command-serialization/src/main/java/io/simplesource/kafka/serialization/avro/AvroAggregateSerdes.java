@@ -24,7 +24,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     private final Serde<AggregateUpdateResult<A>> aur;
     private final Serde<CommandResponse> crp;
 
-    public static <A extends GenericRecord, E extends GenericRecord, C extends GenericRecord, K extends GenericRecord> AvroAggregateSerdes<A, E, C, K> of(
+    public static <K extends GenericRecord, C extends GenericRecord, E extends GenericRecord, A extends GenericRecord> AvroAggregateSerdes<K, C, E, A> of(
             final String schemaRegistryUrl,
             final Schema aggregateSchema
     ) {
@@ -34,7 +34,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
                 aggregateSchema);
     }
 
-    public static <A extends GenericRecord, E extends GenericRecord, C extends GenericRecord, K extends GenericRecord> AvroAggregateSerdes<A, E, C, K> of(
+    public static <K extends GenericRecord, C extends GenericRecord, E extends GenericRecord, A extends GenericRecord> AvroAggregateSerdes<K, C, E, A> of(
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry,
             final Schema aggregateSchema
@@ -50,10 +50,10 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     }
 
     public AvroAggregateSerdes(
-            final GenericMapper<A, GenericRecord> aggregateMapper,
-            final GenericMapper<E, GenericRecord> eventMapper,
-            final GenericMapper<C, GenericRecord> commandMapper,
             final GenericMapper<K, GenericRecord> keyMapper,
+            final GenericMapper<C, GenericRecord> commandMapper,
+            final GenericMapper<E, GenericRecord> eventMapper,
+            final GenericMapper<A, GenericRecord> aggregateMapper,
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry,
             final Schema aggregateSchema) {

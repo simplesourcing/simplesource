@@ -22,10 +22,10 @@ public class AvroAggregateSerdeTests {
     @BeforeEach
     void setup() {
         serdes = new AvroAggregateSerdes<>(
-                UserAccountAvroMappers.aggregateMapper,
-                UserAccountAvroMappers.eventMapper,
-                UserAccountAvroMappers.commandMapper,
                 UserAccountAvroMappers.keyMapper,
+                UserAccountAvroMappers.commandMapper,
+                UserAccountAvroMappers.eventMapper,
+                UserAccountAvroMappers.aggregateMapper,
                 "http://localhost:8081",
                 true,
                 io.simplesource.kafka.serialization.avro.generated.UserAccount.SCHEMA$);
