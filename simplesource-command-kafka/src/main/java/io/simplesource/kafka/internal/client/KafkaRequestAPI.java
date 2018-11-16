@@ -1,8 +1,6 @@
 package io.simplesource.kafka.internal.client;
 
 import avro.shaded.com.google.common.collect.Lists;
-import io.simplesource.api.CommandAPI;
-import io.simplesource.api.CommandError;
 import io.simplesource.data.FutureResult;
 import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.spec.TopicSpec;
@@ -12,12 +10,9 @@ import lombok.Value;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.state.HostInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,8 +22,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-
-import static io.simplesource.api.CommandError.Reason.CommandPublishError;
 
 
 public final class KafkaRequestAPI<K, I, O> {
@@ -46,7 +39,7 @@ public final class KafkaRequestAPI<K, I, O> {
 
     @Value
     @Builder
-    static final class RequestAPIContext<K, I, O> {
+    public static final class RequestAPIContext<K, I, O> {
         final KafkaConfig kafkaConfig;
         final String requestTopic;
         final String responseTopicMapTopic;
@@ -62,10 +55,10 @@ public final class KafkaRequestAPI<K, I, O> {
     private final Closeable consumerRunner;
     private final ExpiringMap<UUID, ResponseHandlers<O>> handlerMap;
     private final RequestAPIContext<K, I, O> ctx;
-    private final RequestSender<K, I> requestSender;
-    private final RequestSender<UUID, String> responseTopicMapSender;
+    private final RequestPublisher<K, I> requestSender;
+    private final RequestPublisher<UUID, String> responseTopicMapSender;
 
-    private static <K, V> RequestSender<K, V> kakfaProducerSender(
+    private static <K, V> RequestPublisher<K, V> kakfaProducerSender(
             KafkaConfig kafkaConfig,
             String topicName,
             Serde<K> keySerde,
@@ -80,7 +73,7 @@ public final class KafkaRequestAPI<K, I, O> {
                     key,
                     value);
             return FutureResult.ofFuture(producer.send(record), e -> e)
-                    .map(meta -> new RequestSender.SendResult(meta.timestamp()));
+                    .map(meta -> new RequestPublisher.SendResult(meta.timestamp()));
         };
     }
 
@@ -97,8 +90,8 @@ public final class KafkaRequestAPI<K, I, O> {
 
     public KafkaRequestAPI(
             final RequestAPIContext<K, I, O> ctx,
-            final RequestSender<K, I> requestSender,
-            final RequestSender<UUID, String> responseTopicMapSender,
+            final RequestPublisher<K, I> requestSender,
+            final RequestPublisher<UUID, String> responseTopicMapSender,
             final Function<BiConsumer<UUID, O>, Closeable> attachReceiver) {
         KafkaConfig kafkaConfig = ctx.kafkaConfig();
 
@@ -139,10 +132,10 @@ public final class KafkaRequestAPI<K, I, O> {
         );
     }
 
-    public FutureResult<Exception, RequestSender.SendResult> publishRequest(final K key, UUID requestId, final I request) {
+    public FutureResult<Exception, RequestPublisher.SendResult> publishRequest(final K key, UUID requestId, final I request) {
 
-        FutureResult<Exception, RequestSender.SendResult> result = responseTopicMapSender.send(requestId, ctx.privateResponseTopic())
-                .flatMap(r -> requestSender.send(key, request));
+        FutureResult<Exception, RequestPublisher.SendResult> result = responseTopicMapSender.publish(requestId, ctx.privateResponseTopic())
+                .flatMap(r -> requestSender.publish(key, request));
 
         handlerMap.removeStale(handlers ->
                 handlers.handlers.forEach(future ->

@@ -36,8 +36,8 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
     public KafkaCommandAPI(
             final CommandSpec<K, C> commandSpec,
             final KafkaConfig kafkaConfig,
-            final RequestSender<K, CommandRequest<K, C>> requestSender,
-            final RequestSender<UUID, String> responseTopicMapSender,
+            final RequestPublisher<K, CommandRequest<K, C>> requestSender,
+            final RequestPublisher<UUID, String> responseTopicMapSender,
             final Function<BiConsumer<UUID, CommandResponse>, Closeable> attachReceiver) {
 
         KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> ctx = getRequestAPIContext(commandSpec, kafkaConfig);
@@ -49,7 +49,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
         final CommandRequest<K, C> commandRequest = new CommandRequest<>(
                 request.key(), request.command(), request.readSequence(), request.commandId());
 
-        FutureResult<Exception, RequestSender.SendResult> publishResult = requestApi.publishRequest(request.key(), request.commandId(), commandRequest);
+        FutureResult<Exception, RequestPublisher.SendResult> publishResult = requestApi.publishRequest(request.key(), request.commandId(), commandRequest);
 
         // A lot of trouble to change the error type from Exception to CommandError
         Future<FutureResult<CommandError, UUID>> futureOfFR = publishResult.fold(
@@ -73,7 +73,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
     }
 
 
-    private KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> getRequestAPIContext(CommandSpec<K, C> commandSpec, KafkaConfig kafkaConfig) {
+    public static <K, C> KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> getRequestAPIContext(CommandSpec<K, C> commandSpec, KafkaConfig kafkaConfig) {
         ResourceNamingStrategy namingStrategy = commandSpec.resourceNamingStrategy();
         CommandSerdes<K, C> serdes = commandSpec.serdes();
         String responseTopicBase = namingStrategy.topicName(
