@@ -19,12 +19,10 @@ import java.util.*;
 
 import static io.simplesource.kafka.serialization.json.JsonGenericMapper.jsonDomainMapper;
 
-public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K, C, E, A> {
+public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> implements AggregateSerdes<K, C, E, A> {
 
-    private final GenericMapper<K, JsonElement> keyMapper;
     private final GenericMapper<A, JsonElement> aggregateMapper;
     private final GenericMapper<E, JsonElement> eventMapper;
-    private final GenericMapper<C, JsonElement> commandMapper;
     private final Serde<String> serde;
     private final Gson gson;
     private final JsonParser parser;
@@ -42,14 +40,14 @@ public final class JsonAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     }
 
     public JsonAggregateSerdes(
-            final GenericMapper<A, JsonElement> aggregateMapper,
-            final GenericMapper<E, JsonElement> eventMapper,
+            final GenericMapper<K, JsonElement> keyMapper,
             final GenericMapper<C, JsonElement> commandMapper,
-            final GenericMapper<K, JsonElement> keyMapper) {
-        this.keyMapper = keyMapper;
+            final GenericMapper<E, JsonElement> eventMapper,
+            final GenericMapper<A, JsonElement> aggregateMapper
+            ) {
+        super(keyMapper, commandMapper);
         this.aggregateMapper = aggregateMapper;
         this.eventMapper = eventMapper;
-        this.commandMapper = commandMapper;
         serde = Serdes.String();
 
         final GsonBuilder gsonBuilder = new GsonBuilder();
