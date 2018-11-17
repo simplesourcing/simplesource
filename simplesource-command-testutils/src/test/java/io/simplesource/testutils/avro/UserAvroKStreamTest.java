@@ -12,7 +12,7 @@ import io.simplesource.testutils.domain.UserCommand;
 import io.simplesource.testutils.domain.UserEvent;
 import io.simplesource.testutils.domain.UserKey;
 import io.simplesource.kafka.dsl.KafkaConfig;
-import io.simplesource.kafka.internal.streams.PrefixResourceNamingStrategy;
+import io.simplesource.kafka.util.PrefixResourceNamingStrategy;
 import io.simplesource.kafka.model.ValueWithSequence;
 import io.simplesource.kafka.serialization.avro.AvroAggregateSerdes;
 import org.junit.jupiter.api.AfterEach;

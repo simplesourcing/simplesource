@@ -1,4 +1,4 @@
-package io.simplesource.kafka.internal.streams;
+package io.simplesource.kafka.util;
 
 import io.simplesource.kafka.api.ResourceNamingStrategy;
 

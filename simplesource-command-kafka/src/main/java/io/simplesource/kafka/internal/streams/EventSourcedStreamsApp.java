@@ -19,7 +19,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.simplesource.kafka.internal.streams.KafkaStreamsUtils.*;
+import static io.simplesource.kafka.util.KafkaStreamsUtils.*;
 import static java.util.Objects.nonNull;
 
 public final class EventSourcedStreamsApp {

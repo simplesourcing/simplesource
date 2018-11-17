@@ -5,7 +5,7 @@ import lombok.Value;
 
 public interface RequestPublisher<K, V> {
     @Value
-    public static class SendResult {
+    class SendResult {
         long timeStamp;
     }
 

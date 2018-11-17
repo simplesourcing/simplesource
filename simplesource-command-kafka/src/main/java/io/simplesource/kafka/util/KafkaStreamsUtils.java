@@ -1,4 +1,4 @@
-package io.simplesource.kafka.internal.streams;
+package io.simplesource.kafka.util;
 
 import org.apache.kafka.streams.KafkaStreams;
 import org.slf4j.Logger;

@@ -12,7 +12,7 @@ import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.testutils.AggregateTestDriver;
 import io.simplesource.kafka.testutils.AggregateTestHelper;
-import io.simplesource.kafka.internal.streams.PrefixResourceNamingStrategy;
+import io.simplesource.kafka.util.PrefixResourceNamingStrategy;
 import io.simplesource.kafka.model.ValueWithSequence;
 import io.simplesource.kafka.serialization.json.JsonAggregateSerdes;
 import org.junit.jupiter.api.AfterEach;
