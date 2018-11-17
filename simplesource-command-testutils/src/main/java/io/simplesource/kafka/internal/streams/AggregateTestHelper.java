@@ -45,7 +45,9 @@ public final class AggregateTestHelper<K, C, E, A> {
         final Result<CommandError, UUID> result = testAPI.publishCommand(new CommandAPI.Request<>(key, readSequence, commandId, command))
             .unsafePerform(AggregateTestHelper::commandError);
         return result.fold(
-            reasons -> fail("Publishing command " + command + " failed with " + reasons),
+            reasons -> {
+                return fail("Publishing command " + command + " failed with " + reasons);
+            },
             uuid -> {
                 assertEquals(uuid, commandId);
                 return uuid;
@@ -79,13 +81,13 @@ public final class AggregateTestHelper<K, C, E, A> {
         assertEquals(aggregateUpdate.aggregate(), aggregateUpdatePair.value.aggregate());
 
 
-        final Result<CommandError, NonEmptyList<Sequence>> queryByCommandId = testAPI
+        final Result<CommandError, Sequence> queryByCommandId = testAPI
             .queryCommandResult(commandId, Duration.ofSeconds(30))
             .unsafePerform(AggregateTestHelper::commandError);
         queryByCommandId.fold(
             reasons -> fail("Failed to fetch result with commandId " + reasons),
-            sequences -> {
-                assertEquals(expectedSequences, sequences);
+            sequence -> {
+                assertEquals(expectedSequences.last(), sequence);
                 return null;
             });
 
@@ -114,7 +116,7 @@ public final class AggregateTestHelper<K, C, E, A> {
         assertEquals(Optional.empty(), testAPI.readEventTopic());
         assertEquals(Optional.empty(), testAPI.readAggregateTopic());
 
-        final Result<CommandError, NonEmptyList<Sequence>> queryByCommandId = testAPI
+        final Result<CommandError, Sequence> queryByCommandId = testAPI
             .queryCommandResult(commandId, Duration.ofSeconds(30))
             .unsafePerform(AggregateTestHelper::commandError);
         queryByCommandId.fold(

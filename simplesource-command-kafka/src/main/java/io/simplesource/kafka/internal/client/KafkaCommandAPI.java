@@ -12,8 +12,11 @@ import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.spec.CommandSpec;
 import org.apache.kafka.streams.state.HostInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -23,6 +26,7 @@ import java.util.function.Function;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.*;
 
 public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
+    private static final Logger logger = LoggerFactory.getLogger(KafkaCommandAPI.class);
 
     private KafkaRequestAPI<K, CommandRequest<K, C>, CommandResponse> requestApi;
 
@@ -57,21 +61,24 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 r -> FutureResult.of(request.commandId()));
 
         return FutureResult
-                .ofFuture(futureOfFR, e -> CommandError.of(CommandError.Reason.CommandPublishError, "Publishing error"))
+                .ofFuture(futureOfFR, e -> {
+                    logger.debug("Error in publishing command", e);
+                    Throwable rootCause = Optional.ofNullable(e.getCause()).orElse(e);
+                    return CommandError.of(CommandError.Reason.CommandPublishError, rootCause);
+                })
                 .flatMap(y -> y);
     }
 
     @Override
-    public FutureResult<CommandError, NonEmptyList<Sequence>> queryCommandResult(final UUID commandId, final Duration timeout) {
+    public FutureResult<CommandError, Sequence> queryCommandResult(final UUID commandId, final Duration timeout) {
         CompletableFuture<CommandResponse> completableFuture = requestApi.queryResponse(commandId, timeout);
-        return FutureResult.ofCompletableFuture(completableFuture.thenApply(resp -> resp.sequenceResult().map(s -> NonEmptyList.of(s))));
+        return FutureResult.ofCompletableFuture(completableFuture.thenApply(CommandResponse::sequenceResult));
     }
 
     @Override
     public void close() {
         requestApi.close();
     }
-
 
     public static <K, C> KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> getRequestAPIContext(CommandSpec<K, C> commandSpec, KafkaConfig kafkaConfig) {
         ResourceNamingStrategy namingStrategy = commandSpec.resourceNamingStrategy();

@@ -68,7 +68,8 @@ public final class FutureResult<E, T> {
         try {
             return run.get();
         } catch (final InterruptedException | ExecutionException e) {
-            return Result.failure(f.apply(e));
+            E error = f.apply(e);
+            return Result.failure(error);
         }
     }
 

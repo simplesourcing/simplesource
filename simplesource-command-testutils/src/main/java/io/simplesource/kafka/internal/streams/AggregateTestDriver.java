@@ -87,7 +87,7 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
     }
 
     @Override
-    public FutureResult<CommandError, NonEmptyList<Sequence>> queryCommandResult(
+    public FutureResult<CommandError, Sequence> queryCommandResult(
         final UUID commandId,
         final Duration timeout) {
         commandAPI.queryCommandResult(commandId, timeout);
