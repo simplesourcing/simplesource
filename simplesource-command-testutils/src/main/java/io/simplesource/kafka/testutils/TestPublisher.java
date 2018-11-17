@@ -1,4 +1,4 @@
-package io.simplesource.kafka.internal.streams;
+package io.simplesource.kafka.testutils;
 
 import io.simplesource.data.FutureResult;
 import io.simplesource.kafka.internal.client.RequestPublisher;

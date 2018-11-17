@@ -1,4 +1,4 @@
-package io.simplesource.kafka.internal.streams;
+package io.simplesource.kafka.testutils;
 
 import io.simplesource.api.CommandAPI;
 import io.simplesource.api.CommandError;

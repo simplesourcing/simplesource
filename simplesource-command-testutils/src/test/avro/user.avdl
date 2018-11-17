@@ -1,0 +1,66 @@
+@namespace("io.simplesource.testutils.generated")
+protocol UserSubsystem {
+
+  record UserId {
+    string id;
+  }
+
+  // 1. Define a basic aggregate model
+  record User {
+    string firstName;
+    string lastName;
+    union {null, int} yearOfBirth;
+  }
+
+  // 2. Define a persistable command structure
+  record InsertUser {
+    string firstName;
+    string lastName;
+  }
+
+  record UpdateName {
+    string firstName;
+    string lastName;
+  }
+
+  record UpdateYearOfBirth {
+    union {null, int} yearOfBirth;
+  }
+
+  record DeleteUser {
+  }
+
+  record BuggyCommand {
+    boolean throwInCommandHandler;
+    boolean throwInEventHandler;
+  }
+
+  record UnhandledCommand {
+  }
+
+
+  // 3. Define a persistable event structure
+  record UserInserted {
+    string firstName;
+    string lastName;
+  }
+
+  record FirstNameUpdated {
+    string firstName;
+  }
+
+  record LastNameUpdated {
+    string lastName;
+  }
+
+  record YearOfBirthUpdated {
+    union {null, int} yearOfBirth;
+  }
+
+  record BuggyEvent {
+  }
+
+  record UserDeleted {
+  }
+
+}
