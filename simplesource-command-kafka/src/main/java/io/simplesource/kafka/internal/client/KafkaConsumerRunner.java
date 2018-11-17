@@ -65,6 +65,7 @@ class KafkaConsumerRunner {
                     // Handle new records
                     records.iterator().forEachRemaining( record -> {
                         String recordKey = record.key();
+                        // TODO factor this out
                         UUID id = UUID.fromString(record.key().substring(recordKey.length() - 36));
                         receiver.accept(id, record.value());
                     });

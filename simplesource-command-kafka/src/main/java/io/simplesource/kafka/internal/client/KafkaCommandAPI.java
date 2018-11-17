@@ -41,7 +41,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
             final Function<BiConsumer<UUID, CommandResponse>, Closeable> attachReceiver) {
 
         KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> ctx = getRequestAPIContext(commandSpec, kafkaConfig);
-        requestApi = new KafkaRequestAPI<>(ctx, requestSender, responseTopicMapSender, attachReceiver);
+        requestApi = new KafkaRequestAPI<>(ctx, requestSender, responseTopicMapSender, attachReceiver, false);
     }
 
     @Override

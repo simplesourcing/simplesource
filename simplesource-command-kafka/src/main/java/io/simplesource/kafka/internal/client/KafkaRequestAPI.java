@@ -85,14 +85,16 @@ public final class KafkaRequestAPI<K, I, O> {
                     ctx.kafkaConfig().producerConfig(),
                     ctx.privateResponseTopic(),
                     ctx.responseValueSerde(),
-                    receiver));
+                    receiver),
+                true);
     }
 
     public KafkaRequestAPI(
             final RequestAPIContext<K, I, O> ctx,
             final RequestPublisher<K, I> requestSender,
             final RequestPublisher<UUID, String> responseTopicMapSender,
-            final Function<BiConsumer<UUID, O>, Closeable> attachReceiver) {
+            final Function<BiConsumer<UUID, O>, Closeable> attachReceiver,
+            boolean createTopics) {
         KafkaConfig kafkaConfig = ctx.kafkaConfig();
 
         this.ctx = ctx;
@@ -100,18 +102,19 @@ public final class KafkaRequestAPI<K, I, O> {
         this.requestSender = requestSender;
         this.responseTopicMapSender = responseTopicMapSender;
 
-        AdminClient adminClient = AdminClient.create(kafkaConfig.adminClientConfig());
-
-        try {
-            Set<String> topics = adminClient.listTopics().names().get();
-            String privateResponseTopic = ctx.privateResponseTopic;
-            if (!topics.contains(privateResponseTopic)) {
-                TopicSpec topicSpec = ctx.outputTopicConfig();
-                NewTopic newTopic = new NewTopic(privateResponseTopic, topicSpec.partitionCount(), topicSpec.replicaCount());
-                adminClient.createTopics(Collections.singletonList(newTopic)).all().get();
+        if (createTopics) {
+            AdminClient adminClient = AdminClient.create(kafkaConfig.adminClientConfig());
+            try {
+                Set<String> topics = adminClient.listTopics().names().get();
+                String privateResponseTopic = ctx.privateResponseTopic;
+                if (!topics.contains(privateResponseTopic)) {
+                    TopicSpec topicSpec = ctx.outputTopicConfig();
+                    NewTopic newTopic = new NewTopic(privateResponseTopic, topicSpec.partitionCount(), topicSpec.replicaCount());
+                    adminClient.createTopics(Collections.singletonList(newTopic)).all().get();
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Unable to create required topics.", e);
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to create", e);
         }
 
         handlerMap = new ExpiringMap<>(retentionInSeconds, Clock.systemUTC());
@@ -135,7 +138,10 @@ public final class KafkaRequestAPI<K, I, O> {
     public FutureResult<Exception, RequestPublisher.SendResult> publishRequest(final K key, UUID requestId, final I request) {
 
         FutureResult<Exception, RequestPublisher.SendResult> result = responseTopicMapSender.publish(requestId, ctx.privateResponseTopic())
-                .flatMap(r -> requestSender.publish(key, request));
+                .flatMap(r -> requestSender.publish(key, request)).map(r -> {
+                    handlerMap.createEntry(requestId, () -> ResponseHandlers.initialise(Optional.empty()));
+                    return r;
+                });
 
         handlerMap.removeStale(handlers ->
                 handlers.handlers.forEach(future ->

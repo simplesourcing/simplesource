@@ -16,37 +16,29 @@ import io.simplesource.kafka.internal.streams.topology.EventSourcedTopology;
 import io.simplesource.kafka.internal.streams.topology.TopologyContext;
 import io.simplesource.kafka.model.*;
 import io.simplesource.kafka.spec.AggregateSpec;
-import lombok.Value;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.state.*;
-import org.apache.kafka.streams.test.ConsumerRecordFactory;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
 
-import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.command_response;
-import static io.simplesource.kafka.api.AggregateResources.TopicEntity.*;
+import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity;
+import static io.simplesource.kafka.api.AggregateResources.TopicEntity;
 
 public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
     private final TopologyTestDriver driver;
     private final AggregateSpec<K, C, E, A> aggregateSpec;
     private final AggregateSerdes<K, C, E, A> aggregateSerdes;
-    private final RequestPublisher<K, CommandRequest<K, C>> publisher;
 
     private final CommandAPI<K, C> commandAPI;
+    private final ArrayList<Runnable> statePollers;
 
     public AggregateTestDriver(
             final AggregateSpec<K, C, E, A> aggregateSpec,
@@ -61,42 +53,51 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
         final Properties streamConfig = new Properties();
         streamConfig.putAll(kafkaConfig.streamsConfig());
         driver = new TopologyTestDriver(builder.build(), streamConfig, 0L);
-        publisher = new TestPublisher<>(driver, aggregateSerdes.aggregateKey(), aggregateSerdes.commandRequest(), topicName(command_request));
 
-        // create a version of the command API that pipe stuff in and out of the TestTopologyDriver
+        // create a version of the command API that pipes stuff in and out of the TestTopologyDriver
+        RequestPublisher<K, CommandRequest<K, C>> commandRequestPublisher =
+                new TestPublisher<>(driver, aggregateSerdes.aggregateKey(), aggregateSerdes.commandRequest(), topicName(TopicEntity.command_request));
         final RequestPublisher<UUID, String> responseTopicMapPublisher =
-                new TestPublisher<>(driver, aggregateSerdes.commandResponseKey(), Serdes.String(), topicName(command_response_topic_map));
+                new TestPublisher<>(driver, aggregateSerdes.commandResponseKey(), Serdes.String(), topicName(TopicEntity.command_response_topic_map));
 
         KafkaRequestAPI.RequestAPIContext<?, ?, CommandResponse> requestCtx = KafkaCommandAPI.getRequestAPIContext(aggregateSpec.getCommandSpec(), kafkaConfig);
         
         TestTopologyReceiver.ReceiverSpec<UUID, CommandResponse> receiverSpec = new TestTopologyReceiver.ReceiverSpec<>(
-                requestCtx.privateResponseTopic(), 400, 4, requestCtx.responseKeySerde(), requestCtx.responseValueSerde());
-        final Function<BiConsumer<UUID, CommandResponse>, Closeable> receiverAttacher = updateTarget -> new TestTopologyReceiver<>(updateTarget, driver, receiverSpec);
+                requestCtx.privateResponseTopic(), 400, 4,
+                requestCtx.responseValueSerde(),
+                stringKey -> UUID.fromString(stringKey.substring(stringKey.length() - 36)));
+
+        statePollers = new ArrayList<>();
+        final Function<BiConsumer<UUID, CommandResponse>, Closeable> receiverAttacher = updateTarget -> {
+            TestTopologyReceiver<UUID, CommandResponse> receiver = new TestTopologyReceiver<>(updateTarget, driver, receiverSpec);
+            statePollers.add(receiver::pollForState);
+            return receiver;
+        };
 
         commandAPI = new KafkaCommandAPI<>(aggregateSpec.getCommandSpec(),
                 kafkaConfig,
-                publisher,
+                commandRequestPublisher,
                 responseTopicMapPublisher,
                 receiverAttacher);
     }
 
     @Override
     public FutureResult<CommandError, UUID> publishCommand(final Request<K, C> request) {
-        publisher.publish(request.key(), new CommandRequest<>(
-                request.key(),request.command(), request.readSequence(), request.commandId()));
-        return FutureResult.of(request.commandId());
+        return commandAPI.publishCommand(request);
     }
 
     @Override
     public FutureResult<CommandError, NonEmptyList<Sequence>> queryCommandResult(
         final UUID commandId,
         final Duration timeout) {
+        commandAPI.queryCommandResult(commandId, timeout);
+        pollForApiResponse();
         return commandAPI.queryCommandResult(commandId, timeout);
     }
 
     Optional<KeyValue<K, AggregateUpdate<A>>> readAggregateTopic() {
         final ProducerRecord<K, AggregateUpdate<A>> maybeRecord = driver.readOutput(
-            topicName(aggregate),
+            topicName(TopicEntity.aggregate),
             aggregateSerdes.aggregateKey().deserializer(),
             aggregateSerdes.aggregateUpdate().deserializer()
         );
@@ -108,7 +109,7 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
 
     Optional<KeyValue<K, ValueWithSequence<E>>> readEventTopic() {
         final ProducerRecord<K, ValueWithSequence<E>> maybeRecord = driver.readOutput(
-            topicName(event),
+            topicName(TopicEntity.event),
                 aggregateSerdes.aggregateKey().deserializer(),
             aggregateSerdes.valueWithSequence().deserializer()
         );
@@ -118,17 +119,27 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
                 record.value()));
     }
 
-    Optional<AggregateUpdateResult<A>> fetchAggregateUpdateResult(UUID key) {
-        final WindowStore<UUID, AggregateUpdateResult<A>> windowStore = driver.getWindowStore(storeName(command_response));
-        final WindowStoreIterator<AggregateUpdateResult<A>> iterator = windowStore
-            .fetch(
-                key,
-                0L,
-                System.currentTimeMillis());
-        final Iterable<KeyValue<Long, AggregateUpdateResult<A>>> iterable = () -> iterator;
+    Optional<CommandResponse> fetchCommandResponse(UUID key) {
+        final WindowStore<UUID, CommandResponse> windowStore = driver.getWindowStore(storeName(StateStoreEntity.command_response));
+        final WindowStoreIterator<CommandResponse> iterator = windowStore
+                .fetch(
+                        key,
+                        0L,
+                        System.currentTimeMillis());
+        final Iterable<KeyValue<Long, CommandResponse>> iterable = () -> iterator;
         return StreamSupport.stream(iterable.spliterator(), false)
-            .max(Comparator.comparingLong(kv -> kv.key))
-            .map(kv -> kv.value);
+                .max(Comparator.comparingLong(kv -> kv.key))
+                .map(kv -> kv.value);
+    }
+
+    Optional<AggregateUpdate<A>> fetchAggregateUpdate(K key) {
+        final ReadOnlyKeyValueStore<K, AggregateUpdate<A>> kvStore = driver.getKeyValueStore(storeName(StateStoreEntity.aggregate_update));
+        AggregateUpdate<A> aggUpdate = kvStore.get(key);
+        return Optional.ofNullable(aggUpdate);
+    }
+
+    public void pollForApiResponse() {
+        statePollers.forEach(Runnable::run);
     }
 
     public void close() {

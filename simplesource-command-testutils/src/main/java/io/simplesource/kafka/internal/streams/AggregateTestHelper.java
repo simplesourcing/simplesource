@@ -8,6 +8,7 @@ import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.model.AggregateUpdate;
 import io.simplesource.kafka.model.AggregateUpdateResult;
+import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.model.ValueWithSequence;
 import org.apache.kafka.streams.KeyValue;
 
@@ -62,14 +63,12 @@ public final class AggregateTestHelper<K, C, E, A> {
         final UUID commandId = publish(key, readSequence, command);
         final NonEmptyList<Sequence> expectedSequences = validateEvents(key, readSequence, expectedEvents);
 
-        final AggregateUpdateResult<A> updateResponse = testAPI.fetchAggregateUpdateResult(commandId)
-            .orElseGet(() -> fail("Didn't find command response"));
+        final CommandResponse updateResponse = testAPI.fetchCommandResponse(commandId)
+                .orElseGet(() -> fail("Didn't find command response"));
         assertEquals(commandId, updateResponse.commandId());
         assertEquals(readSequence, updateResponse.readSequence());
-        final AggregateUpdate<A> aggregateUpdate = updateResponse.updatedAggregateResult().fold(
-            reasons -> fail("Updating aggregate_update failed for command " + command + " failed with " + reasons),
-            Function.identity()
-        );
+        AggregateUpdate<A> aggregateUpdate = testAPI.fetchAggregateUpdate(key)
+                .orElseGet(() -> fail("Didn't find aggregate update"));
         assertEquals(expectedSequences.last(), aggregateUpdate.sequence());
         assertEquals(expectedAggregate, aggregateUpdate.aggregate());
 
@@ -81,7 +80,7 @@ public final class AggregateTestHelper<K, C, E, A> {
 
 
         final Result<CommandError, NonEmptyList<Sequence>> queryByCommandId = testAPI
-            .queryCommandResult(commandId, Duration.ofHours(1))
+            .queryCommandResult(commandId, Duration.ofSeconds(30))
             .unsafePerform(AggregateTestHelper::commandError);
         queryByCommandId.fold(
             reasons -> fail("Failed to fetch result with commandId " + reasons),
@@ -101,22 +100,22 @@ public final class AggregateTestHelper<K, C, E, A> {
     ) {
         final UUID commandId = publish(key, readSequence, command);
 
-        final AggregateUpdateResult<A> updateResponse = testAPI.fetchAggregateUpdateResult(commandId)
-            .orElseGet(() -> fail("Didn't find command response"));
+        final CommandResponse updateResponse = testAPI.fetchCommandResponse(commandId)
+                .orElseGet(() -> fail("Didn't find command response"));
         assertEquals(commandId, updateResponse.commandId());
         assertEquals(readSequence, updateResponse.readSequence());
-        updateResponse.updatedAggregateResult().fold(
-            reasons -> {
-                failureValidator.accept(reasons);
-                return null;
-            },
-            aggregateUpdate -> fail("Expected update failure for command " + command + " but got update " + aggregateUpdate));
+        updateResponse.sequenceResult().fold(
+                reasons -> {
+                    failureValidator.accept(reasons);
+                    return null;
+                },
+                aggregateUpdate -> fail("Expected update failure for command " + command + " but got update " + aggregateUpdate));
 
         assertEquals(Optional.empty(), testAPI.readEventTopic());
         assertEquals(Optional.empty(), testAPI.readAggregateTopic());
 
         final Result<CommandError, NonEmptyList<Sequence>> queryByCommandId = testAPI
-            .queryCommandResult(commandId, Duration.ofHours(1))
+            .queryCommandResult(commandId, Duration.ofSeconds(30))
             .unsafePerform(AggregateTestHelper::commandError);
         queryByCommandId.fold(
             reasons -> {
