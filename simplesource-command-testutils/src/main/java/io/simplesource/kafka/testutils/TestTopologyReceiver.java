@@ -1,6 +1,6 @@
 package io.simplesource.kafka.testutils;
 
-import io.simplesource.kafka.internal.client.Closeable;
+import io.simplesource.kafka.internal.client.ResponseSubscription;
 import lombok.Value;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serde;
@@ -11,11 +11,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public final class TestTopologyReceiver<K, V> implements Closeable {
+final class TestTopologyReceiver<K, V> implements ResponseSubscription {
     Supplier<Integer> getDriverOutput;
 
     @Value
-    public static final class ReceiverSpec<K, V> {
+    static final class ReceiverSpec<K, V> {
         String topicName;
         int delayMillis;
         int pollAttempts;
@@ -23,7 +23,7 @@ public final class TestTopologyReceiver<K, V> implements Closeable {
         Function<String, K> keyConverter;
     }
 
-    public TestTopologyReceiver(BiConsumer<K, V> updateTarget, TopologyTestDriver driver, ReceiverSpec<K, V> spec) {
+    TestTopologyReceiver(BiConsumer<K, V> updateTarget, TopologyTestDriver driver, ReceiverSpec<K, V> spec) {
         getDriverOutput = () -> {
             int count = 0;
             while (true) {
@@ -40,7 +40,7 @@ public final class TestTopologyReceiver<K, V> implements Closeable {
         };
     }
 
-    public void pollForState() {
+    void pollForState() {
         getDriverOutput.get();
     }
 

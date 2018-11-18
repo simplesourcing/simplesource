@@ -4,11 +4,10 @@ import io.simplesource.api.CommandAPI;
 import io.simplesource.api.CommandError;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.FutureResult;
-import io.simplesource.data.NonEmptyList;
 import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.dsl.KafkaConfig;
-import io.simplesource.kafka.internal.client.Closeable;
+import io.simplesource.kafka.internal.client.ResponseSubscription;
 import io.simplesource.kafka.internal.client.KafkaCommandAPI;
 import io.simplesource.kafka.internal.client.KafkaRequestAPI;
 import io.simplesource.kafka.internal.client.RequestPublisher;
@@ -70,7 +69,7 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
                 stringKey -> UUID.fromString(stringKey.substring(stringKey.length() - 36)));
 
         statePollers = new ArrayList<>();
-        final Function<BiConsumer<UUID, CommandResponse>, Closeable> receiverAttacher = updateTarget -> {
+        final Function<BiConsumer<UUID, CommandResponse>, ResponseSubscription> receiverAttacher = updateTarget -> {
             TestTopologyReceiver<UUID, CommandResponse> receiver = new TestTopologyReceiver<>(updateTarget, driver, receiverSpec);
             statePollers.add(receiver::pollForState);
             return receiver;

@@ -8,7 +8,7 @@ import org.apache.kafka.streams.test.ConsumerRecordFactory;
 
 import java.time.Instant;
 
-public class TestPublisher<K, V> implements RequestPublisher<K, V> {
+class TestPublisher<K, V> implements RequestPublisher<K, V> {
 
     private final ConsumerRecordFactory<K,V> factory;
     TopologyTestDriver driver;

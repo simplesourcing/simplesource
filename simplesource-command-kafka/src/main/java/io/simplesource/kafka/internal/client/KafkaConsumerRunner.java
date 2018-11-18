@@ -17,7 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
-class KafkaConsumerRunner {
+final class KafkaConsumerRunner {
     private static final Logger logger = LoggerFactory.getLogger(KafkaConsumerRunner.class);
 
     static private Properties copyProperties(Map<String, Object> properties) {
@@ -26,7 +26,7 @@ class KafkaConsumerRunner {
         return newProps;
     }
 
-    static <R> Closeable run(
+    static <R> ResponseSubscription run(
             Map<String, Object> properties,
             String topicName,
             Serde<R> responseSerde,

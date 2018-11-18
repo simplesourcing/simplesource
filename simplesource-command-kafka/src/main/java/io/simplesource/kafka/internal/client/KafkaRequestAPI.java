@@ -21,6 +21,8 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 
@@ -28,12 +30,27 @@ public final class KafkaRequestAPI<K, I, O> {
     private static final Logger logger = LoggerFactory.getLogger(KafkaRequestAPI.class);
 
     @Value
-    static final class ResponseHandlers<O> {
-        final List<CompletableFuture<O>> handlers;
+    static final class ResponseReceiver<K, M, V> {
+        final ExpiringMap<K, M> expiringMap;
+        final BiFunction<M, V, M> mapModifier;
+
+        void receive(K k, V v) {
+            expiringMap.computeIfPresent(k, m -> mapModifier.apply(m, v));
+        }
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    @Value
+    static final class ResponseHandler<O> {
+        final List<CompletableFuture<O>> responseFutures;
         final Optional<O> response;
 
-        public static <O> ResponseHandlers<O> initialise(Optional<O> r) {
-            return new ResponseHandlers<>(Lists.newArrayList(), r);
+        static <O> ResponseHandler<O> initialise(Optional<O> r) {
+            return new ResponseHandler<>(Lists.newArrayList(), r);
+        }
+
+        void forEachFuture(Consumer<CompletableFuture<O>> action) {
+            responseFutures.forEach(action);
         }
     }
 
@@ -52,9 +69,9 @@ public final class KafkaRequestAPI<K, I, O> {
         final TopicSpec outputTopicConfig;
     }
 
-    private final Closeable responseSubscriber;
-    private final ExpiringMap<UUID, ResponseHandlers<O>> handlerMap;
     private final RequestAPIContext<K, I, O> ctx;
+    private final ResponseSubscription responseSubscription;
+    private final ExpiringMap<UUID, ResponseHandler<O>> responseHandlers;
     private final RequestPublisher<K, I> requestSender;
     private final RequestPublisher<UUID, String> responseTopicMapSender;
 
@@ -93,7 +110,7 @@ public final class KafkaRequestAPI<K, I, O> {
             final RequestAPIContext<K, I, O> ctx,
             final RequestPublisher<K, I> requestSender,
             final RequestPublisher<UUID, String> responseTopicMapSender,
-            final Function<BiConsumer<UUID, O>, Closeable> responseSubscriber,
+            final Function<BiConsumer<UUID, O>, ResponseSubscription> responseSubscriber,
             boolean createTopics) {
         KafkaConfig kafkaConfig = ctx.kafkaConfig();
 
@@ -117,20 +134,20 @@ public final class KafkaRequestAPI<K, I, O> {
             }
         }
 
-        handlerMap = new ExpiringMap<>(retentionInSeconds, Clock.systemUTC());
-        ResponseReceiver<UUID, ResponseHandlers<O>, O> responseReceiver =
-            new ResponseReceiver<>(handlerMap, (h, r) -> {
-                h.handlers().forEach(future -> future.complete(r));
-                return ResponseHandlers.initialise(Optional.of(r));
+        responseHandlers = new ExpiringMap<>(retentionInSeconds, Clock.systemUTC());
+        ResponseReceiver<UUID, ResponseHandler<O>, O> responseReceiver =
+            new ResponseReceiver<>(responseHandlers, (h, r) -> {
+                h.forEachFuture(future -> future.complete(r));
+                return ResponseHandler.initialise(Optional.of(r));
             });
 
-        this.responseSubscriber = responseSubscriber.apply(responseReceiver::receive);
+        this.responseSubscription = responseSubscriber.apply(responseReceiver::receive);
 
         Runtime.getRuntime().addShutdownHook(
                 new Thread(
                         () -> {
                             logger.info("CommandAPI shutting down");
-                            this.responseSubscriber.close();
+                            this.responseSubscription.close();
                         }
                 )
         );
@@ -140,35 +157,40 @@ public final class KafkaRequestAPI<K, I, O> {
 
         FutureResult<Exception, RequestPublisher.PublishResult> result = responseTopicMapSender.publish(requestId, ctx.privateResponseTopic())
                 .flatMap(r -> requestSender.publish(key, request)).map(r -> {
-                    handlerMap.insertIfAbsent(requestId, () -> ResponseHandlers.initialise(Optional.empty()));
+                    responseHandlers.insertIfAbsent(requestId, () -> ResponseHandler.initialise(Optional.empty()));
                     return r;
                 });
 
-        handlerMap.removeStale(handlers ->
-                handlers.handlers.forEach(future ->
-                        future.completeExceptionally(new Exception("Request timed out..."))));
+        responseHandlers.removeStaleAsync(h ->
+                h.forEachFuture(f ->
+                        f.completeExceptionally(new Exception("Request timed out."))));
 
         return result;
     }
 
     public CompletableFuture<O> queryResponse(final UUID requestId, final Duration timeout) {
-        // TODO - handle timeout
+        // TODO - handle timeout...
         CompletableFuture<O> completableFuture = new CompletableFuture<>();
-        ResponseHandlers h = handlerMap.computeIfPresent(requestId, handlers -> {
-            if (handlers.response().isPresent())
-                completableFuture.complete(handlers.response().get());
+        ResponseHandler handler = responseHandlers.computeIfPresent(requestId, h -> {
+            Optional<O> response = h.response;
+            if (response.isPresent())
+                completableFuture.complete(response.get());
             else
-                handlers.handlers.add(completableFuture);
-            return handlers;
+                h.responseFutures.add(completableFuture);
+            return h;
         });
-        if (h == null) {
+        if (handler == null) {
             completableFuture.completeExceptionally(new Exception("Invalid commandId."));
         }
         return completableFuture;
     }
 
     public void close() {
-        this.responseSubscriber.close();
+        responseHandlers.removeAll(handlers ->
+                handlers.forEachFuture(future ->
+                        future.completeExceptionally(new Exception("Consumer closed before future."))));
+
+        this.responseSubscription.close();
     }
 }
 

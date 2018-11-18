@@ -10,7 +10,6 @@ import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.spec.CommandSpec;
-import org.apache.kafka.streams.state.HostInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +40,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
             final KafkaConfig kafkaConfig,
             final RequestPublisher<K, CommandRequest<K, C>> requestSender,
             final RequestPublisher<UUID, String> responseTopicMapSender,
-            final Function<BiConsumer<UUID, CommandResponse>, Closeable> attachReceiver) {
+            final Function<BiConsumer<UUID, CommandResponse>, ResponseSubscription> attachReceiver) {
 
         KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> ctx = getRequestAPIContext(commandSpec, kafkaConfig);
         requestApi = new KafkaRequestAPI<>(ctx, requestSender, responseTopicMapSender, attachReceiver, false);

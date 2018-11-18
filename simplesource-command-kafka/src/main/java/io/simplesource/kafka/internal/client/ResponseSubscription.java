@@ -1,5 +1,5 @@
 package io.simplesource.kafka.internal.client;
 
-public interface Closeable {
+public interface ResponseSubscription {
     void close();
 }

@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -42,18 +43,27 @@ final class ExpiringMap<K, V> {
         return null;
     }
 
-    final void removeStale(Consumer<V> consumeV)  {
+    final void removeStaleAsync(Consumer<V> consumeV)  {
         if (outerMap.size() < 3) return;
         new Thread(() -> {
             long outerKey = Instant.now(clock).getEpochSecond() / retentionInSeconds;
-            outerMap.keySet().forEach(k -> {
-                if (k + 1 < outerKey) {
-                    outerMap.values().forEach(innerMap -> {
-                        innerMap.values().forEach(consumeV);
-                    });
-                    outerMap.remove(k);
-                }
-            });
+            removeIf(consumeV, k -> k + 1 < outerKey);
         }).start();
     }
+
+    final void removeAll(Consumer<V> consumeV)  {
+        removeIf(consumeV, k -> true);
+    }
+
+    private void removeIf(Consumer<V> consumeV, Predicate<Long> outerKeyCondition) {
+        outerMap.keySet().forEach(k -> {
+            if (outerKeyCondition.test(k)) {
+                outerMap.values().forEach(innerMap -> {
+                    innerMap.values().forEach(consumeV);
+                });
+                outerMap.remove(k);
+            }
+        });
+    }
+
 }
