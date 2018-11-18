@@ -34,11 +34,6 @@ final class KafkaConsumerRunner {
 
         Properties consumerConfig  = copyProperties(properties);
         consumerConfig.setProperty(ConsumerConfig.GROUP_ID_CONFIG, String.format("response_consumer_%s", UUID.randomUUID().toString().substring(0, 8)));
-        // TODO: For now automatic - probably rather do this manually
-        consumerConfig.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
-        consumerConfig.setProperty(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
-        consumerConfig.setProperty(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
-
         RunnableConsumer runnableConsumer = new RunnableConsumer<>(consumerConfig, responseSerde, topicName, responseReceiver);
         new Thread(runnableConsumer).start();
         return runnableConsumer::close;

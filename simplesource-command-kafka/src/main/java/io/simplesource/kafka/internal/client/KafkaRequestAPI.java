@@ -99,7 +99,7 @@ public final class KafkaRequestAPI<K, I, O> {
                 kakfaProducerSender(ctx.kafkaConfig, ctx.requestTopic, ctx.requestKeySerde, ctx.requestValueSerde),
                 kakfaProducerSender(ctx.kafkaConfig, ctx.responseTopicMapTopic, ctx.responseKeySerde, Serdes.String()),
                 receiver -> KafkaConsumerRunner.run(
-                    ctx.kafkaConfig().producerConfig(),
+                    ctx.kafkaConfig().consumerConfig(),
                     ctx.privateResponseTopic(),
                     ctx.responseValueSerde(),
                     receiver),

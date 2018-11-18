@@ -19,8 +19,14 @@ public final class EventSourcedClient {
     private Map<String, CommandSpec<?, ?>> commandConfigMap = new HashMap<>();
 
     public EventSourcedClient withKafkaConfig(
-            final Function<KafkaConfig.Builder, KafkaConfig> builder) {
-        kafkaConfig = builder.apply(new KafkaConfig.Builder());
+            final Function<? super KafkaConfig.Builder, KafkaConfig> builderFn) {
+        KafkaConfig.Builder builder = new KafkaConfig.Builder() {
+            @Override
+            public KafkaConfig build() {
+                return super.build(true);
+            }
+        };
+        kafkaConfig = builderFn.apply(builder);
         return this;
     }
 

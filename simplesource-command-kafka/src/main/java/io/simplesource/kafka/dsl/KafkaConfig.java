@@ -2,6 +2,7 @@ package io.simplesource.kafka.dsl;
 
 import lombok.Value;
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.streams.StreamsConfig;
 
@@ -10,7 +11,7 @@ import java.util.*;
 import static java.util.Objects.requireNonNull;
 
 @Value
-public final class KafkaConfig {
+public class KafkaConfig {
     private final Map<String, Object> config;
 
     public String applicationId() {
@@ -34,6 +35,15 @@ public final class KafkaConfig {
     public Map<String, Object> adminClientConfig() {
         return Collections.singletonMap(
             CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers());
+    }
+
+    public Map<String, Object> consumerConfig() {
+        final Map<String, Object> configs = new HashMap<>();
+        configs.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers());
+        configs.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+        configs.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 1000);
+        configs.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
+        return configs;
     }
 
     public Map<String, Object> producerConfig() {
@@ -93,15 +103,23 @@ public final class KafkaConfig {
         }
 
         public KafkaConfig build() {
-            validateKafkaConfig();
+            validateKafkaConfig(false);
             return new KafkaConfig(config);
         }
 
-        private void validateKafkaConfig() {
+        public KafkaConfig build(boolean clientOnly) {
+            validateKafkaConfig(clientOnly);
+            return new KafkaConfig(config);
+        }
+
+        private void validateKafkaConfig(boolean clientOnly) {
+            (clientOnly ? Arrays.asList(
+                StreamsConfig.BOOTSTRAP_SERVERS_CONFIG
+            ) :
             Arrays.asList(
                 StreamsConfig.APPLICATION_ID_CONFIG,
                 StreamsConfig.BOOTSTRAP_SERVERS_CONFIG
-            ).forEach(key ->
+            )).forEach(key ->
                 requireNonNull(config.get(key), "KafkaConfig missing " + key));
         }
 
