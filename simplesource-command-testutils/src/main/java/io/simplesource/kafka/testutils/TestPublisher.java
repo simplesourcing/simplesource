@@ -22,8 +22,8 @@ public class TestPublisher<K, V> implements RequestPublisher<K, V> {
     }
 
     @Override
-    public FutureResult<Exception, SendResult> publish(K key, V value) {
+    public FutureResult<Exception, PublishResult> publish(K key, V value) {
         driver.pipeInput(factory.create(topicName, key, value));
-        return FutureResult.of(new SendResult(Instant.now().getEpochSecond()));
+        return FutureResult.of(new PublishResult(Instant.now().getEpochSecond()));
     }
 }

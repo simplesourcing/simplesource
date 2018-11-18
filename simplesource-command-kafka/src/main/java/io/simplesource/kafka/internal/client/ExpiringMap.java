@@ -27,10 +27,10 @@ final class ExpiringMap<K, V> {
         this.clock = clock;
     }
 
-    final V createEntry(K k, Supplier<V> lazyV) {
+    final void insertIfAbsent(K k, Supplier<V> lazyV) {
         long outerKey = Instant.now(clock).getEpochSecond() / retentionInSeconds;
         ConcurrentHashMap<K, V> innerMap = outerMap.computeIfAbsent(outerKey, oKey -> new ConcurrentHashMap<>());
-        return innerMap.computeIfAbsent(k, ik -> lazyV.get());
+        innerMap.computeIfAbsent(k, ik -> lazyV.get());
     }
 
     final V computeIfPresent(K k, Function<V, V> vToV) {

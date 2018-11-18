@@ -5,9 +5,9 @@ import lombok.Value;
 
 public interface RequestPublisher<K, V> {
     @Value
-    class SendResult {
+    class PublishResult {
         long timeStamp;
     }
 
-    FutureResult<Exception, SendResult> publish(K key, V value);
+    FutureResult<Exception, PublishResult> publish(K key, V value);
 }

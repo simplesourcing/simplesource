@@ -32,7 +32,7 @@ public final class AggregateSpec<K, C, E, A>  {
         private final InitialValue<K, A> initialValue;
     }
 
-    public CommandSpec<K, C> getCommandSpec() {
-       return new CommandSpec<>(aggregateName, serialization.resourceNamingStrategy, serialization.serdes, generation.stateStoreSpec, generation.topicConfig.get(AggregateResources.TopicEntity.command_response));
+    public CommandSpec<K, C> getCommandSpec(String clientId) {
+       return new CommandSpec<>(aggregateName, clientId, serialization.resourceNamingStrategy, serialization.serdes, generation.stateStoreSpec, generation.topicConfig.get(AggregateResources.TopicEntity.command_response));
     }
 }

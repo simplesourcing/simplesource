@@ -3,7 +3,6 @@ package io.simplesource.kafka.internal.client;
 import io.simplesource.api.CommandAPI;
 import io.simplesource.api.CommandError;
 import io.simplesource.data.FutureResult;
-import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.api.ResourceNamingStrategy;
@@ -53,7 +52,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
         final CommandRequest<K, C> commandRequest = new CommandRequest<>(
                 request.key(), request.command(), request.readSequence(), request.commandId());
 
-        FutureResult<Exception, RequestPublisher.SendResult> publishResult = requestApi.publishRequest(request.key(), request.commandId(), commandRequest);
+        FutureResult<Exception, RequestPublisher.PublishResult> publishResult = requestApi.publishRequest(request.key(), request.commandId(), commandRequest);
 
         // A lot of trouble to change the error type from Exception to CommandError
         Future<FutureResult<CommandError, UUID>> futureOfFR = publishResult.fold(
@@ -87,8 +86,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 commandSpec.aggregateName(),
                 command_response.name());
 
-        HostInfo currentHost = kafkaConfig.currentHostInfo();
-        String privateResponseTopic =  String.format("%s_%s_%d", responseTopicBase, currentHost.host(), currentHost.port());
+        String privateResponseTopic =  String.format("%s_%s", responseTopicBase, commandSpec.clientId());
         return KafkaRequestAPI.RequestAPIContext.<K, CommandRequest<K, C>, CommandResponse>builder()
                 .kafkaConfig(kafkaConfig)
                 .requestTopic(namingStrategy.topicName(

@@ -52,7 +52,7 @@ public final class KafkaRequestAPI<K, I, O> {
         final TopicSpec outputTopicConfig;
     }
 
-    private final Closeable consumerRunner;
+    private final Closeable responseSubscriber;
     private final ExpiringMap<UUID, ResponseHandlers<O>> handlerMap;
     private final RequestAPIContext<K, I, O> ctx;
     private final RequestPublisher<K, I> requestSender;
@@ -73,7 +73,7 @@ public final class KafkaRequestAPI<K, I, O> {
                     key,
                     value);
             return FutureResult.ofFuture(producer.send(record), e -> e)
-                    .map(meta -> new RequestPublisher.SendResult(meta.timestamp()));
+                    .map(meta -> new RequestPublisher.PublishResult(meta.timestamp()));
         };
     }
 
@@ -93,7 +93,7 @@ public final class KafkaRequestAPI<K, I, O> {
             final RequestAPIContext<K, I, O> ctx,
             final RequestPublisher<K, I> requestSender,
             final RequestPublisher<UUID, String> responseTopicMapSender,
-            final Function<BiConsumer<UUID, O>, Closeable> attachReceiver,
+            final Function<BiConsumer<UUID, O>, Closeable> responseSubscriber,
             boolean createTopics) {
         KafkaConfig kafkaConfig = ctx.kafkaConfig();
 
@@ -118,28 +118,29 @@ public final class KafkaRequestAPI<K, I, O> {
         }
 
         handlerMap = new ExpiringMap<>(retentionInSeconds, Clock.systemUTC());
-        ResponseReceiver<UUID, ResponseHandlers<O>, O> responseReceiver = new ResponseReceiver<>(handlerMap, (h, r) -> {
-            h.handlers().forEach(future -> future.complete(r));
-            return ResponseHandlers.initialise(Optional.of(r));
-        });
+        ResponseReceiver<UUID, ResponseHandlers<O>, O> responseReceiver =
+            new ResponseReceiver<>(handlerMap, (h, r) -> {
+                h.handlers().forEach(future -> future.complete(r));
+                return ResponseHandlers.initialise(Optional.of(r));
+            });
 
-        consumerRunner = attachReceiver.apply(responseReceiver::receive);
+        this.responseSubscriber = responseSubscriber.apply(responseReceiver::receive);
 
         Runtime.getRuntime().addShutdownHook(
                 new Thread(
                         () -> {
                             logger.info("CommandAPI shutting down");
-                            consumerRunner.close();
+                            this.responseSubscriber.close();
                         }
                 )
         );
     }
 
-    public FutureResult<Exception, RequestPublisher.SendResult> publishRequest(final K key, UUID requestId, final I request) {
+    public FutureResult<Exception, RequestPublisher.PublishResult> publishRequest(final K key, UUID requestId, final I request) {
 
-        FutureResult<Exception, RequestPublisher.SendResult> result = responseTopicMapSender.publish(requestId, ctx.privateResponseTopic())
+        FutureResult<Exception, RequestPublisher.PublishResult> result = responseTopicMapSender.publish(requestId, ctx.privateResponseTopic())
                 .flatMap(r -> requestSender.publish(key, request)).map(r -> {
-                    handlerMap.createEntry(requestId, () -> ResponseHandlers.initialise(Optional.empty()));
+                    handlerMap.insertIfAbsent(requestId, () -> ResponseHandlers.initialise(Optional.empty()));
                     return r;
                 });
 
@@ -167,7 +168,7 @@ public final class KafkaRequestAPI<K, I, O> {
     }
 
     public void close() {
-        this.consumerRunner.close();
+        this.responseSubscriber.close();
     }
 }
 

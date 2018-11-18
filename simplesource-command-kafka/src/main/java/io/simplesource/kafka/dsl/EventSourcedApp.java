@@ -11,34 +11,37 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-public final class AggregateSetBuilder {
+import static java.util.Objects.requireNonNull;
+
+public final class EventSourcedApp {
     private KafkaConfig kafkaConfig;
     private Map<String, AggregateSpec<?, ?, ?, ?>> aggregateConfigMap = new HashMap<>();
+    private AggregateSetSpec aggregateSetSpec;
 
-    public AggregateSetBuilder withKafkaConfig(
+    public EventSourcedApp withKafkaConfig(
             final Function<KafkaConfig.Builder, KafkaConfig> builder) {
         kafkaConfig = builder.apply(new KafkaConfig.Builder());
         return this;
     }
 
-    public AggregateSetBuilder withKafkaConfig(final KafkaConfig kafkaConfig) {
+    public EventSourcedApp withKafkaConfig(final KafkaConfig kafkaConfig) {
         this.kafkaConfig = kafkaConfig;
         return this;
     }
 
-    public <K, C, E, A> AggregateSetBuilder addAggregate(
+    public <K, C, E, A> EventSourcedApp addAggregate(
             final Function<AggregateBuilder<K, C, E, A>, AggregateSpec<K, C, E, A>> builder) {
         final AggregateSpec<K, C, E, A> spec = builder.apply(AggregateBuilder.newBuilder());
         aggregateConfigMap.put(spec.aggregateName(), spec);
         return this;
     }
 
-    public <K, C, E, A> AggregateSetBuilder addAggregate(final AggregateSpec<K, C, E, A> spec) {
+    public <K, C, E, A> EventSourcedApp addAggregate(final AggregateSpec<K, C, E, A> spec) {
         aggregateConfigMap.put(spec.aggregateName(), spec);
         return this;
     }
 
-    public AggregateSetSpec build() {
+    public EventSourcedApp start() {
         final AggregateSetSpec aggregateSetSpec = new AggregateSetSpec(
                 kafkaConfig,
                 aggregateConfigMap);
@@ -47,25 +50,26 @@ public final class AggregateSetBuilder {
                 new EventSourcedStreamsApp(aggregateSetSpec);
 
         app.start();
-        return aggregateSetSpec;
+        this.aggregateSetSpec = aggregateSetSpec;
+        return this;
     }
 
     /**
-     * Creates a CommandAPISet instance from a AggregateSetSpec
+     * Creates a CommandAPISet instance
      *
      * Used for directly exposing a CommandAPISet from within a Simple Sourcing application
      * If creating a CommandAPISet from an external application, rather use the CommandAPISetBuilder DSL
      *
-     * @param aggregateSetSpec
      * @return a CommandAPISet
      */
-    public static CommandAPISet getCommandAPISet(AggregateSetSpec aggregateSetSpec) {
+    public CommandAPISet getCommandAPISet(String clientId) {
+        requireNonNull(aggregateSetSpec, "App has not been started. start() must be called before getCommandAPISet");
         Stream<CommandSpec<?, ?>> commandSpecs = aggregateSetSpec
                 .aggregateConfigMap()
                 .values()
                 .stream()
-                .map(aSpec -> aSpec.getCommandSpec());
+                .map(aSpec -> aSpec.getCommandSpec(clientId));
 
-        return CommandApiSetBuilder.getCommandAPISet(commandSpecs, aggregateSetSpec.kafkaConfig());
+        return EventSourcedClient.getCommandAPISet(commandSpecs, aggregateSetSpec.kafkaConfig());
     }
 }

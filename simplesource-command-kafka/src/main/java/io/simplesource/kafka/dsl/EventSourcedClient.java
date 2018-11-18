@@ -14,29 +14,29 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public final class CommandApiSetBuilder {
+public final class EventSourcedClient {
     private KafkaConfig kafkaConfig;
     private Map<String, CommandSpec<?, ?>> commandConfigMap = new HashMap<>();
 
-    public CommandApiSetBuilder withKafkaConfig(
+    public EventSourcedClient withKafkaConfig(
             final Function<KafkaConfig.Builder, KafkaConfig> builder) {
         kafkaConfig = builder.apply(new KafkaConfig.Builder());
         return this;
     }
 
-    public CommandApiSetBuilder withKafkaConfig(final KafkaConfig kafkaConfig) {
+    public EventSourcedClient withKafkaConfig(final KafkaConfig kafkaConfig) {
         this.kafkaConfig = kafkaConfig;
         return this;
     }
 
-    public <K, C> CommandApiSetBuilder addCommands(
+    public <K, C> EventSourcedClient addCommands(
             final Function<CommandApiBuilder<K, C>, CommandSpec<K, C>> builder) {
         final CommandSpec<K, C> spec = builder.apply(CommandApiBuilder.newBuilder());
         commandConfigMap.put(spec.aggregateName(), spec);
         return this;
     }
 
-    public <K, C> CommandApiSetBuilder addCommands(final CommandSpec<K, C> spec) {
+    public <K, C> EventSourcedClient addCommands(final CommandSpec<K, C> spec) {
         commandConfigMap.put(spec.aggregateName(), spec);
         return this;
     }

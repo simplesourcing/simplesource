@@ -1,11 +1,9 @@
 package io.simplesource.kafka.dsl;
 
 import lombok.Value;
-import io.simplesource.kafka.internal.client.ClientConfig;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.state.HostInfo;
 
 import java.util.*;
 
@@ -14,11 +12,6 @@ import static java.util.Objects.requireNonNull;
 @Value
 public final class KafkaConfig {
     private final Map<String, Object> config;
-    private final ClientConfig clientConfig;
-
-    public HostInfo currentHostInfo() {
-        return new HostInfo(clientConfig.iface(), clientConfig.port());
-    }
 
     public String applicationId() {
         return (String)config.get(StreamsConfig.APPLICATION_ID_CONFIG);
@@ -78,11 +71,6 @@ public final class KafkaConfig {
             return this;
         }
 
-        public Builder withApplicationServer(final String applicationServer) {
-            config.put(StreamsConfig.APPLICATION_SERVER_CONFIG, applicationServer);
-            return this;
-        }
-
         public Builder withExactlyOnce() {
             config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE);
             return this;
@@ -106,27 +94,13 @@ public final class KafkaConfig {
 
         public KafkaConfig build() {
             validateKafkaConfig();
-            final String rpc = String.valueOf(config.get(StreamsConfig.APPLICATION_SERVER_CONFIG));
-            final int index = rpc.indexOf(':');
-            if (index < 0) {
-                throw new IllegalArgumentException(StreamsConfig.APPLICATION_SERVER_CONFIG + " must be in format host:port");
-            }
-            final String rpcHost = rpc.substring(0, index);
-            final int rpcPort = Integer.parseInt(rpc.substring(index + 1));
-
-            //TODO parse rest of cluster properties
-            ClientConfig clientConfig = new ClientConfig();
-            clientConfig.iface(rpcHost);
-            clientConfig.port(rpcPort);
-
-            return new KafkaConfig(config, clientConfig);
+            return new KafkaConfig(config);
         }
 
         private void validateKafkaConfig() {
             Arrays.asList(
                 StreamsConfig.APPLICATION_ID_CONFIG,
-                StreamsConfig.BOOTSTRAP_SERVERS_CONFIG,
-                StreamsConfig.APPLICATION_SERVER_CONFIG
+                StreamsConfig.BOOTSTRAP_SERVERS_CONFIG
             ).forEach(key ->
                 requireNonNull(config.get(key), "KafkaConfig missing " + key));
         }

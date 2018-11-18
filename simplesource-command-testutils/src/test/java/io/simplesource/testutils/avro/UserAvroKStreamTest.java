@@ -46,7 +46,6 @@ class UserAvroKStreamTest {
                 ),
                 new KafkaConfig.Builder()
                         .withKafkaApplicationId("testApp")
-                        .withApplicationServer("server:8888")
                         .withKafkaBootstrap("0.0.0.0:9092")
                         .withExactlyOnce()
                         .build());

@@ -7,6 +7,8 @@ import io.simplesource.kafka.spec.TopicSpec;
 import io.simplesource.kafka.spec.WindowSpec;
 import org.apache.kafka.common.config.TopicConfig;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -15,6 +17,7 @@ import static java.util.Objects.requireNonNull;
 
 public final class CommandApiBuilder<K, C> {
     private String name;
+    private String clientId;
     private ResourceNamingStrategy resourceNamingStrategy;
     private CommandSerdes<K, C> commandSerdes;
     private TopicSpec outputTopicSpec;
@@ -31,6 +34,11 @@ public final class CommandApiBuilder<K, C> {
 
     public CommandApiBuilder<K, C> withName(final String name) {
         this.name = name;
+        return this;
+    }
+
+    public CommandApiBuilder<K, C> withClientId(final String clientId) {
+        this.clientId = clientId;
         return this;
     }
 
@@ -58,8 +66,15 @@ public final class CommandApiBuilder<K, C> {
         requireNonNull(name, "No name for aggregate has been defined");
         requireNonNull(resourceNamingStrategy, "No resource naming strategy for aggregate has been defined");
         requireNonNull(outputTopicSpec, "No topic config for aggregate has been defined");
+        if (clientId == null) {
+            try {
+                clientId = InetAddress.getLocalHost().getHostName();
+            } catch (UnknownHostException e) {
+                requireNonNull(clientId, "No client Id was defined, and host name could not be resolved");
+            }
+        }
 
-        return new CommandSpec<>(name, resourceNamingStrategy, commandSerdes, commandResponseStoreSpec, outputTopicSpec);
+        return new CommandSpec<>(name, clientId, resourceNamingStrategy, commandSerdes, commandResponseStoreSpec, outputTopicSpec);
     }
 
     private TopicSpec defaultTopicConfig() {
