@@ -1,6 +1,6 @@
 package io.simplesource.kafka.internal.streams;
 
-import io.simplesource.kafka.internal.util.Tuple;
+import io.simplesource.kafka.internal.util.Tuple2;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes.ByteArraySerde;
@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class MockInMemorySerde<T> implements Serde<T> {
     private final ByteArraySerde serde = new ByteArraySerde();
-    private final static Map<Tuple<String, Integer>, Object> serialisedObjectCache = new ConcurrentHashMap<>();
+    private final static Map<Tuple2<String, Integer>, Object> serialisedObjectCache = new ConcurrentHashMap<>();
 
     public static void resetCache() {
         serialisedObjectCache.clear();
@@ -36,7 +36,7 @@ public class MockInMemorySerde<T> implements Serde<T> {
 
             @Override
             public byte[] serialize(String topic, T data) {
-                serialisedObjectCache.putIfAbsent(Tuple.of(topic, data.hashCode()), data);
+                serialisedObjectCache.putIfAbsent(Tuple2.of(topic, data.hashCode()), data);
                 return String.valueOf(data.hashCode()).getBytes(Charset.defaultCharset());
             }
 
@@ -55,7 +55,7 @@ public class MockInMemorySerde<T> implements Serde<T> {
             @Override
             public T deserialize(String topic, byte[] data) {
                 String objectHashcode = new String(data, Charset.defaultCharset());
-                return (T) serialisedObjectCache.get(Tuple.of(topic, Integer.valueOf(objectHashcode)));
+                return (T) serialisedObjectCache.get(Tuple2.of(topic, Integer.valueOf(objectHashcode)));
             }
 
             @Override

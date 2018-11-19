@@ -1,6 +1,6 @@
 package io.simplesource.kafka.internal.streams.topology;
 
-import io.simplesource.kafka.internal.util.Tuple;
+import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.kafka.model.*;
 import lombok.Value;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -59,13 +59,13 @@ class TestContextDriver<K, C, E, A> {
                 ctx.serdes().valueWithSequence().deserializer()), false, k, verifier);
     }
 
-    List<ValueWithSequence<E>> verifyEvents(K k, Consumer<Tuple<Integer, ValueWithSequence<E>>> verifier) {
+    List<ValueWithSequence<E>> verifyEvents(K k, Consumer<Tuple2<Integer, ValueWithSequence<E>>> verifier) {
         List<ValueWithSequence<E>> eventList = new ArrayList<>();
         int[] index = new int[1];
         while (true) {
             ValueWithSequence<E> response = verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.event),
                     ctx.serdes().aggregateKey().deserializer(),
-                    ctx.serdes().valueWithSequence().deserializer()), false, k, verifier == null ? null : resp -> verifier.accept(new Tuple<>(index[0], resp)));
+                    ctx.serdes().valueWithSequence().deserializer()), false, k, verifier == null ? null : resp -> verifier.accept(new Tuple2<>(index[0], resp)));
             if (response == null) break;
             index[0] = index[0] + 1;
             eventList.add(response);

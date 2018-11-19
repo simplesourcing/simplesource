@@ -1,6 +1,6 @@
 package io.simplesource.kafka.internal.streams.topology;
 
-import io.simplesource.kafka.internal.util.Tuple;
+import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.kafka.spec.WindowSpec;
 import lombok.Value;
 import org.apache.kafka.common.serialization.Serde;
@@ -39,7 +39,7 @@ final class ResultDistributor {
 
         KStream<String, V> joined = resultStream.selectKey((k, v) -> ctx.idMapper.apply(v))
                 .join(topicNameStream,
-                        Tuple::new,
+                        Tuple2::new,
                         JoinWindows.of(retentionMillis).until(retentionMillis * 2 + 1),
                         Joined.with(serdes.uuid(), serdes.value(), Serdes.String()))
                 .map((uuid, tuple) -> KeyValue.pair(String.format("%s:%s", tuple.v2(), uuid.toString()), tuple.v1()));
