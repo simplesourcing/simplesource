@@ -58,7 +58,7 @@ public final class EventSourcedApp {
      * Creates a CommandAPISet instance
      *
      * Used for directly exposing a CommandAPISet from within a Simple Sourcing application
-     * If creating a CommandAPISet from an external application, rather use the CommandAPISetBuilder DSL
+     * If creating a CommandAPISet from an external application, rather use the EventSourcedClient DSL
      *
      * @return a CommandAPISet
      */
