@@ -230,11 +230,8 @@ public final class AvroSerdes {
 
 
         static GenericRecord toCommandResponse(
-                final CommandResponse commandResponse,
-                final Schema aggregateSchema
-        ) {
-            final Schema schema = schemaCache.computeIfAbsent(aggregateSchema,
-                    CommandResponseAvroHelper::commandResponseSchema);
+                final CommandResponse commandResponse) {
+            final Schema schema = commandResponseSchema();
             final Schema resultSchema = schema.getField(RESULT).schema();
             final Schema responseFailureSchema = resultSchema.getTypes().get(0);
             final Schema reasonSchema = responseFailureSchema.getField(REASON).schema();
@@ -299,28 +296,28 @@ public final class AvroSerdes {
             return CommandError.of(error, errorMessage);
         }
 
-
-        private static Schema commandResponseSchema(final Schema aggregateSchema) {
+        private static Schema commandResponseSchema() {
             final Schema reasonSchema = SchemaBuilder
-                    .record(aggregateSchema.getName() + "Reason")
+                    .record("Reason")
                     .fields()
                     .name(ERROR_MESSAGE).type().stringType().noDefault()
                     .name(ERROR_CODE).type().stringType().noDefault()
                     .endRecord();
             final Schema updateFailure = SchemaBuilder
-                    .record(aggregateSchema.getName() + "CommandResponseFailure")
+                    .record( "CommandResponseFailure")
                     .fields()
                     .name(REASON).type(reasonSchema).noDefault()
                     .name(ADDITIONAL_REASONS).type().array().items(reasonSchema).noDefault()
                     .endRecord();
             final Schema updateSuccess = SchemaBuilder
-                    .record(aggregateSchema.getName() + "CommandResponseSuccess")
+                    .record("CommandResponseSuccess")
                     .fields()
                     .name(WRITE_SEQUENCE).type().longType().noDefault()
                     .endRecord();
 
             return SchemaBuilder
-                    .record(aggregateSchema.getName() + "CommandResponse").namespace(aggregateSchema.getNamespace())
+                    .record("CommandResponse")
+                    .namespace("io.simplesource.kafka.serialization.avro")
                     .fields()
                     .name(READ_SEQUENCE).type().longType().noDefault()
                     .name(COMMAND_ID).type().stringType().noDefault()

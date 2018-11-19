@@ -47,7 +47,7 @@ public final class CommandApiBuilder<K, C> {
         return this;
     }
 
-    public CommandApiBuilder<K, C> withSerdes(final CommandSerdes<K, C> aggregateSerdes) {
+    public CommandApiBuilder<K, C> withSerdes(final CommandSerdes<K, C> commandSerdes) {
         this.commandSerdes = commandSerdes;
         return this;
     }

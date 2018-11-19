@@ -25,8 +25,7 @@ class AvroCommandSerdeTests {
                 UserAccountAvroMappers.keyMapper,
                 UserAccountAvroMappers.commandMapper,
                 "http://localhost:8081",
-                true,
-                io.simplesource.kafka.serialization.avro.generated.UserAccount.SCHEMA$);
+                true);
     }
 
     @Test

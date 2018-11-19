@@ -80,7 +80,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
                 s -> AggregateUpdateResultAvroHelper.fromAggregateUpdateResult(s).map(aggregateMapper::fromGeneric));
 
         crp = GenericSerde.of(valueSerde,
-                v -> CommandResponseAvroHelper.toCommandResponse(v, aggregateSchema),
+                CommandResponseAvroHelper::toCommandResponse,
                 CommandResponseAvroHelper::fromCommandResponse);
     }
 
