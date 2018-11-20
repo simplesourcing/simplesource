@@ -19,6 +19,7 @@ import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.model.ValueWithSequence;
 import io.simplesource.kafka.spec.AggregateSpec;
 import io.simplesource.kafka.spec.CommandSpec;
+import io.simplesource.kafka.util.SpecUtils;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
@@ -63,7 +64,7 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
         final RequestPublisher<UUID, String> responseTopicMapPublisher =
                 new TestPublisher<>(driver, aggregateSerdes.commandResponseKey(), Serdes.String(), topicName(TopicEntity.command_response_topic_map));
 
-        CommandSpec<K, C> commandSpec = aggregateSpec.getCommandSpec("localhost");
+        CommandSpec<K, C> commandSpec = SpecUtils.getCommandSpec(aggregateSpec,"localhost");
         KafkaRequestAPI.RequestAPIContext<?, ?, CommandResponse> requestCtx = KafkaCommandAPI.getRequestAPIContext(commandSpec, kafkaConfig);
         
         TestTopologyReceiver.ReceiverSpec<UUID, CommandResponse> receiverSpec = new TestTopologyReceiver.ReceiverSpec<>(

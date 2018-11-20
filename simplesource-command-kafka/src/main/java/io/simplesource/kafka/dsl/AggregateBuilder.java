@@ -35,7 +35,7 @@ public final class AggregateBuilder<K, C, E, A> {
 
     private AggregateBuilder() {
         topicConfig = new HashMap<>();
-        commandResponseStoreSpec = new WindowSpec(3600);
+        commandResponseStoreSpec = new WindowSpec(TimeUnit.DAYS.toSeconds(1L));
     }
 
     public AggregateBuilder<K, C, E, A> withName(final String name) {

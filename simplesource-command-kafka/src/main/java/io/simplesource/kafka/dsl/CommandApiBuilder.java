@@ -28,8 +28,8 @@ public final class CommandApiBuilder<K, C> {
     }
 
     private CommandApiBuilder() {
-        outputTopicSpec = defaultTopicConfig();
-        commandResponseStoreSpec = new WindowSpec(3600);
+        outputTopicSpec = defaultTopicConfig(1, 1);
+        commandResponseStoreSpec = new WindowSpec(TimeUnit.DAYS.toSeconds(1L));
     }
 
     public CommandApiBuilder<K, C> withName(final String name) {
@@ -49,6 +49,11 @@ public final class CommandApiBuilder<K, C> {
 
     public CommandApiBuilder<K, C> withSerdes(final CommandSerdes<K, C> commandSerdes) {
         this.commandSerdes = commandSerdes;
+        return this;
+    }
+
+    public CommandApiBuilder<K, C> withTopicSpec(int partitions, int replication) {
+        this.outputTopicSpec = defaultTopicConfig(partitions, replication);
         return this;
     }
 
@@ -77,9 +82,9 @@ public final class CommandApiBuilder<K, C> {
         return new CommandSpec<>(name, clientId, resourceNamingStrategy, commandSerdes, commandResponseStoreSpec, outputTopicSpec);
     }
 
-    private TopicSpec defaultTopicConfig() {
+    private TopicSpec defaultTopicConfig(int partitions, int replication) {
         final Map<String, String> commandResponseTopic = new HashMap<>();
         commandResponseTopic.put(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(TimeUnit.DAYS.toMillis(1)));
-        return new TopicSpec(1, (short)1, commandResponseTopic);
+        return new TopicSpec(partitions, (short)replication, commandResponseTopic);
     }
 }

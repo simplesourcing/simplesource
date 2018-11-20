@@ -73,11 +73,6 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
         return FutureResult.ofCompletableFuture(completableFuture.thenApply(CommandResponse::sequenceResult));
     }
 
-    @Override
-    public void close() {
-        requestApi.close();
-    }
-
     public static <K, C> KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> getRequestAPIContext(CommandSpec<K, C> commandSpec, KafkaConfig kafkaConfig) {
         ResourceNamingStrategy namingStrategy = commandSpec.resourceNamingStrategy();
         CommandSerdes<K, C> serdes = commandSpec.serdes();

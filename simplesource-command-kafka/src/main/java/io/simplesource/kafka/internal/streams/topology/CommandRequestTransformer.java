@@ -7,6 +7,7 @@ import io.simplesource.data.Sequence;
 import io.simplesource.kafka.model.AggregateUpdate;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.ValueWithSequence;
+import io.simplesource.kafka.spec.AggregateSpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +23,8 @@ final class CommandRequestTransformer {
             final AggregateUpdate<A> currentUpdateInput, final CommandRequest<K, C> request) {
 
         final K readOnlyKey = request.aggregateKey();
+        AggregateSpec.Generation<K, C, E, A> generation = ctx.aggregateSpec().generation();
+
         AggregateUpdate<A> currentUpdatePre;
         try {
             currentUpdatePre = Optional.ofNullable(currentUpdateInput)
@@ -35,7 +38,7 @@ final class CommandRequestTransformer {
         try {
             Optional<CommandError> maybeReject =
                     Objects.equals(request.readSequence(), currentUpdate.sequence()) ? Optional.empty() :
-                            ctx.aggregateSpec().generation().invalidSequenceHandler().shouldReject(
+                            generation.invalidSequenceHandler().shouldReject(
                                     readOnlyKey,
                                     currentUpdate.sequence(),
                                     request.readSequence(),
@@ -44,7 +47,7 @@ final class CommandRequestTransformer {
 
             commandResult = maybeReject.<Result<CommandError, NonEmptyList<E>>>map(
                     commandErrorReason -> Result.failure(commandErrorReason)).orElseGet(
-                    () -> ctx.aggregateSpec().generation().commandHandler().interpretCommand(
+                    () -> generation.commandHandler().interpretCommand(
                             readOnlyKey,
                             currentUpdate.aggregate(),
                             request.command()));

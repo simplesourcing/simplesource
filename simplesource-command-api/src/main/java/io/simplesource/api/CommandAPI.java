@@ -63,11 +63,6 @@ public interface CommandAPI<K, C> {
             .flatMap(v -> queryCommandResult(commandRequest.commandId, timeout));
     }
 
-    /**
-     * Close the API and free up any resources
-     */
-    void close();
-
     @Value
     class Request<K, C> {
         // the aggregate key the command applies to

@@ -143,14 +143,7 @@ public final class KafkaRequestAPI<K, I, O> {
 
         this.responseSubscription = responseSubscriber.apply(responseReceiver::receive);
 
-        Runtime.getRuntime().addShutdownHook(
-                new Thread(
-                        () -> {
-                            logger.info("CommandAPI shutting down");
-                            this.responseSubscription.close();
-                        }
-                )
-        );
+        Runtime.getRuntime().addShutdownHook(new Thread(this::close));
     }
 
     public FutureResult<Exception, RequestPublisher.PublishResult> publishRequest(final K key, UUID requestId, final I request) {
@@ -186,6 +179,7 @@ public final class KafkaRequestAPI<K, I, O> {
     }
 
     public void close() {
+        logger.info("Request API shutting down");
         responseHandlers.removeAll(handlers ->
                 handlers.forEachFuture(future ->
                         future.completeExceptionally(new Exception("Consumer closed before future."))));
