@@ -24,9 +24,4 @@ public final class PrefixResourceNamingStrategy implements ResourceNamingStrateg
         return prefix + aggregateName + separator + topicEntity;
     }
 
-    @Override
-    public String storeName(final String aggregateName, final String stateStoreEntity) {
-        return prefix + aggregateName + separator + stateStoreEntity + "_store";
-    }
-
 }

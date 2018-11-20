@@ -122,10 +122,6 @@ class TestContextBuilder {
         };
     }
 
-    public static String stateStoreName(AggregateResources.StateStoreEntity entity) {
-        return RESOURCE_NAMING_STRATEGY.storeName(AGGREGATE_NAME, entity.name());
-    }
-
     public static String topicName(AggregateResources.TopicEntity entity) {
         return RESOURCE_NAMING_STRATEGY.topicName(AGGREGATE_NAME, entity.name());
     }

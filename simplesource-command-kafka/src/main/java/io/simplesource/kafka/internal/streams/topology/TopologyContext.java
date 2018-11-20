@@ -61,10 +61,6 @@ public final class TopologyContext<K, C, E, A> {
         return resourceNamingStrategy().topicName(aggregateSpec.aggregateName(), entity.name());
     }
 
-    public String stateStoreName(AggregateResources.StateStoreEntity entity) {
-        return resourceNamingStrategy().storeName(aggregateName(), entity.name());
-    }
-
     public String aggregateName() {
         return aggregateSpec.aggregateName();
     }

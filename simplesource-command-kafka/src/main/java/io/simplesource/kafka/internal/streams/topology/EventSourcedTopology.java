@@ -22,21 +22,21 @@ public final class EventSourcedTopology {
         // Consume from topics
         final KStream<K, CommandRequest<K, C>> commandRequestStream = EventSourcedConsumer.commandRequestStream(ctx, builder);
         final KStream<K, CommandResponse> commandResponseStream = EventSourcedConsumer.commandResponseStream(ctx, builder);
-        KTable<K, AggregateUpdate<A>> aggregateTable = EventSourcedConsumer.aggregateTable(ctx, builder);
-        DistributorContext<CommandResponse> distCtx = getDistributorContext(ctx);
+        final KTable<K, AggregateUpdate<A>> aggregateTable = EventSourcedConsumer.aggregateTable(ctx, builder);
+        final DistributorContext<CommandResponse> distCtx = getDistributorContext(ctx);
         final KStream<UUID, String> resultsTopicMapStream = ResultDistributor.resultTopicMapStream(distCtx,  builder);
 
         // Handle idempotence by splitting stream into processed and unprocessed
         Tuple2<KStream<K, CommandRequest<K, C>>, KStream<K, CommandResponse>> reqResp = EventSourcedStreams.getProcessedCommands(
                 ctx, commandRequestStream, commandResponseStream);
-        KStream<K, CommandRequest<K, C>> unprocessedRequests = reqResp.v1();
-        KStream<K, CommandResponse> processedResponses = reqResp.v2();
+        final KStream<K, CommandRequest<K, C>> unprocessedRequests = reqResp.v1();
+        final KStream<K, CommandResponse> processedResponses = reqResp.v2();
         
         // Transformations
-        final KStream<K, CommandEvents<E, A>> eventResultStream = EventSourcedStreams.eventResultStream2(ctx, unprocessedRequests, aggregateTable);
-        KStream<K, ValueWithSequence<E>> eventsWithSequence = EventSourcedStreams.getEventsWithSequence(eventResultStream);
+        final KStream<K, CommandEvents<E, A>> commandEvents = EventSourcedStreams.getCommandEvents(ctx, unprocessedRequests, aggregateTable);
+        final KStream<K, ValueWithSequence<E>> eventsWithSequence = EventSourcedStreams.getEventsWithSequence(commandEvents);
 
-        final KStream<K, AggregateUpdateResult<A>> aggregateUpdateResults = EventSourcedStreams.getAggregateUpdateResults(ctx, eventResultStream);
+        final KStream<K, AggregateUpdateResult<A>> aggregateUpdateResults = EventSourcedStreams.getAggregateUpdateResults(ctx, commandEvents);
         final KStream<K, AggregateUpdate<A>> aggregateUpdates = EventSourcedStreams.getAggregateUpdates(aggregateUpdateResults);
         final KStream<K, CommandResponse>commandResponses = EventSourcedStreams.getCommandResponses(aggregateUpdateResults);
 

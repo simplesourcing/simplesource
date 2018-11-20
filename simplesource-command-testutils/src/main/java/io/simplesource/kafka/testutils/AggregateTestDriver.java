@@ -2,18 +2,21 @@ package io.simplesource.kafka.testutils;
 
 import io.simplesource.api.CommandAPI;
 import io.simplesource.api.CommandError;
-import io.simplesource.data.Sequence;
 import io.simplesource.data.FutureResult;
+import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.dsl.KafkaConfig;
-import io.simplesource.kafka.internal.client.ResponseSubscription;
 import io.simplesource.kafka.internal.client.KafkaCommandAPI;
 import io.simplesource.kafka.internal.client.KafkaRequestAPI;
 import io.simplesource.kafka.internal.client.RequestPublisher;
+import io.simplesource.kafka.internal.client.ResponseSubscription;
 import io.simplesource.kafka.internal.streams.topology.EventSourcedTopology;
 import io.simplesource.kafka.internal.streams.topology.TopologyContext;
-import io.simplesource.kafka.model.*;
+import io.simplesource.kafka.model.AggregateUpdate;
+import io.simplesource.kafka.model.CommandRequest;
+import io.simplesource.kafka.model.CommandResponse;
+import io.simplesource.kafka.model.ValueWithSequence;
 import io.simplesource.kafka.spec.AggregateSpec;
 import io.simplesource.kafka.spec.CommandSpec;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -21,15 +24,15 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.TopologyTestDriver;
-import org.apache.kafka.streams.state.*;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.stream.StreamSupport;
 
-import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity;
 
 public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
@@ -146,10 +149,4 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
         return aggregateSpec.serialization().resourceNamingStrategy().topicName(
             aggregateSpec.aggregateName(), topic.name());
     }
-
-    private String storeName(final AggregateResources.StateStoreEntity store) {
-        return aggregateSpec.serialization().resourceNamingStrategy().storeName(
-            aggregateSpec.aggregateName(), store.name());
-    }
-
 }
