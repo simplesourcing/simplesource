@@ -1,20 +1,20 @@
 package io.simplesource.kafka.internal.streams.topology;
 
 import io.simplesource.kafka.internal.util.Tuple2;
-import io.simplesource.kafka.model.*;
+import io.simplesource.kafka.model.AggregateUpdate;
+import io.simplesource.kafka.model.CommandRequest;
+import io.simplesource.kafka.model.CommandResponse;
+import io.simplesource.kafka.model.ValueWithSequence;
 import lombok.Value;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.TopologyTestDriver;
-import org.apache.kafka.streams.kstream.Windowed;
-import org.apache.kafka.streams.state.KeyValueStore;
-import org.apache.kafka.streams.state.WindowStore;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity;
-import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Value

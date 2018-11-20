@@ -116,33 +116,38 @@ public final class AggregateBuilder<K, C, E, A> {
     private Map<TopicEntity, TopicSpec> defaultTopicConfig(final int partitions, final int replication, final int retentionDays) {
         short replicationShort = (short)replication;
         final Map<TopicEntity, TopicSpec> config = new HashMap<>();
+        String retentionMillis = String.valueOf(TimeUnit.HOURS.toMillis(retentionDays));
 
         final Map<String, String> commandRequestTopic = new HashMap<>();
-        commandRequestTopic.put(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(TimeUnit.HOURS.toMillis(retentionDays)));
+        commandRequestTopic.put(TopicConfig.RETENTION_MS_CONFIG, retentionMillis);
         config.put(
             TopicEntity.command_request,
             new TopicSpec(partitions, replicationShort, commandRequestTopic));
 
+        // turn on log compaction of aggregates by default
         final Map<String, String> aggregateTopic = new HashMap<>();
-        aggregateTopic.put(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(TimeUnit.DAYS.toMillis(retentionDays)));
+        aggregateTopic.put(TopicConfig.CLEANUP_POLICY_CONFIG,TopicConfig.CLEANUP_POLICY_COMPACT);
+        aggregateTopic.put(TopicConfig.MIN_COMPACTION_LAG_MS_CONFIG, retentionMillis);
+        aggregateTopic.put(TopicConfig.DELETE_RETENTION_MS_CONFIG, retentionMillis);
         config.put(
             TopicEntity.aggregate,
             new TopicSpec(partitions, replicationShort, aggregateTopic));
 
+        // never delete old log segments for events
         final Map<String, String> eventTopic = new HashMap<>();
-        eventTopic.put(TopicConfig.RETENTION_MS_CONFIG, "-1"); // never delete old log segments
+        eventTopic.put(TopicConfig.RETENTION_MS_CONFIG, "-1");
         config.put(
                 TopicEntity.event,
                 new TopicSpec(partitions, replicationShort, eventTopic));
 
         final Map<String, String> commandResponseTopic = new HashMap<>();
-        aggregateTopic.put(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(TimeUnit.DAYS.toMillis(retentionDays)));
+        aggregateTopic.put(TopicConfig.RETENTION_MS_CONFIG, retentionMillis);
         config.put(
                 TopicEntity.command_response,
                 new TopicSpec(partitions, replicationShort, commandResponseTopic));
 
         final Map<String, String> commandResponseTopicMapTopic = new HashMap<>();
-        aggregateTopic.put(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(TimeUnit.DAYS.toMillis(retentionDays)));
+        aggregateTopic.put(TopicConfig.RETENTION_MS_CONFIG, retentionMillis);
         config.put(
                 TopicEntity.command_response_topic_map,
                 new TopicSpec(partitions, replicationShort, commandResponseTopicMapTopic));

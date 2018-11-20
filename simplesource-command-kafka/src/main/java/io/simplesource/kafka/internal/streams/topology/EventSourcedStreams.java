@@ -16,9 +16,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.BiFunction;
 
-import static io.simplesource.data.Result.failure;
-import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity.aggregate_update;
-
 final class EventSourcedStreams {
     private static final Logger logger = LoggerFactory.getLogger(EventSourcedStreams.class);
 
