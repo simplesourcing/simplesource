@@ -1,19 +1,20 @@
 package io.simplesource.kafka.internal.streams.topology;
 
-import io.simplesource.kafka.api.AggregateResources;
-import io.simplesource.kafka.internal.util.Tuple;
-import io.simplesource.kafka.model.*;
+import io.simplesource.kafka.internal.util.Tuple2;
+import io.simplesource.kafka.model.AggregateUpdate;
+import io.simplesource.kafka.model.CommandRequest;
+import io.simplesource.kafka.model.CommandResponse;
+import io.simplesource.kafka.model.ValueWithSequence;
 import lombok.Value;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.streams.TopologyTestDriver;
-import org.apache.kafka.streams.kstream.Windowed;
-import org.apache.kafka.streams.state.WindowStore;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity;
-import static io.simplesource.kafka.api.AggregateResources.StateStoreEntity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Value
@@ -30,6 +31,10 @@ class TestContextDriver<K, C, E, A> {
 
     void publishCommand(K key, CommandRequest<K, C> commandRequest) {
         commandPublisher.publish(ctx.topicName(TopicEntity.command_request), key, commandRequest);
+    }
+
+    public <KP, VP> TestDriverPublisher<KP, VP> getPublisher(final Serde<KP> keySerde, final Serde<VP> valueSerde) {
+        return new TestDriverPublisher<>(driver, keySerde, valueSerde);
     }
 
     <V> V verifyAndReturn(ProducerRecord<K, V> record, boolean isNull, K k, Consumer<V> verifier) {
@@ -54,13 +59,13 @@ class TestContextDriver<K, C, E, A> {
                 ctx.serdes().valueWithSequence().deserializer()), false, k, verifier);
     }
 
-    List<ValueWithSequence<E>> verifyEvents(K k, Consumer<Tuple<Integer, ValueWithSequence<E>>> verifier) {
+    List<ValueWithSequence<E>> verifyEvents(K k, Consumer<Tuple2<Integer, ValueWithSequence<E>>> verifier) {
         List<ValueWithSequence<E>> eventList = new ArrayList<>();
         int[] index = new int[1];
         while (true) {
             ValueWithSequence<E> response = verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.event),
                     ctx.serdes().aggregateKey().deserializer(),
-                    ctx.serdes().valueWithSequence().deserializer()), false, k, verifier == null ? null : resp -> verifier.accept(new Tuple<>(index[0], resp)));
+                    ctx.serdes().valueWithSequence().deserializer()), false, k, verifier == null ? null : resp -> verifier.accept(new Tuple2<>(index[0], resp)));
             if (response == null) break;
             index[0] = index[0] + 1;
             eventList.add(response);
@@ -75,8 +80,8 @@ class TestContextDriver<K, C, E, A> {
         }
     }
 
-    ValueWithSequence<E> verifyNoEvent() {
-        return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.event),
+    void verifyNoEvent() {
+        verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.event),
                 ctx.serdes().aggregateKey().deserializer(),
                 ctx.serdes().valueWithSequence().deserializer()), true, null, null);
     }
@@ -94,8 +99,8 @@ class TestContextDriver<K, C, E, A> {
         }
     }
 
-    CommandResponse verifyNoCommandResponse() {
-        return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.command_response),
+    void verifyNoCommandResponse() {
+        verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.command_response),
                 ctx.serdes().aggregateKey().deserializer(),
                 ctx.serdes().commandResponse().deserializer()), true, null, null);
     }
@@ -118,22 +123,4 @@ class TestContextDriver<K, C, E, A> {
                 break;
         }
     }
-
-    WindowStore<UUID, AggregateUpdateResult<A>> getCommandResultStore() {
-        WindowStore<UUID, AggregateUpdateResult<A>> store = driver.getWindowStore(ctx.stateStoreName(StateStoreEntity.command_response));
-        return store;
-    }
-
-    Map<UUID, AggregateUpdateResult<A>> getCommandResults() {
-        HashMap<UUID, AggregateUpdateResult<A>> map = new HashMap<>();
-
-        getCommandResultStore().all().forEachRemaining(kv -> {
-            Windowed<UUID> wKey = kv.key;
-            AggregateUpdateResult<A> update = kv.value;
-            map.put(wKey.key(), update);
-        });
-        return map;
-    }
-
-
 }

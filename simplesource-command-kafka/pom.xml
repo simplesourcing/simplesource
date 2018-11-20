@@ -5,7 +5,7 @@
     <parent>
         <artifactId>simplesource-command-parent</artifactId>
         <groupId>io.simplesource</groupId>
-        <version>0.1.7-SNAPSHOT</version>
+        <version>0.2.0-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -43,11 +43,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
-        <dependency>
-            <groupId>javax.activation</groupId>
-            <artifactId>activation</artifactId>
-            <scope>runtime</scope>
-        </dependency>
 
         <dependency>
             <groupId>io.confluent</groupId>
@@ -56,12 +51,6 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-        </dependency>
-
-        <!-- Netty -->
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
         </dependency>
 
         <!-- test -->
@@ -129,7 +118,6 @@
             <version>${junit.jupiter.version}</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>

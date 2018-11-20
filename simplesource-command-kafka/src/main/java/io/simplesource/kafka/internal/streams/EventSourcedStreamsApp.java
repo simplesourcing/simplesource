@@ -19,7 +19,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.simplesource.kafka.internal.streams.KafkaStreamsUtils.*;
+import static io.simplesource.kafka.util.KafkaStreamsUtils.*;
 import static java.util.Objects.nonNull;
 
 public final class EventSourcedStreamsApp {
@@ -34,7 +34,7 @@ public final class EventSourcedStreamsApp {
             final AggregateSetSpec aggregateSetSpec
     ) {
         this.aggregateSetSpec = aggregateSetSpec;
-        adminClient = AdminClient.create(aggregateSetSpec.executionSpec().kafkaConfig().adminClientConfig());
+        adminClient = AdminClient.create(aggregateSetSpec.kafkaConfig().adminClientConfig());
     }
 
     public synchronized void start() {
@@ -106,10 +106,10 @@ public final class EventSourcedStreamsApp {
         logger.info("Topology description {}", topology.describe());
 
         // empty and set state store directory
-        new File(aggregateSetSpec.executionSpec().kafkaConfig().stateDir()).mkdirs();
+        new File(aggregateSetSpec.kafkaConfig().stateDir()).mkdirs();
 
         final KafkaStreams streams = new KafkaStreams(
-                topology, new StreamsConfig(aggregateSetSpec.executionSpec().kafkaConfig().streamsConfig()));
+                topology, new StreamsConfig(aggregateSetSpec.kafkaConfig().streamsConfig()));
         registerExceptionHandler(logger, streams);
         addShutdownHook(logger, streams);
         streams.start();

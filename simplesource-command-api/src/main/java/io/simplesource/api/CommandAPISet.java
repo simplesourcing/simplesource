@@ -12,5 +12,4 @@ public interface CommandAPISet {
      * @return the aggregate matching the given name
      */
     <K, C> CommandAPI<K, C> getCommandAPI(String aggregateName);
-
 }

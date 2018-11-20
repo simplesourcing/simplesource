@@ -11,12 +11,12 @@ import java.util.function.Function;
 
 @Value
 @AllArgsConstructor
-public final class AggregateUpdateResult<P> {
+public final class AggregateUpdateResult<A> {
     private UUID commandId;
     private Sequence readSequence;
-    private Result<CommandError, AggregateUpdate<P>> updatedAggregateResult;
+    private Result<CommandError, AggregateUpdate<A>> updatedAggregateResult;
 
-    public <S> AggregateUpdateResult<S> map(final Function<P, S> f) {
+    public <S> AggregateUpdateResult<S> map(final Function<A, S> f) {
         return new AggregateUpdateResult<>(
                 commandId,
                 readSequence,

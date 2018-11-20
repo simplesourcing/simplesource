@@ -8,10 +8,9 @@ import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.api.InitialValue;
 import io.simplesource.kafka.api.ResourceNamingStrategy;
 import io.simplesource.kafka.internal.streams.InvalidSequenceHandlerProvider;
-import io.simplesource.kafka.internal.util.RetryDelay;
 import io.simplesource.kafka.spec.AggregateSpec;
 import io.simplesource.kafka.spec.TopicSpec;
-import io.simplesource.kafka.spec.WindowedStateStoreSpec;
+import io.simplesource.kafka.spec.WindowSpec;
 import org.apache.kafka.common.config.TopicConfig;
 
 import java.util.*;
@@ -24,9 +23,8 @@ public final class AggregateBuilder<K, C, E, A> {
     private ResourceNamingStrategy resourceNamingStrategy;
     private AggregateSerdes<K, C, E, A> aggregateSerdes;
     private Map<TopicEntity, TopicSpec> topicConfig;
-    private WindowedStateStoreSpec commandResponseStoreSpec;
+    private WindowSpec commandResponseStoreSpec;
     private InitialValue<K, A> initialValue;
-    private RetryDelay retryDelay = (startTime, timeoutMillis, spinCount) -> 15L;
     private CommandHandler<K, C, E, A> commandHandler;
     private Aggregator<E, A> aggregator;
     private InvalidSequenceHandler<K, C, A> invalidSequenceHandler;
@@ -36,8 +34,8 @@ public final class AggregateBuilder<K, C, E, A> {
     }
 
     private AggregateBuilder() {
-        topicConfig = defaultTopicConfig();
-        commandResponseStoreSpec = new WindowedStateStoreSpec(3600);
+        topicConfig = new HashMap<>();
+        commandResponseStoreSpec = new WindowSpec(TimeUnit.DAYS.toSeconds(1L));
     }
 
     public AggregateBuilder<K, C, E, A> withName(final String name) {
@@ -55,18 +53,19 @@ public final class AggregateBuilder<K, C, E, A> {
         return this;
     }
 
+    public AggregateBuilder<K, C, E, A> withDefaultTopicSpec(final int partitions, final int replication, final int retentionDays) {
+        Map<TopicEntity, TopicSpec> defaultTopicConf = defaultTopicConfig(partitions, replication, retentionDays);
+        defaultTopicConf.keySet().forEach(topicKey -> topicConfig.putIfAbsent(topicKey, defaultTopicConf.get(topicKey)));
+        return this;
+    }
+
     public AggregateBuilder<K, C, E, A> withTopicSpec(final TopicEntity topicEntity, final TopicSpec topicSpec) {
         topicConfig.put(topicEntity, topicSpec);
         return this;
     }
 
     public AggregateBuilder<K, C, E, A> withCommandResponseRetention(final long retentionInSeconds) {
-        commandResponseStoreSpec = new WindowedStateStoreSpec(retentionInSeconds);
-        return this;
-    }
-
-    public AggregateBuilder<K, C, E, A> withRetryDelay(final RetryDelay retryDelay) {
-        this.retryDelay = retryDelay;
+        commandResponseStoreSpec = new WindowSpec(retentionInSeconds);
         return this;
     }
 
@@ -103,42 +102,55 @@ public final class AggregateBuilder<K, C, E, A> {
         if (invalidSequenceHandler == null)
             invalidSequenceHandler = InvalidSequenceHandlerProvider.getForStrategy(InvalidSequenceStrategy.Strict);
 
-        // defensive copy
+        // set missing topic configuration to default
+        withDefaultTopicSpec(1, 1, 1);
 
         final AggregateSpec.Serialization<K, C, E, A> serialization =
             new AggregateSpec.Serialization<>(resourceNamingStrategy, aggregateSerdes);
         final AggregateSpec.Generation<K, C, E, A> generation =
-            new AggregateSpec.Generation<>(topicConfig, commandResponseStoreSpec, retryDelay, commandHandler, invalidSequenceHandler, aggregator, initialValue);
+            new AggregateSpec.Generation<>(topicConfig, commandResponseStoreSpec, commandHandler, invalidSequenceHandler, aggregator, initialValue);
 
         return new AggregateSpec<>(name, serialization, generation);
     }
 
-    private Map<TopicEntity, TopicSpec> defaultTopicConfig() {
+    private Map<TopicEntity, TopicSpec> defaultTopicConfig(final int partitions, final int replication, final int retentionDays) {
+        short replicationShort = (short)replication;
         final Map<TopicEntity, TopicSpec> config = new HashMap<>();
+        String retentionMillis = String.valueOf(TimeUnit.HOURS.toMillis(retentionDays));
 
         final Map<String, String> commandRequestTopic = new HashMap<>();
-        commandRequestTopic.put(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(TimeUnit.HOURS.toMillis(1)));
+        commandRequestTopic.put(TopicConfig.RETENTION_MS_CONFIG, retentionMillis);
         config.put(
             TopicEntity.command_request,
-            new TopicSpec(1, (short)1, commandRequestTopic));
+            new TopicSpec(partitions, replicationShort, commandRequestTopic));
 
+        // turn on log compaction of aggregates by default
         final Map<String, String> aggregateTopic = new HashMap<>();
-        aggregateTopic.put(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(TimeUnit.DAYS.toMillis(1)));
+        aggregateTopic.put(TopicConfig.CLEANUP_POLICY_CONFIG,TopicConfig.CLEANUP_POLICY_COMPACT);
+        aggregateTopic.put(TopicConfig.MIN_COMPACTION_LAG_MS_CONFIG, retentionMillis);
+        aggregateTopic.put(TopicConfig.DELETE_RETENTION_MS_CONFIG, retentionMillis);
         config.put(
             TopicEntity.aggregate,
-            new TopicSpec(1, (short)1, aggregateTopic));
+            new TopicSpec(partitions, replicationShort, aggregateTopic));
 
+        // never delete old log segments for events
         final Map<String, String> eventTopic = new HashMap<>();
-        eventTopic.put(TopicConfig.RETENTION_MS_CONFIG, "-1"); // never delete old log segments
+        eventTopic.put(TopicConfig.RETENTION_MS_CONFIG, "-1");
         config.put(
                 TopicEntity.event,
-                new TopicSpec(8, (short)1, eventTopic));
+                new TopicSpec(partitions, replicationShort, eventTopic));
 
         final Map<String, String> commandResponseTopic = new HashMap<>();
-        aggregateTopic.put(TopicConfig.RETENTION_MS_CONFIG, String.valueOf(TimeUnit.DAYS.toMillis(1)));
+        aggregateTopic.put(TopicConfig.RETENTION_MS_CONFIG, retentionMillis);
         config.put(
                 TopicEntity.command_response,
-                new TopicSpec(1, (short)1, commandResponseTopic));
+                new TopicSpec(partitions, replicationShort, commandResponseTopic));
+
+        final Map<String, String> commandResponseTopicMapTopic = new HashMap<>();
+        aggregateTopic.put(TopicConfig.RETENTION_MS_CONFIG, retentionMillis);
+        config.put(
+                TopicEntity.command_response_topic_map,
+                new TopicSpec(partitions, replicationShort, commandResponseTopicMapTopic));
 
         return config;
     }

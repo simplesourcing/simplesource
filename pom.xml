@@ -5,10 +5,10 @@
 
     <groupId>io.simplesource</groupId>
     <artifactId>simplesource-command-parent</artifactId>
-    <version>0.1.7-SNAPSHOT</version>
+    <version>0.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>simplesourcing</name>
+    <name>simplesource</name>
     <description>Simple Sourcing Event Sourcing API</description>
     <url>http://simplesource.io</url>
     <licenses>
@@ -129,6 +129,7 @@
                         <include>**/*Tests.java</include>
                         <include>**/*TestCase.java</include>
                     </includes>
+                    <useSystemClassLoader>false</useSystemClassLoader>
                     <properties>
                         <!-- <includeTags>fast</includeTags> -->
                         <excludeTags>slow</excludeTags>

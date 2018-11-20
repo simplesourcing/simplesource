@@ -4,6 +4,7 @@ import io.simplesource.api.CommandError;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
+import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.dsl.InvalidSequenceStrategy;
 import io.simplesource.kafka.internal.streams.MockInMemorySerde;
 import io.simplesource.kafka.internal.streams.model.TestAggregate;
@@ -11,7 +12,11 @@ import io.simplesource.kafka.internal.streams.model.TestCommand;
 import io.simplesource.kafka.internal.streams.model.TestEvent;
 import io.simplesource.kafka.internal.streams.model.TestHandlers;
 import io.simplesource.kafka.model.*;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.TopologyTestDriver;
+import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.junit.jupiter.api.AfterEach;
@@ -19,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import scala.collection.immutable.Stream;
 
 import java.util.List;
 import java.util.Map;
@@ -26,7 +32,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
@@ -119,21 +124,6 @@ class EventSourcedTopologyTest {
             assertThat(a.aggregate().get()).isEqualTo(new TestAggregate(name));
         });
         ctxDriver.verifyNoAggregateUpdate();
-
-        int[] count = new int[1];
-        KeyValueIterator<Windowed<UUID>, AggregateUpdateResult<Optional<TestAggregate>>> resultStoreUpdates = ctxDriver.getCommandResultStore().all();
-
-        resultStoreUpdates.forEachRemaining(kv -> {
-            count[0] = count[0] + 1;
-            UUID k = kv.key.key();
-            assertThat(k).isEqualTo(commandRequest.commandId());
-            Result<CommandError, AggregateUpdate<Optional<TestAggregate>>> result = kv.value.updatedAggregateResult();
-            assertThat(result.isSuccess()).isEqualTo(true);
-            AggregateUpdate<Optional<TestAggregate>> aggUpdate = result.getOrElse(AggregateUpdate.of(Optional.empty()));
-            assertThat(aggUpdate.aggregate().isPresent()).isEqualTo(true);
-            assertThat(aggUpdate.aggregate().get().name()).isEqualTo(name);
-        });
-        assertThat(count[0]).isGreaterThan(0);
     }
 
     @Test
@@ -182,11 +172,6 @@ class EventSourcedTopologyTest {
 
             ctxDriver.verifyNoCommandResponse();
             ctxDriver.verifyNoAggregateUpdate();
-
-            Map<UUID, AggregateUpdateResult<Optional<TestAggregate>>> results = ctxDriver.getCommandResults();
-            AggregateUpdateResult<Optional<TestAggregate>> result = results.get(commandRequest.commandId());
-            assertThat(result.updatedAggregateResult().isSuccess()).isEqualTo(true);
-            result.updatedAggregateResult().ifSuccessful(res -> assertThat(res.aggregate().get().name()).isEqualTo(newName));
         }
     }
 
@@ -239,6 +224,39 @@ class EventSourcedTopologyTest {
             assertThat(r.sequenceResult().getOrElse(Sequence.position(2000))).isEqualTo(Sequence.first().next());
             assertThat(r).isEqualToComparingFieldByField(response);
         });
+    }
 
+    @Test
+    void testDistributor() {
+        String topicNamesTopic = "topic_names";
+        String outputTopic = "output_topic";
+
+        TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> ctx = ctxBuilder.buildContext();
+        driver = new TestDriverInitializer().build(builder -> {
+            EventSourcedTopology.InputStreams<String, TestCommand> inputStreams = EventSourcedTopology.addTopology(ctx, builder);
+            DistributorContext<CommandResponse> context = new DistributorContext<>(
+                    topicNamesTopic,
+                    new DistributorSerdes<>(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()),
+                    ctx.aggregateSpec().generation().stateStoreSpec(),
+                    CommandResponse::commandId);
+
+            KStream<UUID, String> topicNames = builder.stream(topicNamesTopic, Consumed.with(ctx.serdes().commandResponseKey(), Serdes.String()));
+            ResultDistributor.distribute(context, inputStreams.commandResponse, topicNames);
+        });
+        TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
+
+        CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
+                key, new TestCommand.CreateCommand("Name 2"), Sequence.first(), UUID.randomUUID());
+
+        ctxDriver.getPublisher(ctx.serdes().commandResponseKey(), Serdes.String())
+                .publish(topicNamesTopic, commandRequest.commandId(), outputTopic);
+        ctxDriver.publishCommand( key, commandRequest);
+
+        ProducerRecord<String, CommandResponse> output = driver.readOutput(outputTopic,
+                Serdes.String().deserializer(),
+                ctx.serdes().commandResponse().deserializer());
+
+        assertThat(output.key()).isEqualTo(String.format("%s:%s", outputTopic, commandRequest.commandId().toString()));
+        assertThat(output.value().sequenceResult().isSuccess()).isEqualTo(true);
     }
 }

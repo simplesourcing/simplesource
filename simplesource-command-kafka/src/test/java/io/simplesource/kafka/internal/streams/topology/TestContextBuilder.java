@@ -8,7 +8,7 @@ import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.dsl.AggregateBuilder;
 import io.simplesource.kafka.dsl.InvalidSequenceStrategy;
 import io.simplesource.kafka.internal.streams.MockInMemorySerde;
-import io.simplesource.kafka.internal.streams.PrefixResourceNamingStrategy;
+import io.simplesource.kafka.util.PrefixResourceNamingStrategy;
 import io.simplesource.kafka.internal.streams.model.TestAggregate;
 import io.simplesource.kafka.internal.streams.model.TestCommand;
 import io.simplesource.kafka.internal.streams.model.TestEvent;
@@ -120,10 +120,6 @@ class TestContextBuilder {
                 return new MockInMemorySerde<>();
             }
         };
-    }
-
-    public static String stateStoreName(AggregateResources.StateStoreEntity entity) {
-        return RESOURCE_NAMING_STRATEGY.storeName(AGGREGATE_NAME, entity.name());
     }
 
     public static String topicName(AggregateResources.TopicEntity entity) {

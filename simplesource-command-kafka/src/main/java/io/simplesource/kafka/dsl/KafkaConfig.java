@@ -1,25 +1,18 @@
 package io.simplesource.kafka.dsl;
 
-import io.simplesource.kafka.api.AggregateSerdes;
-import io.simplesource.kafka.internal.cluster.ClusterConfig;
 import lombok.Value;
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.state.HostInfo;
 
 import java.util.*;
 
 import static java.util.Objects.requireNonNull;
 
 @Value
-public final class KafkaConfig {
+public class KafkaConfig {
     private final Map<String, Object> config;
-    private final ClusterConfig clusterConfig;
-
-    public HostInfo currentHostInfo() {
-        return new HostInfo(clusterConfig.iface(),clusterConfig.port());
-    }
 
     public String applicationId() {
         return (String)config.get(StreamsConfig.APPLICATION_ID_CONFIG);
@@ -42,6 +35,15 @@ public final class KafkaConfig {
     public Map<String, Object> adminClientConfig() {
         return Collections.singletonMap(
             CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers());
+    }
+
+    public Map<String, Object> consumerConfig() {
+        final Map<String, Object> configs = new HashMap<>();
+        configs.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers());
+        configs.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
+        configs.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, 1000);
+        configs.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
+        return configs;
     }
 
     public Map<String, Object> producerConfig() {
@@ -79,11 +81,6 @@ public final class KafkaConfig {
             return this;
         }
 
-        public Builder withApplicationServer(final String applicationServer) {
-            config.put(StreamsConfig.APPLICATION_SERVER_CONFIG, applicationServer);
-            return this;
-        }
-
         public Builder withExactlyOnce() {
             config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE);
             return this;
@@ -106,29 +103,23 @@ public final class KafkaConfig {
         }
 
         public KafkaConfig build() {
-            validateKafkaConfig();
-            final String rpc = String.valueOf(config.get(StreamsConfig.APPLICATION_SERVER_CONFIG));
-            final int index = rpc.indexOf(':');
-            if (index < 0) {
-                throw new IllegalArgumentException(StreamsConfig.APPLICATION_SERVER_CONFIG + " must be in format host:port");
-            }
-            final String rpcHost = rpc.substring(0, index);
-            final int rpcPort = Integer.parseInt(rpc.substring(index + 1));
-
-            //TODO parse rest of cluster properties
-            ClusterConfig clusterConfig = new ClusterConfig();
-            clusterConfig.iface(rpcHost);
-            clusterConfig.port(rpcPort);
-
-            return new KafkaConfig(config, clusterConfig);
+            validateKafkaConfig(false);
+            return new KafkaConfig(config);
         }
 
-        private void validateKafkaConfig() {
+        public KafkaConfig build(boolean clientOnly) {
+            validateKafkaConfig(clientOnly);
+            return new KafkaConfig(config);
+        }
+
+        private void validateKafkaConfig(boolean clientOnly) {
+            (clientOnly ? Arrays.asList(
+                StreamsConfig.BOOTSTRAP_SERVERS_CONFIG
+            ) :
             Arrays.asList(
                 StreamsConfig.APPLICATION_ID_CONFIG,
-                StreamsConfig.BOOTSTRAP_SERVERS_CONFIG,
-                StreamsConfig.APPLICATION_SERVER_CONFIG
-            ).forEach(key ->
+                StreamsConfig.BOOTSTRAP_SERVERS_CONFIG
+            )).forEach(key ->
                 requireNonNull(config.get(key), "KafkaConfig missing " + key));
         }
 

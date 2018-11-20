@@ -42,10 +42,9 @@ public interface CommandAPI<K, C> {
      *
      * @param commandId the UUID of the command to lookup the result for.
      * @param timeout how long to wait attempting to fetch the result before timing out.
-     * @return sequence numbers of generated events as a result of applying the given
-     *         command or error reasons on failure.
+     * @return sequence number of aggregate.
      */
-    FutureResult<CommandError, NonEmptyList<Sequence>> queryCommandResult(
+    FutureResult<CommandError, Sequence> queryCommandResult(
         UUID commandId,
         Duration timeout
     );
@@ -54,10 +53,9 @@ public interface CommandAPI<K, C> {
      * Chain together publishing a command then query the result.
      * @param commandRequest the command request.
      * @param timeout how long to wait for processing to complete and the result to be available.
-     * @return sequence numbers of generated events as a result of applying the given
-     *         command or error reasons on failure.
+     * @return sequence number of aggregate.
      */
-    default FutureResult<CommandError, NonEmptyList<Sequence>> publishAndQueryCommand(
+    default FutureResult<CommandError, Sequence> publishAndQueryCommand(
         final Request<K, C> commandRequest,
         final Duration timeout
     ) {
