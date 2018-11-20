@@ -65,20 +65,17 @@ public final class AggregateTestHelper<K, C, E, A> {
         final UUID commandId = publish(key, readSequence, command);
         final NonEmptyList<Sequence> expectedSequences = validateEvents(key, readSequence, expectedEvents);
 
-        final CommandResponse updateResponse = testAPI.fetchCommandResponse(commandId)
+        final KeyValue<K, CommandResponse> updateResponse = testAPI.readCommandResponseTopic()
                 .orElseGet(() -> fail("Didn't find command response"));
-        assertEquals(commandId, updateResponse.commandId());
-        assertEquals(readSequence, updateResponse.readSequence());
-        AggregateUpdate<A> aggregateUpdate = testAPI.fetchAggregateUpdate(key)
-                .orElseGet(() -> fail("Didn't find aggregate update"));
-        assertEquals(expectedSequences.last(), aggregateUpdate.sequence());
-        assertEquals(expectedAggregate, aggregateUpdate.aggregate());
+        assertEquals(readSequence, updateResponse.value.readSequence());
+        assertEquals(true, updateResponse.value.sequenceResult().isSuccess());
+        updateResponse.value.sequenceResult().ifSuccessful(seq -> assertEquals(expectedSequences.last(), seq));
 
         final KeyValue<K, AggregateUpdate<A>> aggregateUpdatePair = testAPI.readAggregateTopic()
             .orElseGet(() -> fail("Missing update on aggregate_update topic"));
         assertEquals(key, aggregateUpdatePair.key);
         assertEquals(expectedSequences.last(), aggregateUpdatePair.value.sequence());
-        assertEquals(aggregateUpdate.aggregate(), aggregateUpdatePair.value.aggregate());
+        assertEquals(expectedAggregate, aggregateUpdatePair.value.aggregate());
 
 
         final Result<CommandError, Sequence> queryByCommandId = testAPI
@@ -91,7 +88,7 @@ public final class AggregateTestHelper<K, C, E, A> {
                 return null;
             });
 
-        return new PublishResponse(key, aggregateUpdate);
+        return new PublishResponse(key, aggregateUpdatePair.value);
     }
 
     private void publishExpectingError(
@@ -102,11 +99,11 @@ public final class AggregateTestHelper<K, C, E, A> {
     ) {
         final UUID commandId = publish(key, readSequence, command);
 
-        final CommandResponse updateResponse = testAPI.fetchCommandResponse(commandId)
+        final KeyValue<K, CommandResponse>  updateResponse = testAPI.readCommandResponseTopic()
                 .orElseGet(() -> fail("Didn't find command response"));
-        assertEquals(commandId, updateResponse.commandId());
-        assertEquals(readSequence, updateResponse.readSequence());
-        updateResponse.sequenceResult().fold(
+        assertEquals(commandId, updateResponse.value.commandId());
+        assertEquals(readSequence, updateResponse.value.readSequence());
+        updateResponse.value.sequenceResult().fold(
                 reasons -> {
                     failureValidator.accept(reasons);
                     return null;

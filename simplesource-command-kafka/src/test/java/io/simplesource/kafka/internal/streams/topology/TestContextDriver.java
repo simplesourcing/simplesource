@@ -80,8 +80,8 @@ class TestContextDriver<K, C, E, A> {
         }
     }
 
-    ValueWithSequence<E> verifyNoEvent() {
-        return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.event),
+    void verifyNoEvent() {
+        verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.event),
                 ctx.serdes().aggregateKey().deserializer(),
                 ctx.serdes().valueWithSequence().deserializer()), true, null, null);
     }
@@ -99,8 +99,8 @@ class TestContextDriver<K, C, E, A> {
         }
     }
 
-    CommandResponse verifyNoCommandResponse() {
-        return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.command_response),
+    void verifyNoCommandResponse() {
+        verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.command_response),
                 ctx.serdes().aggregateKey().deserializer(),
                 ctx.serdes().commandResponse().deserializer()), true, null, null);
     }
@@ -123,36 +123,4 @@ class TestContextDriver<K, C, E, A> {
                 break;
         }
     }
-
-    KeyValueStore<K, AggregateUpdate<A>> getAggegateUpdateStore() {
-        KeyValueStore<K, AggregateUpdate<A>> store = driver.getKeyValueStore(ctx.stateStoreName(StateStoreEntity.aggregate_update));
-        return store;
-    }
-
-    Map<K, AggregateUpdate<A>> getAggegateUpdates() {
-        HashMap<K, AggregateUpdate<A>> map = new HashMap<>();
-
-        getAggegateUpdateStore().all().forEachRemaining(kv -> {
-            map.put(kv.key, kv.value);
-        });
-        return map;
-    }
-
-    WindowStore<UUID, CommandResponse> getCommandResponseStore() {
-        WindowStore<UUID, CommandResponse> store = driver.getWindowStore(ctx.stateStoreName(StateStoreEntity.command_response));
-        return store;
-    }
-
-    Map<UUID, CommandResponse> getCommandResponses() {
-        HashMap<UUID, CommandResponse> map = new HashMap<>();
-
-        getCommandResponseStore().all().forEachRemaining(kv -> {
-            Windowed<UUID> wKey = kv.key;
-            CommandResponse response = kv.value;
-            map.put(wKey.key(), response);
-        });
-        return map;
-    }
-
-
 }

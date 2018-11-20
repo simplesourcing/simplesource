@@ -30,11 +30,6 @@ public final class EventSourcedClient {
         return this;
     }
 
-    public EventSourcedClient withKafkaConfig(final KafkaConfig kafkaConfig) {
-        this.kafkaConfig = kafkaConfig;
-        return this;
-    }
-
     public <K, C> EventSourcedClient addCommands(
             final Function<CommandApiBuilder<K, C>, CommandSpec<K, C>> builder) {
         final CommandSpec<K, C> spec = builder.apply(CommandApiBuilder.newBuilder());

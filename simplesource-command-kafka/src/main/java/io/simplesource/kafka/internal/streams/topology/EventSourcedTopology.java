@@ -6,6 +6,7 @@ import io.simplesource.kafka.model.*;
 import lombok.Value;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KTable;
 
 import java.util.UUID;
 
@@ -18,12 +19,10 @@ public final class EventSourcedTopology {
     }
 
     public static <K, C, E, A> InputStreams<K, C> addTopology(TopologyContext<K, C, E, A> ctx, final StreamsBuilder builder) {
-        // Create stores
-        EventSourcedStores.addStateStores(ctx, builder);
-
         // Consume from topics
         final KStream<K, CommandRequest<K, C>> commandRequestStream = EventSourcedConsumer.commandRequestStream(ctx, builder);
         final KStream<K, CommandResponse> commandResponseStream = EventSourcedConsumer.commandResponseStream(ctx, builder);
+        KTable<K, AggregateUpdate<A>> aggregateTable = EventSourcedConsumer.aggregateTable(ctx, builder);
         DistributorContext<CommandResponse> distCtx = getDistributorContext(ctx);
         final KStream<UUID, String> resultsTopicMapStream = ResultDistributor.resultTopicMapStream(distCtx,  builder);
 
@@ -34,7 +33,7 @@ public final class EventSourcedTopology {
         KStream<K, CommandResponse> processedResponses = reqResp.v2();
         
         // Transformations
-        final KStream<K, CommandEvents<E, A>> eventResultStream = EventSourcedStreams.eventResultStream(ctx, unprocessedRequests);
+        final KStream<K, CommandEvents<E, A>> eventResultStream = EventSourcedStreams.eventResultStream2(ctx, unprocessedRequests, aggregateTable);
         KStream<K, ValueWithSequence<E>> eventsWithSequence = EventSourcedStreams.getEventsWithSequence(eventResultStream);
 
         final KStream<K, AggregateUpdateResult<A>> aggregateUpdateResults = EventSourcedStreams.getAggregateUpdateResults(ctx, eventResultStream);
@@ -46,10 +45,6 @@ public final class EventSourcedTopology {
         EventSourcedPublisher.publishAggregateUpdates(ctx, aggregateUpdates);
         EventSourcedPublisher.publishCommandResponses(ctx, processedResponses);
         EventSourcedPublisher.publishCommandResponses(ctx, commandResponses);
-
-        // Update stores
-        EventSourcedStores.updateAggregateStateStore(ctx, aggregateUpdateResults);
-        EventSourcedStores.updateCommandResponseStore(ctx, commandResponses);
 
         // Distribute command results
         ResultDistributor.distribute(distCtx, commandResponseStream, resultsTopicMapStream);

@@ -98,14 +98,26 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
 
     Optional<KeyValue<K, AggregateUpdate<A>>> readAggregateTopic() {
         final ProducerRecord<K, AggregateUpdate<A>> maybeRecord = driver.readOutput(
-            topicName(TopicEntity.aggregate),
-            aggregateSerdes.aggregateKey().deserializer(),
-            aggregateSerdes.aggregateUpdate().deserializer()
+                topicName(TopicEntity.aggregate),
+                aggregateSerdes.aggregateKey().deserializer(),
+                aggregateSerdes.aggregateUpdate().deserializer()
         );
         return Optional.ofNullable(maybeRecord)
-            .map(record -> KeyValue.pair(
-                record.key(),
-                record.value()));
+                .map(record -> KeyValue.pair(
+                        record.key(),
+                        record.value()));
+    }
+
+    Optional<KeyValue<K, CommandResponse>> readCommandResponseTopic() {
+        final ProducerRecord<K, CommandResponse> maybeRecord = driver.readOutput(
+                topicName(TopicEntity.command_response),
+                aggregateSerdes.aggregateKey().deserializer(),
+                aggregateSerdes.commandResponse().deserializer()
+        );
+        return Optional.ofNullable(maybeRecord)
+                .map(record -> KeyValue.pair(
+                        record.key(),
+                        record.value()));
     }
 
     Optional<KeyValue<K, ValueWithSequence<E>>> readEventTopic() {
@@ -118,25 +130,6 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
             .map(record -> KeyValue.pair(
                 record.key(),
                 record.value()));
-    }
-
-    Optional<CommandResponse> fetchCommandResponse(UUID key) {
-        final WindowStore<UUID, CommandResponse> windowStore = driver.getWindowStore(storeName(StateStoreEntity.command_response));
-        final WindowStoreIterator<CommandResponse> iterator = windowStore
-                .fetch(
-                        key,
-                        0L,
-                        System.currentTimeMillis());
-        final Iterable<KeyValue<Long, CommandResponse>> iterable = () -> iterator;
-        return StreamSupport.stream(iterable.spliterator(), false)
-                .max(Comparator.comparingLong(kv -> kv.key))
-                .map(kv -> kv.value);
-    }
-
-    Optional<AggregateUpdate<A>> fetchAggregateUpdate(K key) {
-        final ReadOnlyKeyValueStore<K, AggregateUpdate<A>> kvStore = driver.getKeyValueStore(storeName(StateStoreEntity.aggregate_update));
-        AggregateUpdate<A> aggUpdate = kvStore.get(key);
-        return Optional.ofNullable(aggUpdate);
     }
 
     public void pollForApiResponse() {

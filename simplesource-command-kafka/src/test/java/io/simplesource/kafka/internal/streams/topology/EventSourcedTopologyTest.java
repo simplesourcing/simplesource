@@ -124,23 +124,6 @@ class EventSourcedTopologyTest {
             assertThat(a.aggregate().get()).isEqualTo(new TestAggregate(name));
         });
         ctxDriver.verifyNoAggregateUpdate();
-
-        Map<UUID, CommandResponse> storeResponses = ctxDriver.getCommandResponses();
-        assertThat(storeResponses).isNotEmpty();
-
-        storeResponses.forEach((k, v) -> {
-            assertThat(k).isEqualTo(commandRequest.commandId());
-            Result<CommandError, Sequence> result = v.sequenceResult();
-            assertThat(result.isSuccess()).isEqualTo(true);
-        });
-
-        Map<String, AggregateUpdate<Optional<TestAggregate>>> storeUpdates = ctxDriver.getAggegateUpdates();
-        assertThat(storeUpdates).isNotEmpty();
-
-        storeUpdates.forEach((k, v) -> {
-            assertThat(k).isEqualTo(key);
-            assertThat(v.aggregate().get().name()).isEqualTo(name);
-        });
     }
 
     @Test
@@ -189,14 +172,6 @@ class EventSourcedTopologyTest {
 
             ctxDriver.verifyNoCommandResponse();
             ctxDriver.verifyNoAggregateUpdate();
-
-            Map<UUID, CommandResponse> results = ctxDriver.getCommandResponses();
-            CommandResponse result = results.get(commandRequest.commandId());
-            assertThat(result.sequenceResult().isSuccess()).isEqualTo(true);
-
-            Map<String, AggregateUpdate<Optional<TestAggregate>>> updates = ctxDriver.getAggegateUpdates();
-            AggregateUpdate<Optional<TestAggregate>> update = updates.get(key);
-            assertThat(update.aggregate().get().name()).isEqualTo(newName);
         }
     }
 
