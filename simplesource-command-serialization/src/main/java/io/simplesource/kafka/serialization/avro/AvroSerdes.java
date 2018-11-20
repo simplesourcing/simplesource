@@ -5,7 +5,6 @@ import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.model.AggregateUpdate;
-import io.simplesource.kafka.model.AggregateUpdateResult;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import org.apache.avro.Schema;
@@ -111,64 +110,11 @@ public final class AvroSerdes {
         private static final String WRITE_SEQUENCE = "writeSequence";
         private static final String AGGREGATION = "aggregate_update";
 
-
-        static GenericRecord toAggregateUpdateResult(
-                final AggregateUpdateResult<GenericRecord> aggregateUpdateResult,
-                final Schema aggregateSchema
-        ) {
-            final Schema schema = schemaCache.computeIfAbsent(aggregateSchema,
-                    AggregateUpdateResultAvroHelper::aggregateUpdateResultSchema);
-            final Schema resultSchema = schema.getField(RESULT).schema();
-            final Schema responseFailureSchema = resultSchema.getTypes().get(0);
-            final Schema reasonSchema = responseFailureSchema.getField(REASON).schema();
-            final Schema responseSuccessSchema = resultSchema.getTypes().get(1);
-
-            return new GenericRecordBuilder(schema)
-                    .set(READ_SEQUENCE, aggregateUpdateResult.readSequence().getSeq())
-                    .set(COMMAND_ID, aggregateUpdateResult.commandId().toString())
-                    .set(RESULT, aggregateUpdateResult.updatedAggregateResult().fold(
-                            reasons -> new GenericRecordBuilder(responseFailureSchema)
-                                    .set(REASON, fromReason(reasonSchema, reasons.head()))
-                                    .set(ADDITIONAL_REASONS, reasons.tail()
-                                            .stream()
-                                            .map(reason -> fromReason(reasonSchema, reason))
-                                            .collect(Collectors.toList()))
-                                    .build(),
-                            aggregateUpdate -> new GenericRecordBuilder(responseSuccessSchema)
-                                    .set(WRITE_SEQUENCE, aggregateUpdate.sequence().getSeq())
-                                    .set(AGGREGATION, aggregateUpdate.aggregate())
-                                    .build()
-                    ))
-                    .build();
-        }
-
         private static GenericRecord fromReason(final Schema schema, final CommandError commandError) {
             return new GenericRecordBuilder(schema)
                     .set(ERROR_MESSAGE, commandError.getMessage())
                     .set(ERROR_CODE, commandError.getReason().name())
                     .build();
-        }
-
-        static AggregateUpdateResult<GenericRecord> fromAggregateUpdateResult(
-                final GenericRecord record) {
-            final Sequence readSequence = Sequence.position((Long) record.get(READ_SEQUENCE));
-            final UUID commandId = UUID.fromString(String.valueOf(record.get(COMMAND_ID)));
-            final GenericRecord genericResult = (GenericRecord) record.get(RESULT);
-            final Result<CommandError, AggregateUpdate<GenericRecord>> result;
-            if (nonNull(genericResult.get(WRITE_SEQUENCE))) {
-                final Sequence writeSequence = Sequence.position((Long) genericResult.get(WRITE_SEQUENCE));
-                final GenericRecord genericAggregate = (GenericRecord) genericResult.get(AGGREGATION);
-                result = Result.success(new AggregateUpdate<>(genericAggregate, writeSequence));
-            } else {
-                final CommandError commandError = toCommandError((GenericRecord) genericResult.get(REASON));
-                final List<CommandError> additionalCommandErrors = ((List<GenericRecord>) genericResult.get(ADDITIONAL_REASONS))
-                        .stream()
-                        .map(AggregateUpdateResultAvroHelper::toCommandError)
-                        .collect(Collectors.toList());
-                result = Result.failure(new NonEmptyList<>(commandError, additionalCommandErrors));
-            }
-
-            return new AggregateUpdateResult<>(commandId, readSequence, result);
         }
 
         private static CommandError toCommandError(final GenericRecord record) {
@@ -183,7 +129,6 @@ public final class AvroSerdes {
             }
             return CommandError.of(error, errorMessage);
         }
-
 
         private static Schema aggregateUpdateResultSchema(final Schema aggregateSchema) {
             final Schema reasonSchema = SchemaBuilder

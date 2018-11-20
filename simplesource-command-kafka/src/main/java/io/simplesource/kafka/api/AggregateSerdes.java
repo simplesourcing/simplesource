@@ -23,5 +23,4 @@ import java.util.UUID;
 public interface AggregateSerdes<K, C, E, A> extends CommandSerdes<K, C> {
     Serde<ValueWithSequence<E>> valueWithSequence();
     Serde<AggregateUpdate<A>> aggregateUpdate();
-    Serde<AggregateUpdateResult<A>> updateResult();
 }

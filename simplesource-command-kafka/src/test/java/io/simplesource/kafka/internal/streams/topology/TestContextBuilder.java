@@ -111,11 +111,6 @@ class TestContextBuilder {
             }
 
             @Override
-            public Serde<AggregateUpdateResult<Optional<TestAggregate>>> updateResult() {
-                return new MockInMemorySerde<>();
-            }
-
-            @Override
             public Serde<CommandResponse> commandResponse() {
                 return new MockInMemorySerde<>();
             }

@@ -35,7 +35,6 @@ public final class TopologyContext<K, C, E, A> {
     final Produced<K, AggregateUpdate<A>> aggregatedUpdateProduced;
     final Produced<K, CommandResponse> commandResponseProduced;
     final Serialized<UUID, CommandResponse> serializedCommandResponse;
-    final Serialized<UUID, AggregateUpdateResult<A>> serializedAggregateUpdate;
 
     public TopologyContext(AggregateSpec<K, C, E, A> aggregateSpec) {
         this.aggregateSpec = aggregateSpec;
@@ -48,7 +47,6 @@ public final class TopologyContext<K, C, E, A> {
         aggregatedUpdateProduced = Produced.with(serdes().aggregateKey(), serdes().aggregateUpdate());
         commandResponseProduced = Produced.with(serdes().aggregateKey(), serdes().commandResponse());
         serializedCommandResponse = Serialized.with(serdes().commandResponseKey(), serdes().commandResponse());
-        serializedAggregateUpdate = Serialized.with(serdes().commandResponseKey(), serdes().updateResult());
         aggregator = aggregateSpec.generation().aggregator();
         initialValue = aggregateSpec.generation().initialValue();
     }

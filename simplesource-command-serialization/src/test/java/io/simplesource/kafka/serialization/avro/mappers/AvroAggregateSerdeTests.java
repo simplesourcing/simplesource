@@ -75,34 +75,6 @@ public class AvroAggregateSerdeTests {
     }
 
     @Test
-    void updateResultSuccess() {
-        AggregateUpdateResult<Optional<UserAccountDomain>> update = new AggregateUpdateResult<>(
-                UUID.randomUUID(),
-                Sequence.first(),
-                Result.success(new AggregateUpdate<>(
-                        Optional.of(new UserAccountDomain("Name", Money.valueOf("100"))),
-                        Sequence.first())));
-
-        byte[] serialised = serdes.updateResult().serializer().serialize(topic, update);
-        AggregateUpdateResult<Optional<UserAccountDomain>> deserialised = serdes.updateResult().deserializer().deserialize(topic, serialised);
-        assertThat(deserialised).isEqualToComparingFieldByField(update);
-    }
-
-    @Test
-    void updateResultFailure() {
-        AggregateUpdateResult<Optional<UserAccountDomain>> update = new AggregateUpdateResult<>(
-                UUID.randomUUID(),
-                Sequence.first(),
-                Result.failure(
-                        CommandError.of(CommandError.Reason.InvalidCommand, "Invalid Command"),
-                        CommandError.of(CommandError.Reason.InvalidReadSequence, "Invalid Sequence")));
-
-        byte[] serialised = serdes.updateResult().serializer().serialize(topic, update);
-        AggregateUpdateResult<Optional<UserAccountDomain>> deserialised = serdes.updateResult().deserializer().deserialize(topic, serialised);
-        assertThat(deserialised).isEqualToComparingFieldByField(update);
-    }
-
-    @Test
     void eventWithSequence() {
         ValueWithSequence<UserAccountDomainEvent> eventSeq = new ValueWithSequence<>(
                 new UserAccountDomainEvent.AccountCreated("name", Money.valueOf("100")),

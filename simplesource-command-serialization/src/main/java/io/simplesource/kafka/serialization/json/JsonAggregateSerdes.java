@@ -32,7 +32,6 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
     private final Serde<UUID> crk;
     private final Serde<ValueWithSequence<E>> vws;
     private final Serde<AggregateUpdate<A>> au;
-    private final Serde<AggregateUpdateResult<A>> aur;
     private final Serde<CommandResponse> cr2;
 
     public JsonAggregateSerdes() {
@@ -55,7 +54,6 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
         gsonBuilder.registerTypeAdapter(UUID.class, new UUIDAdapter());
         gsonBuilder.registerTypeAdapter(ValueWithSequence.class, new ValueWithSequenceAdapter());
         gsonBuilder.registerTypeAdapter(AggregateUpdate.class, new AggregateUpdateAdapter());
-        gsonBuilder.registerTypeAdapter(AggregateUpdateResult.class, new AggregateUpdateResultAdapter());
         gsonBuilder.registerTypeAdapter(CommandResponse.class, new CommandResponseAdapter());
         gson = gsonBuilder.create();
         parser = new JsonParser();
@@ -78,10 +76,6 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
         au = GenericSerde.of(serde,
                 gson::toJson,
                 s -> gson.fromJson(s, new TypeToken<AggregateUpdate<A>>() {
-                }.getType()));
-        aur = GenericSerde.of(serde,
-                gson::toJson,
-                s -> gson.fromJson(s, new TypeToken<AggregateUpdateResult<A>>() {
                 }.getType()));
         cr2 = GenericSerde.of(serde,
                 gson::toJson,
@@ -112,11 +106,6 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
     @Override
     public Serde<AggregateUpdate<A>> aggregateUpdate() {
         return au;
-    }
-
-    @Override
-    public Serde<AggregateUpdateResult<A>> updateResult() {
-        return aur;
     }
 
     @Override
@@ -236,91 +225,6 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
                     aggregateMapper.fromGeneric(wrapper.get(AGGREGATION)),
                     Sequence.position(wrapper.getAsJsonPrimitive(SEQUENCE).getAsLong()));
         }
-    }
-
-    private class AggregateUpdateResultAdapter implements JsonSerializer<AggregateUpdateResult<A>>, JsonDeserializer<AggregateUpdateResult<A>> {
-
-        private static final String READ_SEQUENCE = "readSequence";
-        private static final String COMMAND_ID = "commandId";
-        private static final String RESULT = "result";
-        private static final String REASON = "reason";
-        private static final String ADDITIONAL_REASONS = "additionalReasons";
-        private static final String ERROR_MESSAGE = "errorMessage";
-        private static final String ERROR_CODE = "errorCode";
-        private static final String WRITE_SEQUENCE = "writeSequence";
-        private static final String AGGREGATION = "aggregate_update";
-
-        @Override
-        public JsonElement serialize(
-                final AggregateUpdateResult<A> aggregateUpdateResult,
-                final Type type,
-                final JsonSerializationContext jsonSerializationContext
-        ) {
-            final JsonObject wrapper = new JsonObject();
-            wrapper.addProperty(READ_SEQUENCE, aggregateUpdateResult.readSequence().getSeq());
-            wrapper.addProperty(COMMAND_ID, aggregateUpdateResult.commandId().toString());
-            wrapper.add(RESULT, aggregateUpdateResult.updatedAggregateResult().fold(
-                    reasons -> {
-                        final JsonObject failureWrapper = new JsonObject();
-                        failureWrapper.add(REASON, serializeReason(reasons.head()));
-                        final JsonArray additionalReasons = new JsonArray();
-                        reasons.tail().forEach(reason -> additionalReasons.add(serializeReason(reason)));
-                        failureWrapper.add(ADDITIONAL_REASONS, additionalReasons);
-                        return failureWrapper;
-                    },
-                    aggregateUpdate -> {
-                        final JsonObject successWrapper = new JsonObject();
-                        successWrapper.addProperty(WRITE_SEQUENCE, aggregateUpdate.sequence().getSeq());
-                        successWrapper.add(AGGREGATION,
-                                aggregateMapper.toGeneric(aggregateUpdate.aggregate()));
-                        return successWrapper;
-                    }
-            ));
-            return wrapper;
-        }
-
-        private JsonElement serializeReason(final CommandError commandError) {
-            final JsonObject wrapper = new JsonObject();
-            wrapper.addProperty(ERROR_MESSAGE, commandError.getMessage());
-            wrapper.addProperty(ERROR_CODE, commandError.getReason().name());
-            return wrapper;
-        }
-
-        @Override
-        public AggregateUpdateResult<A> deserialize(
-                final JsonElement jsonElement, final Type type, final JsonDeserializationContext jsonDeserializationContext
-        ) throws JsonParseException {
-            final JsonObject wrapper = jsonElement.getAsJsonObject();
-            final Sequence readSequence = Sequence.position(wrapper.getAsJsonPrimitive(READ_SEQUENCE).getAsLong());
-            final UUID commandId = UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString());
-            final JsonObject resultWrapper = wrapper.getAsJsonObject(RESULT);
-            final Result<CommandError, AggregateUpdate<A>> result;
-            if (resultWrapper.has(REASON)) {
-                final CommandError headCommandError = deserializeReason(resultWrapper.getAsJsonObject(REASON));
-                final List<CommandError> tailCommandErrors = new ArrayList<>();
-                resultWrapper.getAsJsonArray(ADDITIONAL_REASONS)
-                        .forEach(reason -> tailCommandErrors.add(deserializeReason(reason.getAsJsonObject())));
-                result = Result.<Reason, AggregateUpdate<A>>failure(new NonEmptyList(headCommandError, tailCommandErrors));
-            } else {
-                result = Result.success(
-                        new AggregateUpdate<>(
-                                aggregateMapper.fromGeneric(resultWrapper.getAsJsonObject(AGGREGATION)),
-                                Sequence.position(resultWrapper.getAsJsonPrimitive(WRITE_SEQUENCE).getAsLong())
-                        )
-                );
-            }
-            return new AggregateUpdateResult<>(
-                    commandId,
-                    readSequence,
-                    result);
-        }
-
-        private CommandError deserializeReason(final JsonObject element) {
-            return CommandError.of(
-                    Reason.valueOf(element.getAsJsonPrimitive(ERROR_CODE).getAsString()),
-                    element.getAsJsonPrimitive(ERROR_MESSAGE).getAsString());
-        }
-
     }
 
     private class CommandResponseAdapter implements JsonSerializer<CommandResponse>, JsonDeserializer<CommandResponse> {

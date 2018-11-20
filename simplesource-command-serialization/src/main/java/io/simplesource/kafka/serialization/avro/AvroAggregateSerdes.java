@@ -13,7 +13,6 @@ import java.util.*;
 import static io.simplesource.kafka.serialization.avro.AvroSpecificGenericMapper.specificDomainMapper;
 import static io.simplesource.kafka.serialization.avro.AvroSerdes.*;
 
-
 public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K, C, E, A> {
 
     private final Serde<K> ak;
@@ -21,7 +20,6 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     private final Serde<UUID> crk;
     private final Serde<ValueWithSequence<E>> vws;
     private final Serde<AggregateUpdate<A>> au;
-    private final Serde<AggregateUpdateResult<A>> aur;
     private final Serde<CommandResponse> crp;
 
     public static <K extends GenericRecord, C extends GenericRecord, E extends GenericRecord, A extends GenericRecord> AvroAggregateSerdes<K, C, E, A> of(
@@ -64,7 +62,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
         ak = GenericSerde.of(keySerde, keyMapper::toGeneric, keyMapper::fromGeneric);
         crq = GenericSerde.of(valueSerde,
                 v -> CommandRequestAvroHelper.toGenericRecord(v.map2(keyMapper::toGeneric, commandMapper::toGeneric)),
-                s -> CommandRequestAvroHelper.fromGenericRecord(s).map2(x -> keyMapper.fromGeneric(x), x -> commandMapper.fromGeneric(x)));
+                s -> CommandRequestAvroHelper.fromGenericRecord(s).map2(keyMapper::fromGeneric, commandMapper::fromGeneric));
         crk = GenericSerde.of(valueSerde,
                 CommandResponseKeyAvroHelper::toGenericRecord,
                 CommandResponseKeyAvroHelper::fromGenericRecord);
@@ -75,10 +73,6 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
                 v -> AggregateUpdateAvroHelper.toGenericRecord(v.map(aggregateMapper::toGeneric), aggregateSchema),
                 s -> AggregateUpdateAvroHelper.fromGenericRecord(s)
                         .map(aggregateMapper::fromGeneric));
-        aur = GenericSerde.of(valueSerde,
-                v -> AggregateUpdateResultAvroHelper.toAggregateUpdateResult(v.map(aggregateMapper::toGeneric), aggregateSchema),
-                s -> AggregateUpdateResultAvroHelper.fromAggregateUpdateResult(s).map(aggregateMapper::fromGeneric));
-
         crp = GenericSerde.of(valueSerde,
                 CommandResponseAvroHelper::toCommandResponse,
                 CommandResponseAvroHelper::fromCommandResponse);
@@ -107,11 +101,6 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     @Override
     public Serde<AggregateUpdate<A>> aggregateUpdate() {
         return au;
-    }
-
-    @Override
-    public Serde<AggregateUpdateResult<A>> updateResult() {
-        return aur;
     }
 
     @Override

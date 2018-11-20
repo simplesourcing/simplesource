@@ -7,7 +7,6 @@ import io.simplesource.data.Sequence;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.model.AggregateUpdate;
-import io.simplesource.kafka.model.AggregateUpdateResult;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.model.ValueWithSequence;
 import org.apache.kafka.streams.KeyValue;
