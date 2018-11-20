@@ -15,7 +15,7 @@ import java.util.Optional;
 
 import static io.simplesource.data.Result.failure;
 
-public final class CommandRequestTransformer {
+final class CommandRequestTransformer {
     private static final Logger logger = LoggerFactory.getLogger(CommandRequestTransformer.class);
     static <K, C, E, A> CommandEvents<E, A> getCommandEvents(
             TopologyContext<K, C, E, A> ctx,
