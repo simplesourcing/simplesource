@@ -10,6 +10,7 @@ import org.apache.kafka.streams.KeyValue;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -31,8 +32,10 @@ public final class EventSourcedClient {
     }
 
     public <K, C> EventSourcedClient addCommands(
-            final Function<CommandApiBuilder<K, C>, CommandSpec<K, C>> builder) {
-        final CommandSpec<K, C> spec = builder.apply(CommandApiBuilder.newBuilder());
+            final Consumer<CommandApiBuilder<K, C>> buildSteps) {
+        CommandApiBuilder<K, C> builder = CommandApiBuilder.newBuilder();
+        buildSteps.accept(builder);
+        final CommandSpec<K, C> spec = builder.build();
         commandConfigMap.put(spec.aggregateName(), spec);
         return this;
     }

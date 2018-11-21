@@ -1,12 +1,19 @@
 package io.simplesource.kafka.dsl;
 
+import io.simplesource.api.CommandAPISet;
 import io.simplesource.kafka.internal.streams.EventSourcedStreamsApp;
 import io.simplesource.kafka.spec.AggregateSetSpec;
 import io.simplesource.kafka.spec.AggregateSpec;
+import io.simplesource.kafka.spec.CommandSpec;
+import io.simplesource.kafka.util.SpecUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
+import static java.util.Objects.requireNonNull;
 
 public final class EventSourcedApp {
     private KafkaConfig kafkaConfig;
@@ -25,8 +32,10 @@ public final class EventSourcedApp {
     }
 
     public <K, C, E, A> EventSourcedApp addAggregate(
-            final Function<AggregateBuilder<K, C, E, A>, AggregateSpec<K, C, E, A>> builder) {
-        final AggregateSpec<K, C, E, A> spec = builder.apply(AggregateBuilder.newBuilder());
+            final Consumer<AggregateBuilder<K, C, E, A>> buildSteps) {
+        AggregateBuilder<K, C, E, A> builder = AggregateBuilder.newBuilder();
+        buildSteps.accept(builder);
+        final AggregateSpec<K, C, E, A> spec = builder.build();
         aggregateConfigMap.put(spec.aggregateName(), spec);
         return this;
     }
@@ -48,4 +57,22 @@ public final class EventSourcedApp {
         this.aggregateSetSpec = aggregateSetSpec;
         return this;
     }
-}
+
+    /**
+     * Creates a CommandAPISet instance
+     *
+     * Used for directly exposing a CommandAPISet from within a Simple Sourcing application
+     * If creating a CommandAPISet from an external application, rather use the CommandAPISetBuilder DSL
+     *
+     * @return a CommandAPISet
+     */
+    public CommandAPISet getCommandAPISet(String clientId) {
+        requireNonNull(aggregateSetSpec, "App has not been started. start() must be called before getCommandAPISet");
+        Stream<CommandSpec<?, ?>> commandSpecs = aggregateSetSpec
+                .aggregateConfigMap()
+                .values()
+                .stream()
+                .map(aggregateSpec -> SpecUtils.getCommandSpec(aggregateSpec, clientId));
+
+        return EventSourcedClient.getCommandAPISet(commandSpecs, aggregateSetSpec.kafkaConfig());
+    }}
