@@ -67,7 +67,8 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
         return CommandError.of(CommandError.Reason.CommandPublishError, e);
     }
 
-    public FutureResult<CommandError, UUID> publishCommandRequest(final Request<K, C> request) {
+    @Override
+    public FutureResult<CommandError, UUID> publishCommand(final Request<K, C> request) {
         final CommandRequest<K, C> commandRequest = new CommandRequest<>(
                 request.key(), request.command(), request.readSequence(), request.commandId());
 
@@ -88,15 +89,6 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                     return CommandError.of(CommandError.Reason.CommandPublishError, rootCause);
                 })
                 .flatMap(y -> y);
-    }
-
-    @Override
-    public FutureResult<CommandError, Sequence> publishCommand(
-            final Request<K, C> commandRequest,
-            final Duration timeout
-    ) {
-        return publishCommandRequest(commandRequest)
-                .flatMap(v -> queryCommandResult(commandRequest.commandId(), timeout));
     }
 
     @Override

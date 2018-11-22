@@ -91,8 +91,8 @@ public final class AggregateTestDriver<K, C, E, A> {
                 receiverAttacher);
     }
 
-    public FutureResult<CommandError, UUID> publishCommandRequest(final CommandAPI.Request<K, C> request) {
-        return commandAPI.publishCommandRequest(request);
+    public FutureResult<CommandError, UUID> publishCommand(final CommandAPI.Request<K, C> request) {
+        return commandAPI.publishCommand(request);
     }
 
     public FutureResult<CommandError, Sequence> queryCommandResult(
