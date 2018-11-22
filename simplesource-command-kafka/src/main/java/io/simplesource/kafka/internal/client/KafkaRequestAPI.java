@@ -1,6 +1,5 @@
 package io.simplesource.kafka.internal.client;
 
-import avro.shaded.com.google.common.collect.Lists;
 import io.simplesource.data.FutureResult;
 import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.spec.TopicSpec;
@@ -20,6 +19,9 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -46,7 +48,7 @@ public final class KafkaRequestAPI<K, I, O> {
         final Optional<O> response;
 
         static <O> ResponseHandler<O> initialise(Optional<O> r) {
-            return new ResponseHandler<>(Lists.newArrayList(), r);
+            return new ResponseHandler<>(new ArrayList<>(), r);
         }
 
         void forEachFuture(Consumer<CompletableFuture<O>> action) {
@@ -58,6 +60,7 @@ public final class KafkaRequestAPI<K, I, O> {
     @Builder
     public static final class RequestAPIContext<K, I, O> {
         final KafkaConfig kafkaConfig;
+        final ScheduledExecutorService scheduler;
         final String requestTopic;
         final String responseTopicMapTopic;
         final String privateResponseTopic;
@@ -156,7 +159,7 @@ public final class KafkaRequestAPI<K, I, O> {
 
         responseHandlers.removeStaleAsync(h ->
                 h.forEachFuture(f ->
-                        f.completeExceptionally(new Exception("Request timed out."))));
+                        f.completeExceptionally(new Exception("Request not processed."))));
 
         return result;
     }
@@ -168,8 +171,13 @@ public final class KafkaRequestAPI<K, I, O> {
             Optional<O> response = h.response;
             if (response.isPresent())
                 completableFuture.complete(response.get());
-            else
+            else {
+//                ctx.scheduler.schedule(() -> {
+//                    final TimeoutException ex = new TimeoutException("Timeout after " + timeout.toMillis() + " millis");
+//                    completableFuture.completeExceptionally(ex);
+//                }, timeout.toMillis(), TimeUnit.MILLISECONDS);
                 h.responseFutures.add(completableFuture);
+            }
             return h;
         });
         if (handler == null) {

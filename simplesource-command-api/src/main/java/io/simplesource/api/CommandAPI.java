@@ -26,10 +26,13 @@ public interface CommandAPI<K, C> {
      * in the result of this method.
      *
      * @param request command request.
-     * @return a <code>FutureResult</code> with the commandId echoed back if the command was successfully queued,
-     * otherwise a list of reasons for the failure.
+     * @param timeout how long to wait for processing to complete and the result to be available.
+     * @return a <code>FutureResult</code> with the sequence number of aggregate.
      */
-    FutureResult<CommandError, UUID> publishCommand(Request<K, C> request);
+    FutureResult<CommandError, Sequence> publishCommand(
+            final Request<K, C> request,
+            final Duration timeout
+    );
 
     /**
      * Get the result of the execution of the command identified by the provided UUID.
@@ -40,6 +43,10 @@ public interface CommandAPI<K, C> {
      * If a command is queried outside the retention window it will keep trying for the
      * given timeout duration then fail with a <code>Timeout</code> error code.
      *
+     * This method can be called to validate the result of the <code>publishCommand</code> method
+     * In cases where there may have been a fault such as a network failure, and the future
+     * returned by <code>publishCommand</code> did not complete in time.
+     *
      * @param commandId the UUID of the command to lookup the result for.
      * @param timeout how long to wait attempting to fetch the result before timing out.
      * @return sequence number of aggregate.
@@ -48,20 +55,6 @@ public interface CommandAPI<K, C> {
         UUID commandId,
         Duration timeout
     );
-
-    /**
-     * Chain together publishing a command then query the result.
-     * @param commandRequest the command request.
-     * @param timeout how long to wait for processing to complete and the result to be available.
-     * @return sequence number of aggregate.
-     */
-    default FutureResult<CommandError, Sequence> publishAndQueryCommand(
-        final Request<K, C> commandRequest,
-        final Duration timeout
-    ) {
-        return publishCommand(commandRequest)
-            .flatMap(v -> queryCommandResult(commandRequest.commandId, timeout));
-    }
 
     @Value
     class Request<K, C> {

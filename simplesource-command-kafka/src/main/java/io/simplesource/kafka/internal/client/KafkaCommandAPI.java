@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -30,24 +31,31 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
 
     public KafkaCommandAPI(
             final CommandSpec<K, C> commandSpec,
-            final KafkaConfig kafkaConfig) {
-        KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> ctx = getRequestAPIContext(commandSpec, kafkaConfig);
+            final KafkaConfig kafkaConfig,
+            final ScheduledExecutorService scheduler) {
+        KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> ctx = getRequestAPIContext(
+                commandSpec,
+                kafkaConfig,
+                scheduler);
         requestApi = new KafkaRequestAPI<>(ctx);
     }
 
     public KafkaCommandAPI(
             final CommandSpec<K, C> commandSpec,
             final KafkaConfig kafkaConfig,
+            final ScheduledExecutorService scheduler,
             final RequestPublisher<K, CommandRequest<K, C>> requestSender,
             final RequestPublisher<UUID, String> responseTopicMapSender,
             final Function<BiConsumer<UUID, CommandResponse>, ResponseSubscription> attachReceiver) {
 
-        KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> ctx = getRequestAPIContext(commandSpec, kafkaConfig);
+        KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> ctx = getRequestAPIContext(
+                commandSpec,
+                kafkaConfig,
+                scheduler);
         requestApi = new KafkaRequestAPI<>(ctx, requestSender, responseTopicMapSender, attachReceiver, false);
     }
 
-    @Override
-    public FutureResult<CommandError, UUID> publishCommand(final Request<K, C> request) {
+    public FutureResult<CommandError, UUID> publishCommandRequest(final Request<K, C> request) {
         final CommandRequest<K, C> commandRequest = new CommandRequest<>(
                 request.key(), request.command(), request.readSequence(), request.commandId());
 
@@ -68,12 +76,24 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
     }
 
     @Override
+    public FutureResult<CommandError, Sequence> publishCommand(
+            final Request<K, C> commandRequest,
+            final Duration timeout
+    ) {
+        return publishCommandRequest(commandRequest)
+                .flatMap(v -> queryCommandResult(commandRequest.commandId(), timeout));
+    }
+
+    @Override
     public FutureResult<CommandError, Sequence> queryCommandResult(final UUID commandId, final Duration timeout) {
         CompletableFuture<CommandResponse> completableFuture = requestApi.queryResponse(commandId, timeout);
         return FutureResult.ofCompletableFuture(completableFuture.thenApply(CommandResponse::sequenceResult));
     }
 
-    public static <K, C> KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> getRequestAPIContext(CommandSpec<K, C> commandSpec, KafkaConfig kafkaConfig) {
+    public static <K, C> KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> getRequestAPIContext(
+            CommandSpec<K, C> commandSpec,
+            KafkaConfig kafkaConfig,
+            ScheduledExecutorService scheduler) {
         ResourceNamingStrategy namingStrategy = commandSpec.resourceNamingStrategy();
         CommandSerdes<K, C> serdes = commandSpec.serdes();
         String responseTopicBase = namingStrategy.topicName(
@@ -96,6 +116,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 .responseValueSerde(serdes.commandResponse())
                 .responseWindowSpec(commandSpec.commandResponseWindowSpec())
                 .outputTopicConfig(commandSpec.outputTopicConfig())
+                .scheduler(scheduler)
                 .build();
     }
 }

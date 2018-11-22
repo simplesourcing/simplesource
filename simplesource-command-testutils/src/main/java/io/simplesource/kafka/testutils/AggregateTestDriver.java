@@ -13,6 +13,7 @@ import io.simplesource.kafka.internal.client.RequestPublisher;
 import io.simplesource.kafka.internal.client.ResponseSubscription;
 import io.simplesource.kafka.internal.streams.topology.EventSourcedTopology;
 import io.simplesource.kafka.internal.streams.topology.TopologyContext;
+import io.simplesource.kafka.internal.util.NamedThreadFactory;
 import io.simplesource.kafka.model.AggregateUpdate;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
@@ -31,17 +32,19 @@ import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity;
 
-public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
+public final class AggregateTestDriver<K, C, E, A> {
     private final TopologyTestDriver driver;
     private final AggregateSpec<K, C, E, A> aggregateSpec;
     private final AggregateSerdes<K, C, E, A> aggregateSerdes;
 
-    private final CommandAPI<K, C> commandAPI;
+    private final KafkaCommandAPI<K, C> commandAPI;
     private final ArrayList<Runnable> statePollers;
 
     public AggregateTestDriver(
@@ -50,6 +53,9 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
     ) {
         final StreamsBuilder builder = new StreamsBuilder();
         final TopologyContext<K, C, E, A> ctx = new TopologyContext<>(aggregateSpec);
+        final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor(
+                new NamedThreadFactory("QueryAPI-scheduler"));
+
         EventSourcedTopology.addTopology(ctx, builder);
 
         this.aggregateSpec = aggregateSpec;
@@ -65,7 +71,8 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
                 new TestPublisher<>(driver, aggregateSerdes.commandResponseKey(), Serdes.String(), topicName(TopicEntity.command_response_topic_map));
 
         CommandSpec<K, C> commandSpec = SpecUtils.getCommandSpec(aggregateSpec,"localhost");
-        KafkaRequestAPI.RequestAPIContext<?, ?, CommandResponse> requestCtx = KafkaCommandAPI.getRequestAPIContext(commandSpec, kafkaConfig);
+        KafkaRequestAPI.RequestAPIContext<?, ?, CommandResponse> requestCtx =
+                KafkaCommandAPI.getRequestAPIContext(commandSpec, kafkaConfig, scheduledExecutor);
         
         TestTopologyReceiver.ReceiverSpec<UUID, CommandResponse> receiverSpec = new TestTopologyReceiver.ReceiverSpec<>(
                 requestCtx.privateResponseTopic(), 400, 4,
@@ -81,21 +88,19 @@ public final class AggregateTestDriver<K, C, E, A> implements CommandAPI<K, C> {
 
         commandAPI = new KafkaCommandAPI<>(commandSpec,
                 kafkaConfig,
+                scheduledExecutor,
                 commandRequestPublisher,
                 responseTopicMapPublisher,
                 receiverAttacher);
     }
 
-    @Override
-    public FutureResult<CommandError, UUID> publishCommand(final Request<K, C> request) {
-        return commandAPI.publishCommand(request);
+    public FutureResult<CommandError, UUID> publishCommandRequest(final CommandAPI.Request<K, C> request) {
+        return commandAPI.publishCommandRequest(request);
     }
 
-    @Override
     public FutureResult<CommandError, Sequence> queryCommandResult(
         final UUID commandId,
         final Duration timeout) {
-        commandAPI.queryCommandResult(commandId, timeout);
         pollForApiResponse();
         return commandAPI.queryCommandResult(commandId, timeout);
     }
