@@ -7,10 +7,7 @@ import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.dsl.KafkaConfig;
-import io.simplesource.kafka.internal.client.KafkaCommandAPI;
-import io.simplesource.kafka.internal.client.KafkaRequestAPI;
-import io.simplesource.kafka.internal.client.RequestPublisher;
-import io.simplesource.kafka.internal.client.ResponseSubscription;
+import io.simplesource.kafka.internal.client.*;
 import io.simplesource.kafka.internal.streams.topology.EventSourcedTopology;
 import io.simplesource.kafka.internal.streams.topology.TopologyContext;
 import io.simplesource.kafka.internal.util.NamedThreadFactory;
@@ -71,7 +68,7 @@ public final class AggregateTestDriver<K, C, E, A> {
                 new TestPublisher<>(driver, aggregateSerdes.commandResponseKey(), Serdes.String(), topicName(TopicEntity.command_response_topic_map));
 
         CommandSpec<K, C> commandSpec = SpecUtils.getCommandSpec(aggregateSpec,"localhost");
-        KafkaRequestAPI.RequestAPIContext<?, ?, CommandResponse> requestCtx =
+        RequestAPIContext<?, ?, CommandResponse> requestCtx =
                 KafkaCommandAPI.getRequestAPIContext(commandSpec, kafkaConfig, scheduledExecutor);
         
         TestTopologyReceiver.ReceiverSpec<UUID, CommandResponse> receiverSpec = new TestTopologyReceiver.ReceiverSpec<>(

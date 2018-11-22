@@ -36,7 +36,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
             final CommandSpec<K, C> commandSpec,
             final KafkaConfig kafkaConfig,
             final ScheduledExecutorService scheduler) {
-        KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> ctx = getRequestAPIContext(
+        RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> ctx = getRequestAPIContext(
                 commandSpec,
                 kafkaConfig,
                 scheduler);
@@ -51,7 +51,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
             final RequestPublisher<UUID, String> responseTopicMapSender,
             final Function<BiConsumer<UUID, CommandResponse>, ResponseSubscription> attachReceiver) {
 
-        KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> ctx = getRequestAPIContext(
+        RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> ctx = getRequestAPIContext(
                 commandSpec,
                 kafkaConfig,
                 scheduler);
@@ -106,7 +106,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
         return FutureResult.ofCompletableFuture(completableFuture.thenApply(CommandResponse::sequenceResult));
     }
 
-    public static <K, C> KafkaRequestAPI.RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> getRequestAPIContext(
+    public static <K, C> RequestAPIContext<K, CommandRequest<K, C>, CommandResponse> getRequestAPIContext(
             CommandSpec<K, C> commandSpec,
             KafkaConfig kafkaConfig,
             ScheduledExecutorService scheduler) {
@@ -117,7 +117,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 command_response.name());
 
         String privateResponseTopic =  String.format("%s_%s", responseTopicBase, commandSpec.clientId());
-        return KafkaRequestAPI.RequestAPIContext.<K, CommandRequest<K, C>, CommandResponse>builder()
+        return RequestAPIContext.<K, CommandRequest<K, C>, CommandResponse>builder()
                 .kafkaConfig(kafkaConfig)
                 .requestTopic(namingStrategy.topicName(
                         commandSpec.aggregateName(),

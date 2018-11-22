@@ -56,23 +56,6 @@ public final class KafkaRequestAPI<K, I, O> {
         }
     }
 
-    @Value
-    @Builder
-    public static final class RequestAPIContext<K, I, O> {
-        final KafkaConfig kafkaConfig;
-        final ScheduledExecutorService scheduler;
-        final String requestTopic;
-        final String responseTopicMapTopic;
-        final String privateResponseTopic;
-        final Serde<K> requestKeySerde;
-        final Serde<I> requestValueSerde;
-        final Serde<UUID> responseKeySerde;
-        final Serde<O> responseValueSerde;
-        final WindowSpec responseWindowSpec;
-        final TopicSpec outputTopicConfig;
-        final BiFunction<I, Throwable, O> errorValue;
-    }
-
     private final RequestAPIContext<K, I, O> ctx;
     private final ResponseSubscription responseSubscription;
     private final ExpiringMap<UUID, ResponseHandler<I, O>> responseHandlers;
@@ -103,8 +86,8 @@ public final class KafkaRequestAPI<K, I, O> {
 
     public KafkaRequestAPI(final RequestAPIContext<K, I, O> ctx) {
         this(ctx,
-                kakfaProducerSender(ctx.kafkaConfig, ctx.requestTopic, ctx.requestKeySerde, ctx.requestValueSerde),
-                kakfaProducerSender(ctx.kafkaConfig, ctx.responseTopicMapTopic, ctx.responseKeySerde, Serdes.String()),
+                kakfaProducerSender(ctx.kafkaConfig(), ctx.requestTopic(), ctx.requestKeySerde(), ctx.requestValueSerde()),
+                kakfaProducerSender(ctx.kafkaConfig(), ctx.responseTopicMapTopic(), ctx.responseKeySerde(), Serdes.String()),
                 receiver -> KafkaConsumerRunner.run(
                     ctx.kafkaConfig().consumerConfig(),
                     ctx.privateResponseTopic(),
@@ -130,7 +113,7 @@ public final class KafkaRequestAPI<K, I, O> {
             AdminClient adminClient = AdminClient.create(kafkaConfig.adminClientConfig());
             try {
                 Set<String> topics = adminClient.listTopics().names().get();
-                String privateResponseTopic = ctx.privateResponseTopic;
+                String privateResponseTopic = ctx.privateResponseTopic();
                 if (!topics.contains(privateResponseTopic)) {
                     TopicSpec topicSpec = ctx.outputTopicConfig();
                     NewTopic newTopic = new NewTopic(privateResponseTopic, topicSpec.partitionCount(), topicSpec.replicaCount());
@@ -163,7 +146,7 @@ public final class KafkaRequestAPI<K, I, O> {
 
         responseHandlers.removeStaleAsync(h ->
                 h.forEachFuture(f ->
-                        f.complete(ctx.errorValue.apply(h.input, new Exception("Request not processed.")))));
+                        f.complete(ctx.errorValue().apply(h.input, new Exception("Request not processed.")))));
 
         return result;
     }
@@ -176,9 +159,9 @@ public final class KafkaRequestAPI<K, I, O> {
             if (response.isPresent())
                 completableFuture.complete(response.get());
             else {
-                ctx.scheduler.schedule(() -> {
+                ctx.scheduler().schedule(() -> {
                     final TimeoutException ex = new TimeoutException("Timeout after " + timeout.toMillis() + " millis");
-                    completableFuture.complete(ctx.errorValue.apply(h.input, ex));
+                    completableFuture.complete(ctx.errorValue().apply(h.input, ex));
                 }, timeout.toMillis(), TimeUnit.MILLISECONDS);
                 h.responseFutures.add(completableFuture);
             }
@@ -194,7 +177,7 @@ public final class KafkaRequestAPI<K, I, O> {
         logger.info("Request API shutting down");
         responseHandlers.removeAll(h ->
                 h.forEachFuture(future ->
-                        future.complete(ctx.errorValue.apply(h.input, new Exception("Consumer closed before future.")))));
+                        future.complete(ctx.errorValue().apply(h.input, new Exception("Consumer closed before future.")))));
 
         this.responseSubscription.close();
     }
