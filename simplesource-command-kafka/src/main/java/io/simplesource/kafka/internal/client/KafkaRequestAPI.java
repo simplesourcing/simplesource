@@ -178,7 +178,7 @@ public final class KafkaRequestAPI<K, I, O> {
             else {
                 ctx.scheduler.schedule(() -> {
                     final TimeoutException ex = new TimeoutException("Timeout after " + timeout.toMillis() + " millis");
-                    completableFuture.complete(ctx.errorValue().apply(h.input, ex));
+                    completableFuture.complete(ctx.errorValue.apply(h.input, ex));
                 }, timeout.toMillis(), TimeUnit.MILLISECONDS);
                 h.responseFutures.add(completableFuture);
             }
