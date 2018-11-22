@@ -3,6 +3,8 @@ package io.simplesource.kafka.internal.client;
 import io.simplesource.api.CommandAPI;
 import io.simplesource.api.CommandError;
 import io.simplesource.data.FutureResult;
+import io.simplesource.data.NonEmptyList;
+import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.api.ResourceNamingStrategy;
@@ -19,6 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -55,6 +58,15 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
         requestApi = new KafkaRequestAPI<>(ctx, requestSender, responseTopicMapSender, attachReceiver, false);
     }
 
+    private static CommandError getCommandError(Throwable e) {
+        Throwable cause = e.getCause();
+        // go to the root cause TODO: make stack safe?
+        if (cause != null) return getCommandError(cause);
+        if (e instanceof TimeoutException)
+            return CommandError.of(CommandError.Reason.Timeout, e);
+        return CommandError.of(CommandError.Reason.CommandPublishError, e);
+    }
+
     public FutureResult<CommandError, UUID> publishCommandRequest(final Request<K, C> request) {
         final CommandRequest<K, C> commandRequest = new CommandRequest<>(
                 request.key(), request.command(), request.readSequence(), request.commandId());
@@ -63,7 +75,10 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
 
         // A lot of trouble to change the error type from Exception to CommandError
         Future<FutureResult<CommandError, UUID>> futureOfFR = publishResult.fold(
-                errors -> FutureResult.fail(CommandError.of(CommandError.Reason.CommandPublishError, errors.head())),
+                errors -> {
+                    NonEmptyList<CommandError> eList = errors.map(KafkaCommandAPI::getCommandError);
+                    return FutureResult.fail(eList);
+                },
                 r -> FutureResult.of(request.commandId()));
 
         return FutureResult
@@ -87,6 +102,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
     @Override
     public FutureResult<CommandError, Sequence> queryCommandResult(final UUID commandId, final Duration timeout) {
         CompletableFuture<CommandResponse> completableFuture = requestApi.queryResponse(commandId, timeout);
+
         return FutureResult.ofCompletableFuture(completableFuture.thenApply(CommandResponse::sequenceResult));
     }
 
@@ -117,6 +133,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 .responseWindowSpec(commandSpec.commandResponseWindowSpec())
                 .outputTopicConfig(commandSpec.outputTopicConfig())
                 .scheduler(scheduler)
+                .errorValue((i, e) -> new CommandResponse(i.commandId(), i.readSequence(), Result.failure(getCommandError(e))))
                 .build();
     }
 }
