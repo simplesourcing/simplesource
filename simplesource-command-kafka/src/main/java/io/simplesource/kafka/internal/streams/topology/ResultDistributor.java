@@ -22,7 +22,7 @@ final class DistributorSerdes<V> {
 final class DistributorContext<V> {
     public final String topicNameMapTopic;
     public final DistributorSerdes<V> serdes;
-    private final WindowSpec commandResponseWindowSpec;
+    private final WindowSpec responseWindowSpec;
     public final Function<V, UUID> idMapper;
 }
 
@@ -35,7 +35,7 @@ final class ResultDistributor {
     static <V> void distribute(DistributorContext<V> ctx, final KStream<?, V> resultStream, final KStream<UUID, String> topicNameStream) {
 
         DistributorSerdes<V> serdes = ctx.serdes();
-        long retentionMillis = ctx.commandResponseWindowSpec().retentionInSeconds() * 1000L;
+        long retentionMillis = ctx.responseWindowSpec().retentionInSeconds() * 1000L;
 
         KStream<String, V> joined = resultStream.selectKey((k, v) -> ctx.idMapper.apply(v))
                 .join(topicNameStream,
