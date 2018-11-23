@@ -33,7 +33,7 @@ public interface CommandAPI<K, C> {
 
     /**
      * Get the result of the execution of the command identified by the provided UUID.
-     * If the command was successful, return sequence numbers of all generated events.
+     * If the command was successful, return the highest sequence number of the generated events.
      * If the command fails, return the failure reasons. Implementations of this method
      * are permitted to have limited retention when querying commands.
      *

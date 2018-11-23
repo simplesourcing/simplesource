@@ -1,6 +1,5 @@
 package io.simplesource.kafka.internal.client;
 
-import avro.shaded.com.google.common.collect.Lists;
 import io.simplesource.data.FutureResult;
 import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.spec.TopicSpec;
@@ -20,11 +19,13 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 
 public final class KafkaRequestAPI<K, I, O> {
     private static final Logger logger = LoggerFactory.getLogger(KafkaRequestAPI.class);
@@ -41,37 +42,23 @@ public final class KafkaRequestAPI<K, I, O> {
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @Value
-    static final class ResponseHandler<O> {
+    static final class ResponseHandler<I, O> {
+        final I input;
         final List<CompletableFuture<O>> responseFutures;
         final Optional<O> response;
 
-        static <O> ResponseHandler<O> initialise(Optional<O> r) {
-            return new ResponseHandler<>(Lists.newArrayList(), r);
+        static <I, O> ResponseHandler<I, O> initialise(I input, Optional<O> r) {
+            return new ResponseHandler<>(input, new ArrayList<>(), r);
         }
 
         void forEachFuture(Consumer<CompletableFuture<O>> action) {
-            responseFutures.forEach(action);
+            responseFutures.forEach(action::accept);
         }
-    }
-
-    @Value
-    @Builder
-    public static final class RequestAPIContext<K, I, O> {
-        final KafkaConfig kafkaConfig;
-        final String requestTopic;
-        final String responseTopicMapTopic;
-        final String privateResponseTopic;
-        final Serde<K> requestKeySerde;
-        final Serde<I> requestValueSerde;
-        final Serde<UUID> responseKeySerde;
-        final Serde<O> responseValueSerde;
-        final WindowSpec responseWindowSpec;
-        final TopicSpec outputTopicConfig;
     }
 
     private final RequestAPIContext<K, I, O> ctx;
     private final ResponseSubscription responseSubscription;
-    private final ExpiringMap<UUID, ResponseHandler<O>> responseHandlers;
+    private final ExpiringMap<UUID, ResponseHandler<I, O>> responseHandlers;
     private final RequestPublisher<K, I> requestSender;
     private final RequestPublisher<UUID, String> responseTopicMapSender;
 
@@ -89,15 +76,18 @@ public final class KafkaRequestAPI<K, I, O> {
                     topicName,
                     key,
                     value);
-            return FutureResult.ofFuture(producer.send(record), e -> e)
+            return FutureResult.ofFuture(producer.send(record), e -> {
+                        logger.error("Error returned from future", e);
+                        return e;
+                    })
                     .map(meta -> new RequestPublisher.PublishResult(meta.timestamp()));
         };
     }
 
     public KafkaRequestAPI(final RequestAPIContext<K, I, O> ctx) {
         this(ctx,
-                kakfaProducerSender(ctx.kafkaConfig, ctx.requestTopic, ctx.requestKeySerde, ctx.requestValueSerde),
-                kakfaProducerSender(ctx.kafkaConfig, ctx.responseTopicMapTopic, ctx.responseKeySerde, Serdes.String()),
+                kakfaProducerSender(ctx.kafkaConfig(), ctx.requestTopic(), ctx.requestKeySerde(), ctx.requestValueSerde()),
+                kakfaProducerSender(ctx.kafkaConfig(), ctx.responseTopicMapTopic(), ctx.responseKeySerde(), Serdes.String()),
                 receiver -> KafkaConsumerRunner.run(
                     ctx.kafkaConfig().consumerConfig(),
                     ctx.privateResponseTopic(),
@@ -123,7 +113,7 @@ public final class KafkaRequestAPI<K, I, O> {
             AdminClient adminClient = AdminClient.create(kafkaConfig.adminClientConfig());
             try {
                 Set<String> topics = adminClient.listTopics().names().get();
-                String privateResponseTopic = ctx.privateResponseTopic;
+                String privateResponseTopic = ctx.privateResponseTopic();
                 if (!topics.contains(privateResponseTopic)) {
                     TopicSpec topicSpec = ctx.outputTopicConfig();
                     NewTopic newTopic = new NewTopic(privateResponseTopic, topicSpec.partitionCount(), topicSpec.replicaCount());
@@ -135,10 +125,10 @@ public final class KafkaRequestAPI<K, I, O> {
         }
 
         responseHandlers = new ExpiringMap<>(retentionInSeconds, Clock.systemUTC());
-        ResponseReceiver<UUID, ResponseHandler<O>, O> responseReceiver =
+        ResponseReceiver<UUID, ResponseHandler<I, O>, O> responseReceiver =
             new ResponseReceiver<>(responseHandlers, (h, r) -> {
                 h.forEachFuture(future -> future.complete(r));
-                return ResponseHandler.initialise(Optional.of(r));
+                return ResponseHandler.initialise(h.input, Optional.of(r));
             });
 
         this.responseSubscription = responseSubscriber.apply(responseReceiver::receive);
@@ -150,13 +140,13 @@ public final class KafkaRequestAPI<K, I, O> {
 
         FutureResult<Exception, RequestPublisher.PublishResult> result = responseTopicMapSender.publish(requestId, ctx.privateResponseTopic())
                 .flatMap(r -> requestSender.publish(key, request)).map(r -> {
-                    responseHandlers.insertIfAbsent(requestId, () -> ResponseHandler.initialise(Optional.empty()));
+                    responseHandlers.insertIfAbsent(requestId, () -> ResponseHandler.initialise(request, Optional.empty()));
                     return r;
                 });
 
         responseHandlers.removeStaleAsync(h ->
                 h.forEachFuture(f ->
-                        f.completeExceptionally(new Exception("Request timed out."))));
+                        f.complete(ctx.errorValue().apply(h.input, new Exception("Request not processed.")))));
 
         return result;
     }
@@ -168,8 +158,13 @@ public final class KafkaRequestAPI<K, I, O> {
             Optional<O> response = h.response;
             if (response.isPresent())
                 completableFuture.complete(response.get());
-            else
+            else {
+                ctx.scheduler().schedule(() -> {
+                    final TimeoutException ex = new TimeoutException("Timeout after " + timeout.toMillis() + " millis");
+                    completableFuture.complete(ctx.errorValue().apply(h.input, ex));
+                }, timeout.toMillis(), TimeUnit.MILLISECONDS);
                 h.responseFutures.add(completableFuture);
+            }
             return h;
         });
         if (handler == null) {
@@ -180,9 +175,9 @@ public final class KafkaRequestAPI<K, I, O> {
 
     public void close() {
         logger.info("Request API shutting down");
-        responseHandlers.removeAll(handlers ->
-                handlers.forEachFuture(future ->
-                        future.completeExceptionally(new Exception("Consumer closed before future."))));
+        responseHandlers.removeAll(h ->
+                h.forEachFuture(future ->
+                        future.complete(ctx.errorValue().apply(h.input, new Exception("Consumer closed before future.")))));
 
         this.responseSubscription.close();
     }

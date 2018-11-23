@@ -49,7 +49,7 @@ public final class AggregateTestHelper<K, C, E, A> {
             },
             uuid -> {
                 assertEquals(uuid, commandId);
-                return uuid;
+                return commandId;
             }
         );
     }
