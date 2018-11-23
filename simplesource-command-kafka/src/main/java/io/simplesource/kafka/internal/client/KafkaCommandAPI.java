@@ -59,9 +59,6 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
     }
 
     private static CommandError getCommandError(Throwable e) {
-        Throwable cause = e.getCause();
-        // go to the root cause TODO: make stack safe?
-        if (cause != null) return getCommandError(cause);
         if (e instanceof TimeoutException)
             return CommandError.of(CommandError.Reason.Timeout, e);
         return CommandError.of(CommandError.Reason.CommandPublishError, e);
@@ -125,7 +122,11 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 .responseWindowSpec(commandSpec.commandResponseWindowSpec())
                 .outputTopicConfig(commandSpec.outputTopicConfig())
                 .scheduler(scheduler)
-                .errorValue((i, e) -> new CommandResponse(i.commandId(), i.readSequence(), Result.failure(getCommandError(e))))
+                .errorValue((i, e) ->
+                        new CommandResponse(
+                                i.commandId(),
+                                i.readSequence(),
+                                Result.failure(getCommandError(e))))
                 .build();
     }
 }
