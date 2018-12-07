@@ -16,7 +16,7 @@ import java.util.Optional;
  * @param <K> the aggregate key type
  * @param <C> the command type
  * @param <A> the aggregate type
- **/
+ */
 @FunctionalInterface
 public interface InvalidSequenceHandler<K, C, A> {
     /**
@@ -32,9 +32,10 @@ public interface InvalidSequenceHandler<K, C, A> {
      *
      * @return If the command should be rejected, return <code>Optional</code> with a reason. If the command should still be invoked, return <code>Optional.empty</code>
      */
-    Optional<CommandError> shouldReject(K key,
-                                        Sequence expectedSeq,
-                                        Sequence currentSeq,
-                                        A currentAggregate,
-                                        C command);
-}
+    Optional<CommandError> shouldReject(
+            K key,
+            Sequence expectedSeq,
+            Sequence currentSeq,
+            A currentAggregate,
+            C command);
+    }

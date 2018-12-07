@@ -13,9 +13,11 @@ import static java.util.Objects.requireNonNull;
 /**
  * An builder for creating an {@link CommandHandler} that can handle several different commands types by adding
  * one or more single command handlers.
- **
+ *
+ * @param <K> the aggregate key type
+ * @param <C> all commands for this aggregate
  * @param <E> all events generated for this aggregate
- * @param <A> the aggregate
+ * @param <A> the aggregate type
  */
 public final class CommandHandlerBuilder<K, C, E, A> {
 
@@ -47,7 +49,7 @@ public final class CommandHandlerBuilder<K, C, E, A> {
                         command.getClass().getSimpleName())));
             }
 
-            return commandHandler.interpretCommand(key, currentAggregate, (SC) command);
+            return commandHandler.interpretCommand(key, currentAggregate, command);
         };
     }
 }

@@ -1,7 +1,6 @@
 package io.simplesource.api;
 
 import io.simplesource.data.FutureResult;
-import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Sequence;
 import lombok.Value;
 
@@ -14,7 +13,7 @@ import java.util.UUID;
  *
  * For a command to be successfully applied, this sequence must be the same as the sequence id of the last applied event.
  *
- * @param <K> the aggregate key
+ * @param <K> the aggregate key type
  * @param <C> all commands for this aggregate
  */
 public interface CommandAPI<K, C> {
@@ -22,7 +21,7 @@ public interface CommandAPI<K, C> {
     /**
      * Submit the given command ready for processing. A successful result implies the command has been
      * successfully queued ready to be processed by the command handler. The validation of the command
-     * and translation into events is done asynchronously after publishing a command and is not reflected
+     * and translation into events is done asynchronously after publishing and is not reflected
      * in the result of this method.
      *
      * @param request command request.

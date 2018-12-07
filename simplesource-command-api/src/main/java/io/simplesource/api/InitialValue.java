@@ -1,10 +1,10 @@
 package io.simplesource.api;
 
 /**
- * Provides the initial value of an aggregate .
+ * Provides the initial value of an aggregate.
  *
- * @param <K> The key type for th aggregate.
- * @param <A> The aggregate type.
+ * @param <K> the aggregate key type
+ * @param <A> the aggregate type
  */
 @FunctionalInterface
 public interface InitialValue<K, A> {

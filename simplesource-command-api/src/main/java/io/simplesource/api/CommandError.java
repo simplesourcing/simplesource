@@ -12,7 +12,7 @@ import static java.util.Objects.requireNonNull;
 public abstract class CommandError {
 
     /**
-     * Construct a {@link CommandError} from a {@link Throwable}
+     * Construct a {@link CommandError} from a {@link Throwable}.
      *
      * @param reason the reason value
      * @param throwable for more context
@@ -23,7 +23,7 @@ public abstract class CommandError {
     }
 
     /**
-     * Construct a {@link CommandError} from a {@link Throwable}
+     * Construct a {@link CommandError} from a {@link Throwable}.
      *
      * @param reason the reason value
      * @param msg for more context
@@ -34,7 +34,7 @@ public abstract class CommandError {
     }
 
     /**
-     * The reason value acaessor
+     * The reason value accessor.
      *
      * @return the reason
      */

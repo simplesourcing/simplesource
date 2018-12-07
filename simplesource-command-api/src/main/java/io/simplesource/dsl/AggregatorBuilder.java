@@ -6,11 +6,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * An builder for creating an {@link Aggregator} that can handle multiple event types by adding
+ * A builder for creating an {@link Aggregator} that can handle multiple event types by adding
  * one or more single event aggregators.
- **
+ *
  * @param <E> all events generated for this aggregate
- * @param <A> the aggregate
+ * @param <A> the aggregate type
  */
 public final class AggregatorBuilder<E, A> {
 

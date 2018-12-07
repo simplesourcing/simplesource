@@ -1,7 +1,5 @@
 package io.simplesource.api;
 
-import io.simplesource.api.InitialValue;
-
 /**
  * An Aggregator is a function that builds up an aggregate from a stream of events (effectively a fold function).
  *
@@ -9,8 +7,7 @@ import io.simplesource.api.InitialValue;
  * prior to executing a command against the aggregate.
  *
  * @param <E> all events generated for this aggregate
- * @param <A> the aggregate
- *
+ * @param <A> the aggregate type
  */
 @FunctionalInterface
 public interface Aggregator<E, A> {

@@ -3,9 +3,6 @@ package io.simplesource.kafka.api;
 import io.simplesource.kafka.model.*;
 import org.apache.kafka.common.serialization.Serde;
 
-import java.util.Map;
-import java.util.UUID;
-
 /**
  * Responsible for providing the mechanism for reading and writing to Kafka from the Simple Sourcing
  * Kafka Streams application when using the given serialization class.
@@ -16,9 +13,9 @@ import java.util.UUID;
  * writing their own.
  *
  * @param <K> the key type for aggregates, commands and events
- * @param <A> the aggregate aggregate_update
- * @param <E> base type of all events generated for this aggregate
  * @param <C> base type of all commands for this aggregate
+ * @param <E> base type of all events generated for this aggregate
+ * @param <A> the aggregate aggregate_update
  */
 public interface AggregateSerdes<K, C, E, A> extends CommandSerdes<K, C> {
     Serde<ValueWithSequence<E>> valueWithSequence();
