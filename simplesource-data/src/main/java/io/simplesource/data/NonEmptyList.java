@@ -24,15 +24,15 @@ public final class NonEmptyList<A> extends AbstractList<A> {
         return new NonEmptyList<>(a, Arrays.asList(as));
     }
 
-    public static <A> NonEmptyList<A> fromList(List<A> l) {
+    public static <A> Optional<NonEmptyList<A>> fromList(List<A> l) {
 
-        if (l.size() < 1) throw new IllegalStateException("Cannot create a NonEmptyList from an Empty List");
+        if (l.size() < 1) return Optional.empty();
 
         if (l.size() == 1) {
-            return NonEmptyList.of(l.get(0));
+            return Optional.of(NonEmptyList.of(l.get(0)));
         }
 
-        return new NonEmptyList<>(l.get(0), l.subList(1, l.size()));
+        return Optional.of(new NonEmptyList<>(l.get(0), l.subList(1, l.size())));
     }
 
     public NonEmptyList(final A head, final List<A> tail) {
