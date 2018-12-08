@@ -40,16 +40,16 @@ public class CommandError {
      * @return the reason
      */
     public Reason getReason() {
-        return reason.getReason();
+        return error.getReason();
     }
 
     /**
-     * The reason message accessor
+     * The error message accessor
      *
-     * @return the reason message
+     * @return the error message
      */
     public String getMessage() {
-        return reason.getMessage();
+        return error.getMessage();
     }
 
     /**
@@ -61,20 +61,13 @@ public class CommandError {
      * @return the result
      */
     public <A> A fold(BiFunction<Reason, String, A> str, BiFunction<Reason, Throwable, A> ex){
-        return reason.fold(str, ex);
+        return error.fold(str, ex);
     }
 
-    private final Error<Reason> reason;
+    private final Error<Reason> error;
 
-    private CommandError(final Error<Reason> reason) {
-        this.reason = reason;
-    }
-
-    @Override
-    public String toString() {
-        return "CommandError(" + fold(
-                (error, message) -> "Error: " + error + " Message: " + message,
-                (error, throwable) -> "Error: " + error + " Throwable: " + throwable) + ')';
+    private CommandError(final Error<Reason> error) {
+        this.error = error;
     }
 
     public enum Reason {
