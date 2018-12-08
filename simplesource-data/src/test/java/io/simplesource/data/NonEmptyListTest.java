@@ -49,6 +49,13 @@ class NonEmptyListTest {
     }
 
     @Test
+    void toListShouldReturnAllElementsOfList() {
+        NonEmptyList<Integer> list = NonEmptyList.of(10, 20, 30, 40);
+
+        assertThat(list.toList()).containsExactly(10, 20, 30, 40);
+    }
+
+    @Test
     void lastShouldReturnLastElementOfList() {
         NonEmptyList<Integer> list = NonEmptyList.of(10, 20, 30, 40);
 

@@ -71,21 +71,8 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
 
         FutureResult<Exception, RequestPublisher.PublishResult> publishResult = requestApi.publishRequest(request.key(), request.commandId(), commandRequest);
 
-        // A lot of trouble to change the error type from Exception to CommandError
-        Future<FutureResult<CommandError, UUID>> futureOfFR = publishResult.fold(
-                errors -> {
-                    NonEmptyList<CommandError> eList = errors.map(KafkaCommandAPI::getCommandError);
-                    return FutureResult.fail(eList);
-                },
-                r -> FutureResult.of(request.commandId()));
-
-        return FutureResult
-                .ofFuture(futureOfFR, e -> {
-                    logger.debug("Error in publishing command", e);
-                    Throwable rootCause = Optional.ofNullable(e.getCause()).orElse(e);
-                    return CommandError.of(CommandError.Reason.CommandPublishError, rootCause);
-                })
-                .flatMap(y -> y);
+        return publishResult.leftMap(KafkaCommandAPI::getCommandError)
+                .map(r -> request.commandId());
     }
 
     @Override

@@ -1,9 +1,6 @@
 package io.simplesource.data;
 
-import java.util.AbstractList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -84,6 +81,13 @@ public final class NonEmptyList<A> extends AbstractList<A> {
 
     public List<A> tail() {
         return tail;
+    }
+
+    public List<A> toList() {
+        List<A> newList = new ArrayList<>();
+        newList.add(head);
+        newList.addAll(tail);
+        return newList;
     }
 
     public <B> B fold(final Function<A, B> initialResult, final BiFunction<B, A, B> op) {

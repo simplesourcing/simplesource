@@ -98,7 +98,11 @@ public final class FutureResult<E, T> {
         return new FutureResult<>(run.thenApply(r -> r.map(f)));
     }
 
-    public <R> Future<R> fold(Function<NonEmptyList<E>, R> e, Function<T, R> f) {
+    public <E2> FutureResult<E2, T> leftMap(Function<E, E2> f) {
+        return new FutureResult<>(run.thenApply(r -> r.leftMap(f)));
+    }
+
+    public <R> CompletableFuture<R> fold(Function<NonEmptyList<E>, R> e, Function<T, R> f) {
         return run.thenApply(r -> r.fold(e, f));
     }
 
