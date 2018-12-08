@@ -1,15 +1,16 @@
 package io.simplesource.api;
 
-import java.util.Objects;
-import java.util.function.BiFunction;
+import io.simplesource.data.Error;
+import lombok.Value;
 
-import static java.util.Objects.requireNonNull;
+import java.util.function.BiFunction;
 
 /**
  * A CommandError explains failures. They can be constructed from the reason type,
  * with either a {@link String} or a {@link Throwable} for more context.
  */
-public abstract class CommandError {
+@Value
+public class CommandError {
 
     /**
      * Construct a {@link CommandError} from a {@link Throwable}.
@@ -19,7 +20,7 @@ public abstract class CommandError {
      * @return the constructed {@link CommandError}
      */
     public static CommandError of(final Reason reason, final Throwable throwable) {
-        return new ThrowableCommandError(reason, throwable);
+        return new CommandError(Error.of(reason, throwable));
     }
 
     /**
@@ -30,7 +31,7 @@ public abstract class CommandError {
      * @return the constructed {@link CommandError}
      */
     public static CommandError of(final Reason reason, final String msg) {
-        return new StringCommandError(reason, msg);
+        return new CommandError(Error.of(reason, msg));
     }
 
     /**
@@ -39,15 +40,17 @@ public abstract class CommandError {
      * @return the reason
      */
     public Reason getReason() {
-        return reason;
-    };
+        return reason.getReason();
+    }
 
     /**
-     * The reason message acaessor
+     * The reason message accessor
      *
      * @return the reason message
      */
-    public abstract String getMessage();
+    public String getMessage() {
+        return reason.getMessage();
+    }
 
     /**
      * Access the reason value and either the string or the throwable context and return whatever you like.
@@ -57,15 +60,13 @@ public abstract class CommandError {
      * @param ex the function that receives the reason and throwable, returning a value of the specified type
      * @return the result
      */
-    public abstract <A> A fold(BiFunction<Reason, String, A> str, BiFunction<Reason, Throwable, A> ex);
+    public <A> A fold(BiFunction<Reason, String, A> str, BiFunction<Reason, Throwable, A> ex){
+        return reason.fold(str, ex);
+    }
 
-    //
-    // internals
-    //
+    private final Error<Reason> reason;
 
-    private final Reason reason;
-
-    private CommandError(final Reason reason) {
+    private CommandError(final Error<Reason> reason) {
         this.reason = reason;
     }
 
@@ -74,74 +75,6 @@ public abstract class CommandError {
         return "CommandError(" + fold(
                 (error, message) -> "Error: " + error + " Message: " + message,
                 (error, throwable) -> "Error: " + error + " Throwable: " + throwable) + ')';
-    }
-
-    static final class ThrowableCommandError extends CommandError {
-        private final Throwable throwable;
-
-        ThrowableCommandError(final Reason reason, final Throwable throwable) {
-            super(reason);
-            this.throwable = requireNonNull(throwable);
-        }
-
-        @Override
-        public String getMessage() {
-            return throwable.getMessage();
-        }
-
-        @Override
-        public <A> A fold(final BiFunction<Reason, String, A> str, final BiFunction<Reason, Throwable, A> ex) {
-            return ex.apply(getReason(), throwable);
-        }
-
-        @Override
-        public int hashCode() {
-            return 31 * getReason().hashCode() + throwable.hashCode();
-        }
-
-        @Override
-        public boolean equals(final Object obj) {
-            if (!(obj instanceof CommandError.ThrowableCommandError))
-                return false;
-            final ThrowableCommandError other = (ThrowableCommandError) obj;
-            return Objects.equals(getReason(), other.getReason()) &&
-                    Objects.equals(throwable, other.throwable);
-        }
-
-    }
-
-    static final class StringCommandError extends CommandError {
-        private final String msg;
-
-        StringCommandError(final Reason reason, final String msg) {
-            super(reason);
-            this.msg = requireNonNull(msg);
-        }
-
-        @Override
-        public String getMessage() {
-            return msg;
-        }
-
-        @Override
-        public <A> A fold(final BiFunction<Reason, String, A> str, final BiFunction<Reason, Throwable, A> ex) {
-            return str.apply(getReason(), msg);
-        }
-
-        @Override
-        public int hashCode() {
-            return 31 * getReason().hashCode() + msg.hashCode();
-        }
-
-        @Override
-        public boolean equals(final Object obj) {
-            if (!(obj instanceof CommandError.StringCommandError))
-                return false;
-            final StringCommandError other = (StringCommandError) obj;
-            return Objects.equals(getReason(), other.getReason()) &&
-                    Objects.equals(msg, other.msg);
-        }
-
     }
 
     public enum Reason {

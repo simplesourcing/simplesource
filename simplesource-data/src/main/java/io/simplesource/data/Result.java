@@ -134,7 +134,7 @@ public abstract class Result<E, A> {
      * @return a {@code Result<E, T>}
      * @throws NullPointerException if {@code mapper} is null
      */
-    public <F> Result<F, A> leftMap(final Function<E, F> errorMapper) {
+    public <F> Result<F, A> errorMap(final Function<E, F> errorMapper) {
         return fold(
                 errors -> failure(errors.map(errorMapper)),
                 a -> success(a)

@@ -78,25 +78,25 @@ class FutureResultTest {
     }
 
     @Test
-    void leftMapShouldChangeTheErrorType() {
+    void errorMapShouldChangeTheErrorType() {
         FutureResult<TestError, Integer> futureResult = asynchronousFailure(futureResultReturnSignal,
                 FAILURE_COMMAND_ERROR_1, FAILURE_COMMAND_ERROR_2);
 
         triggerFutureResultReturnSignal();
 
         assertDoesNotThrow(() -> {
-            Result<TestError.Reason, Integer> actualResult = getFutureResultValue(futureResult.leftMap(TestError::getReason));
+            Result<TestError.Reason, Integer> actualResult = getFutureResultValue(futureResult.errorMap(TestError::getReason));
             assertThat(actualResult.isFailure()).isTrue();
             assertThat( actualResult.failureReasons().get()).containsOnly(TestError.Reason.InternalError, TestError.Reason.UnexpectedErrorCode);
         });
     }
 
     @Test
-    void leftMapShouldDoNothingOnSuccess() {
+    void errorMapShouldDoNothingOnSuccess() {
         FutureResult<TestError, Integer> futureResult = asynchronousSuccess(futureResultReturnSignal, 10);
 
         triggerFutureResultReturnSignal();
-        Result<TestError.Reason, Integer> result = getFutureResultValue(futureResult.leftMap(TestError::getReason));
+        Result<TestError.Reason, Integer> result = getFutureResultValue(futureResult.errorMap(TestError::getReason));
         assertThat(result.getOrElse(-1)).isEqualTo(10);
         assertTrue(result.isSuccess());
     }
