@@ -1,7 +1,6 @@
 package io.simplesource.data;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
 
 import static java.util.Objects.requireNonNull;
 
@@ -9,7 +8,7 @@ import static java.util.Objects.requireNonNull;
  * A CommandError explains failures. They can be constructed from the reason type,
  * with either a {@link String} or a {@link Throwable} for more context.
  */
-public abstract class Error<Reason> {
+public interface Error<Reason> {
 
     /**
      * Construct a {@link Error} from a {@link Throwable}.
@@ -18,7 +17,7 @@ public abstract class Error<Reason> {
      * @param throwable for more context
      * @return the constructed {@link Error}
      */
-    public static <Reason> Error<Reason> of(final Reason reason, final Throwable throwable) {
+    static <Reason> Error<Reason> of(final Reason reason, final Throwable throwable) {
         return new ThrowableError<>(reason, throwable);
     }
 
@@ -29,7 +28,7 @@ public abstract class Error<Reason> {
      * @param msg for more context
      * @return the constructed {@link Error}
      */
-    public static <Reason> Error<Reason> of(final Reason reason, final String msg) {
+    static <Reason> Error<Reason> of(final Reason reason, final String msg) {
         return new StringError<>(reason, msg);
     }
 
@@ -38,49 +37,24 @@ public abstract class Error<Reason> {
      *
      * @return the reason
      */
-    public Reason getReason() {
-        return reason;
-    }
+    Reason getReason();
 
     /**
      * The reason message accessor
      *
      * @return the reason message
      */
-    public abstract String getMessage();
-
-    /**
-     * Access the reason value and either the string or the throwable context and return whatever you like.
-     *
-     * @param <A> the result type
-     * @param str the function that receives the reason and string, returning a value of the specified type
-     * @param ex the function that receives the reason and throwable, returning a value of the specified type
-     * @return the result
-     */
-    public abstract <A> A fold(BiFunction<Reason, String, A> str, BiFunction<Reason, Throwable, A> ex);
+    String getMessage();
 
     //
-    // internals
+    // implementations
     //
-
-    private final Reason reason;
-
-    private Error(final Reason reason) {
-        this.reason = reason;
-    }
-
-    @Override
-    public String toString() {
-        return "Error(" + fold(
-                (error, message) -> "Error: " + error + " Message: " + message,
-                (error, throwable) -> "Error: " + error + " Throwable: " + throwable) + ')';
-    }
-
-    static final class ThrowableError<Reason>  extends Error<Reason>  {
+    final class ThrowableError<Reason>  implements Error<Reason>  {
         private final Throwable throwable;
+        private final Reason reason;
 
         ThrowableError(final Reason reason, final Throwable throwable) {
-            super(reason);
+            this.reason = reason;
             this.throwable = requireNonNull(throwable);
         }
 
@@ -90,8 +64,8 @@ public abstract class Error<Reason> {
         }
 
         @Override
-        public <A> A fold(final BiFunction<Reason, String, A> str, final BiFunction<Reason, Throwable, A> ex) {
-            return ex.apply(getReason(), throwable);
+        public Reason getReason() {
+            return reason;
         }
 
         @Override
@@ -108,13 +82,18 @@ public abstract class Error<Reason> {
                     Objects.equals(throwable, other.throwable);
         }
 
+        @Override
+        public String toString() {
+            return "Error(" + "Reason: " + getReason() + " Throwable: " + throwable + ')';
+        }
     }
 
-    static final class StringError<Reason>  extends Error<Reason>  {
+    final class StringError<Reason>  implements Error<Reason>  {
         private final String msg;
+        private final Reason reason;
 
         StringError(final Reason reason, final String msg) {
-            super(reason);
+            this.reason = reason;
             this.msg = requireNonNull(msg);
         }
 
@@ -124,8 +103,8 @@ public abstract class Error<Reason> {
         }
 
         @Override
-        public <A> A fold(final BiFunction<Reason, String, A> str, final BiFunction<Reason, Throwable, A> ex) {
-            return str.apply(getReason(), msg);
+        public Reason getReason() {
+            return reason;
         }
 
         @Override
@@ -142,5 +121,9 @@ public abstract class Error<Reason> {
                     Objects.equals(msg, other.msg);
         }
 
+        @Override
+        public String toString() {
+            return "Error(" + "Reason: " + getReason() + " Message: " + getMessage() + ')';
+        }
     }
 }

@@ -3,15 +3,12 @@ package io.simplesource.api;
 import io.simplesource.data.Error;
 import lombok.Value;
 
-import java.util.function.BiFunction;
-
 /**
  * A CommandError explains failures. They can be constructed from the reason type,
  * with either a {@link String} or a {@link Throwable} for more context.
  */
 @Value
 public class CommandError {
-
     /**
      * Construct a {@link CommandError} from a {@link Throwable}.
      *
@@ -50,18 +47,6 @@ public class CommandError {
      */
     public String getMessage() {
         return error.getMessage();
-    }
-
-    /**
-     * Access the reason value and either the string or the throwable context and return whatever you like.
-     *
-     * @param <A> the result type
-     * @param str the function that receives the reason and string, returning a value of the specified type
-     * @param ex the function that receives the reason and throwable, returning a value of the specified type
-     * @return the result
-     */
-    public <A> A fold(BiFunction<Reason, String, A> str, BiFunction<Reason, Throwable, A> ex){
-        return error.fold(str, ex);
     }
 
     private final Error<Reason> error;
