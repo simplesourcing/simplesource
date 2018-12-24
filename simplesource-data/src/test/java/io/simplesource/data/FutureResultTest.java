@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FutureResultTest {
-    private static final int COUNTDOWN_SLEEP_TIME = 1000;
+    private static final int COUNTDOWN_SLEEP_TIME = 500;
     private static final String DEFAULT_VALUE = "not exist value";
     private static final TestError FAILURE_COMMAND_ERROR_1 = new TestError(TestError.Reason.InternalError);
     private static final TestError FAILURE_COMMAND_ERROR_2 = new TestError(TestError.Reason.UnexpectedErrorCode);
@@ -78,6 +78,30 @@ class FutureResultTest {
     }
 
     @Test
+    void errorMapShouldChangeTheErrorType() {
+        FutureResult<TestError, Integer> futureResult = asynchronousFailure(futureResultReturnSignal,
+                FAILURE_COMMAND_ERROR_1, FAILURE_COMMAND_ERROR_2);
+
+        triggerFutureResultReturnSignal();
+
+        assertDoesNotThrow(() -> {
+            Result<TestError.Reason, Integer> actualResult = getFutureResultValue(futureResult.errorMap(TestError::getReason));
+            assertThat(actualResult.isFailure()).isTrue();
+            assertThat( actualResult.failureReasons().get()).containsOnly(TestError.Reason.InternalError, TestError.Reason.UnexpectedErrorCode);
+        });
+    }
+
+    @Test
+    void errorMapShouldDoNothingOnSuccess() {
+        FutureResult<TestError, Integer> futureResult = asynchronousSuccess(futureResultReturnSignal, 10);
+
+        triggerFutureResultReturnSignal();
+        Result<TestError.Reason, Integer> result = getFutureResultValue(futureResult.errorMap(TestError::getReason));
+        assertThat(result.getOrElse(-1)).isEqualTo(10);
+        assertTrue(result.isSuccess());
+    }
+
+    @Test
     void flatMapShouldMapIntValueToStringWhenFutureResultIsSuccess() {
         FutureResult<TestError, Integer> futureResult = asynchronousSuccess(futureResultReturnSignal, 10);
 
@@ -137,7 +161,7 @@ class FutureResultTest {
         );
     }
 
-    private static <T> Result<TestError, T> getFutureResultValue(FutureResult<TestError, T> futureResult) {
+    private static <E, T> Result<E, T> getFutureResultValue(FutureResult<E, T> futureResult) {
         return futureResult.future().join();
     }
 }

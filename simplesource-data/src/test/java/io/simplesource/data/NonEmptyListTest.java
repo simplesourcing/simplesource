@@ -3,6 +3,7 @@ package io.simplesource.data;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -49,6 +50,13 @@ class NonEmptyListTest {
     }
 
     @Test
+    void toListShouldReturnAllElementsOfList() {
+        NonEmptyList<Integer> list = NonEmptyList.of(10, 20, 30, 40);
+
+        assertThat(list.toList()).containsExactly(10, 20, 30, 40);
+    }
+
+    @Test
     void lastShouldReturnLastElementOfList() {
         NonEmptyList<Integer> list = NonEmptyList.of(10, 20, 30, 40);
 
@@ -75,13 +83,16 @@ class NonEmptyListTest {
 
     @Test
     void fromListShouldCreateNonEmptyListFromElementsInTheSameOrder() {
-        NonEmptyList<Integer> list = NonEmptyList.fromList(Stream.of(100, 10, 5).collect(toList()));
+        Optional<NonEmptyList<Integer>> oList = NonEmptyList.fromList(Stream.of(100, 10, 5).collect(toList()));
 
-        assertThat(list).containsExactly(100, 10, 5);
+        assertThat(oList.isPresent()).isTrue();
+        oList.ifPresent(list -> assertThat(list).containsExactly(100, 10, 5));
     }
 
     @Test
-    void fromListShouldThrowIllegalStateExceptionWhenListIsEmpty() {
-        assertThrows(IllegalStateException.class, () -> NonEmptyList.fromList(new ArrayList<>()));
+    void fromListShouldNotCreateNELFromEmptyList() {
+        Optional<NonEmptyList<Integer>> oList = NonEmptyList.fromList(new ArrayList<>());
+
+        assertThat(oList.isPresent()).isFalse();
     }
 }

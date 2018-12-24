@@ -3,7 +3,6 @@ package io.simplesource.kafka.internal.client;
 import io.simplesource.api.CommandAPI;
 import io.simplesource.api.CommandError;
 import io.simplesource.data.FutureResult;
-import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.CommandSerdes;
@@ -12,14 +11,10 @@ import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.spec.CommandSpec;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
@@ -28,7 +23,6 @@ import java.util.function.Function;
 import static io.simplesource.kafka.api.AggregateResources.TopicEntity.*;
 
 public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
-    private static final Logger logger = LoggerFactory.getLogger(KafkaCommandAPI.class);
 
     private KafkaRequestAPI<K, CommandRequest<K, C>, CommandResponse> requestApi;
 
@@ -71,21 +65,8 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
 
         FutureResult<Exception, RequestPublisher.PublishResult> publishResult = requestApi.publishRequest(request.key(), request.commandId(), commandRequest);
 
-        // A lot of trouble to change the error type from Exception to CommandError
-        Future<FutureResult<CommandError, UUID>> futureOfFR = publishResult.fold(
-                errors -> {
-                    NonEmptyList<CommandError> eList = errors.map(KafkaCommandAPI::getCommandError);
-                    return FutureResult.fail(eList);
-                },
-                r -> FutureResult.of(request.commandId()));
-
-        return FutureResult
-                .ofFuture(futureOfFR, e -> {
-                    logger.debug("Error in publishing command", e);
-                    Throwable rootCause = Optional.ofNullable(e.getCause()).orElse(e);
-                    return CommandError.of(CommandError.Reason.CommandPublishError, rootCause);
-                })
-                .flatMap(y -> y);
+        return publishResult.errorMap(KafkaCommandAPI::getCommandError)
+                .map(r -> request.commandId());
     }
 
     @Override

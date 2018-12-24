@@ -1,9 +1,6 @@
 package io.simplesource.data;
 
-import java.util.AbstractList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -27,15 +24,15 @@ public final class NonEmptyList<A> extends AbstractList<A> {
         return new NonEmptyList<>(a, Arrays.asList(as));
     }
 
-    public static <A> NonEmptyList<A> fromList(List<A> l) {
+    public static <A> Optional<NonEmptyList<A>> fromList(List<A> l) {
 
-        if (l.size() < 1) throw new IllegalStateException("Cannot create a NonEmptyList from an Empty List");
+        if (l.size() < 1) return Optional.empty();
 
         if (l.size() == 1) {
-            return NonEmptyList.of(l.get(0));
+            return Optional.of(NonEmptyList.of(l.get(0)));
         }
 
-        return new NonEmptyList<>(l.get(0), l.subList(1, l.size()));
+        return Optional.of(new NonEmptyList<>(l.get(0), l.subList(1, l.size())));
     }
 
     public NonEmptyList(final A head, final List<A> tail) {
@@ -84,6 +81,13 @@ public final class NonEmptyList<A> extends AbstractList<A> {
 
     public List<A> tail() {
         return tail;
+    }
+
+    public List<A> toList() {
+        List<A> newList = new ArrayList<>();
+        newList.add(head);
+        newList.addAll(tail);
+        return newList;
     }
 
     public <B> B fold(final Function<A, B> initialResult, final BiFunction<B, A, B> op) {

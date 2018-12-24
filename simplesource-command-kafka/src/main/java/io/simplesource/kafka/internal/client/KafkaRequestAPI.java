@@ -149,7 +149,7 @@ public final class KafkaRequestAPI<K, I, O> {
     }
 
     public CompletableFuture<O> queryResponse(final UUID requestId, final Duration timeout) {
-        // TODO - handle timeout...
+
         CompletableFuture<O> completableFuture = new CompletableFuture<>();
         ResponseHandler handler = responseHandlers.computeIfPresent(requestId, h -> {
             Optional<O> response = h.response;
@@ -157,7 +157,7 @@ public final class KafkaRequestAPI<K, I, O> {
                 completableFuture.complete(response.get());
             else {
                 ctx.scheduler().schedule(() -> {
-                    final TimeoutException ex = new TimeoutException("Timeout after " + timeout.toMillis() + " millis");
+                    final TimeoutException ex = new TimeoutException("Timeout after " + timeout);
                     completableFuture.complete(ctx.errorValue().apply(h.input, ex));
                 }, timeout.toMillis(), TimeUnit.MILLISECONDS);
                 h.responseFutures.add(completableFuture);

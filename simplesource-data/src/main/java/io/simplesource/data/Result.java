@@ -127,6 +127,21 @@ public abstract class Result<E, A> {
     }
 
     /**
+     * Modifies the error type of the result, returning a new {@code Result}
+     *
+     * @param <F>    The new component type
+     * @param errorMapper The error mapping function
+     * @return a {@code Result<E, T>}
+     * @throws NullPointerException if {@code mapper} is null
+     */
+    public <F> Result<F, A> errorMap(final Function<E, F> errorMapper) {
+        return fold(
+                errors -> failure(errors.map(errorMapper)),
+                a -> success(a)
+        );
+    }
+
+    /**
      * Runs the given function on the contents value this Result, returning a new {@code Result} with the
      * extracted reason extracted from the functions returned {@code Result<E, T>}
      *
