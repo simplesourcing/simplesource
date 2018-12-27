@@ -355,13 +355,14 @@
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.3</version>
+                        <version>1.6.7</version>
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>ossrh</serverId>
                             <nexusUrl>https://oss.sonatype.org</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
                             <skipStaging>true</skipStaging>
+                            <stagingProfileId>962ed5c4616942</stagingProfileId>
+                            <stagingProfileRepository>simplesource-command-parent-${project.version}</stagingProfileRepository>
                         </configuration>
                     </plugin>
                 </plugins>
