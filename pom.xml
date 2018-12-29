@@ -369,7 +369,7 @@
                         <configuration>
                             <nexusUrl>https://oss.sonatype.org</nexusUrl>
                             <serverId>ossrh</serverId>
-                            <stagingProfileId>962ed5c4616942</stagingProfileId>
+                            <stagingProfileId>iosimplesource-1038</stagingProfileId>
                         </configuration>
                     </plugin>
                     <plugin>
