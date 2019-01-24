@@ -95,11 +95,7 @@ public abstract class Result<E, A> {
      * @param s a function to apply to successfully updated aggregate value
      * @return the target type returned in either the success or the failure cases
      */
-    public <T> T fold(final Function<NonEmptyList<E>, T> f, final Function<A, T> s) {
-        return isSuccess() ?
-                s.apply(((Success<E, A>) this).value) :
-                f.apply(((Failure<E, A>) this).errors);
-    }
+    public abstract  <T> T fold(final Function<NonEmptyList<E>, T> f, final Function<A, T> s);
 
     /**
      * If this is a failure, return the error reasons for that failure, if not return nothing.
@@ -198,6 +194,11 @@ public abstract class Result<E, A> {
         }
 
         @Override
+        public <T> T fold(Function<NonEmptyList<E>, T> f, Function<A, T> s) {
+            return s.apply(value);
+        }
+
+        @Override
         public String toString() {
             return "Success{" + "value=" + value + '}';
         }
@@ -214,6 +215,11 @@ public abstract class Result<E, A> {
         @Override
         public boolean isSuccess() {
             return false;
+        }
+
+        @Override
+        public <T> T fold(Function<NonEmptyList<E>, T> f, Function<A, T> s) {
+            return f.apply(errors);
         }
 
         @Override
