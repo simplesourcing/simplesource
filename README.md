@@ -1,7 +1,7 @@
 # Simple Sourcing - Event Sourcing with CQRS backed by Kafka
 
-![](https://maven-badges.herokuapp.com/maven-central/io.simplesource/simplesource-command-api/badge.svg)
-![https://travis-ci.com/simplesourcing/simplesource](https://travis-ci.com/simplesourcing/simplesource.svg?branch=master)
+[![Latest version](https://maven-badges.herokuapp.com/maven-central/io.simplesource/simplesource-command-api/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.simplesource/simplesource-command-api)
+[![Build Status](https://travis-ci.com/simplesourcing/simplesource.svg?branch=master)](https://travis-ci.com/simplesourcing/simplesource)
 
 Simple Sourcing is an API for building event sourcing systems where the data is stored in Kafka.
 
