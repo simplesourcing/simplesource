@@ -21,18 +21,31 @@ public final class AvroCommandSerdes<K, C> implements CommandSerdes<K, C> {
     private final Serde<UUID> crk;
     private final Serde<CommandResponse> crp;
 
-    public static <A extends GenericRecord, E extends GenericRecord, C extends GenericRecord, K extends GenericRecord> AvroCommandSerdes<K, C> of(
+    public static <K extends GenericRecord, C extends GenericRecord> AvroCommandSerdes<K, C> of(
             final String schemaRegistryUrl) {
         return of(schemaRegistryUrl, false);
     }
 
-    public static <A extends GenericRecord, E extends GenericRecord, C extends GenericRecord, K extends GenericRecord> AvroCommandSerdes<K, C> of(
+    public static <K extends GenericRecord, C extends GenericRecord> AvroCommandSerdes<K, C> of(
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry
     ) {
         return new AvroCommandSerdes<>(
                 specificDomainMapper(),
                 specificDomainMapper(),
+                schemaRegistryUrl,
+                useMockSchemaRegistry);
+    }
+
+    public static <K, C> AvroCommandSerdes<K, C> of(
+            final GenericMapper<K, GenericRecord> keyMapper,
+            final GenericMapper<C, GenericRecord> commandMapper,
+            final String schemaRegistryUrl,
+            final boolean useMockSchemaRegistry
+    ) {
+        return new AvroCommandSerdes<>(
+                keyMapper,
+                commandMapper,
                 schemaRegistryUrl,
                 useMockSchemaRegistry);
     }

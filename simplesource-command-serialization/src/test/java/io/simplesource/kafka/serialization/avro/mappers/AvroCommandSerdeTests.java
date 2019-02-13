@@ -21,7 +21,7 @@ class AvroCommandSerdeTests {
 
     @BeforeEach
     void setup() {
-        serdes = new AvroCommandSerdes<>(
+        serdes = AvroCommandSerdes.of(
                 UserAccountAvroMappers.keyMapper,
                 UserAccountAvroMappers.commandMapper,
                 "http://localhost:8081",
