@@ -4,6 +4,7 @@ import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.serialization.util.GenericMapper;
 import io.simplesource.kafka.model.*;
 import io.simplesource.kafka.serialization.util.GenericSerde;
+import io.simplesource.kafka.serialization.avro.AvroGenericUtils.*;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.common.serialization.Serde;
@@ -56,10 +57,16 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
             final boolean useMockSchemaRegistry,
             final Schema aggregateSchema) {
 
-        Serde<GenericRecord> keySerde = AvroGenericUtils.genericAvroSerde(schemaRegistryUrl, useMockSchemaRegistry, true);
-        Serde<GenericRecord> valueSerde = AvroGenericUtils.genericAvroSerde(schemaRegistryUrl, useMockSchemaRegistry, false);
+        // aggregates must use SchemaNameStrategy.TOPIC_NAME for compatibility with kafka-connect
+        // (so aggregate topics can be streamed directly to the read-store)
+        Serde<GenericRecord> aggKeySerde = AvroGenericUtils.genericAvroSerde(schemaRegistryUrl, useMockSchemaRegistry, true, SchemaNameStrategy.TOPIC_NAME);
+        Serde<GenericRecord> aggValueSerde = AvroGenericUtils.genericAvroSerde(schemaRegistryUrl, useMockSchemaRegistry, false, SchemaNameStrategy.TOPIC_NAME);
 
-        ak = GenericSerde.of(keySerde, keyMapper::toGeneric, keyMapper::fromGeneric);
+        // commands, events, responses etc. can have records of different schema records going through the same topic.
+        // SchemaNameStrategy.TOPIC_RECORD_NAME is required to prevent name conflicts in schema registry
+        Serde<GenericRecord> valueSerde = AvroGenericUtils.genericAvroSerde(schemaRegistryUrl, useMockSchemaRegistry, false, SchemaNameStrategy.TOPIC_RECORD_NAME);
+
+        ak = GenericSerde.of(aggKeySerde, keyMapper::toGeneric, keyMapper::fromGeneric);
         crq = GenericSerde.of(valueSerde,
                 v -> CommandRequestAvroHelper.toGenericRecord(v.map2(keyMapper::toGeneric, commandMapper::toGeneric)),
                 s -> CommandRequestAvroHelper.fromGenericRecord(s).map2(keyMapper::fromGeneric, commandMapper::fromGeneric));
@@ -69,7 +76,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
         vws = GenericSerde.of(valueSerde,
                 v -> AvroGenericUtils.ValueWithSequenceAvroHelper.toGenericRecord(v.map(eventMapper::toGeneric)),
                 s -> AvroGenericUtils.ValueWithSequenceAvroHelper.fromGenericRecord(s).map(eventMapper::fromGeneric));
-        au = GenericSerde.of(valueSerde,
+        au = GenericSerde.of(aggValueSerde,
                 v -> AggregateUpdateAvroHelper.toGenericRecord(v.map(aggregateMapper::toGeneric), aggregateSchema),
                 s -> AggregateUpdateAvroHelper.fromGenericRecord(s)
                         .map(aggregateMapper::fromGeneric));
