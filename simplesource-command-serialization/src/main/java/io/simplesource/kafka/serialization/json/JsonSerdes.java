@@ -81,10 +81,11 @@ class JsonSerdes<K, C> {
         }
     }
 
-    class CommandResponseAdapter implements JsonSerializer<CommandResponse>, JsonDeserializer<CommandResponse> {
+    class CommandResponseAdapter implements JsonSerializer<CommandResponse<K>>, JsonDeserializer<CommandResponse> {
 
 
         private static final String READ_SEQUENCE = "readSequence";
+        private static final String AGGREGATE_KEY = "key";
         private static final String COMMAND_ID = "commandId";
         private static final String RESULT = "result";
         private static final String REASON = "reason";
@@ -95,13 +96,14 @@ class JsonSerdes<K, C> {
 
         @Override
         public JsonElement serialize(
-                final CommandResponse commandResponse,
+                final CommandResponse<K> commandResponse,
                 final Type type,
                 final JsonSerializationContext jsonSerializationContext
         ) {
             final JsonObject wrapper = new JsonObject();
             wrapper.addProperty(READ_SEQUENCE, commandResponse.readSequence().getSeq());
             wrapper.addProperty(COMMAND_ID, commandResponse.commandId().toString());
+            wrapper.add(AGGREGATE_KEY, keyMapper.toGeneric(commandResponse.aggregateKey()));
             wrapper.add(RESULT, commandResponse.sequenceResult().fold(
                     reasons -> {
                         final JsonObject failureWrapper = new JsonObject();
@@ -141,14 +143,15 @@ class JsonSerdes<K, C> {
                 final List<CommandError> tailCommandErrors = new ArrayList<>();
                 resultWrapper.getAsJsonArray(ADDITIONAL_REASONS)
                         .forEach(reason -> tailCommandErrors.add(deserializeReason(reason.getAsJsonObject())));
-                result = Result.<CommandError, Sequence>failure(new NonEmptyList(headCommandError, tailCommandErrors));
+                result = Result.<CommandError, Sequence>failure(new NonEmptyList<>(headCommandError, tailCommandErrors));
             } else {
                 result = Result.success(
                         Sequence.position(resultWrapper.getAsJsonPrimitive(WRITE_SEQUENCE).getAsLong()
                         )
                 );
             }
-            return new CommandResponse(
+            return new CommandResponse<>(
+                    keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
                     commandId,
                     readSequence,
                     result);

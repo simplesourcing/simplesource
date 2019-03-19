@@ -24,7 +24,7 @@ final class EventSourcedPublisher {
         aggregateUpdateStream.to(ctx.topicName(aggregate), ctx.aggregatedUpdateProduced());
     }
 
-    static <K> void publishCommandResponses(TopologyContext<K, ?, ?, ?> ctx, final KStream<K, CommandResponse> responseStream) {
+    static <K> void publishCommandResponses(TopologyContext<K, ?, ?, ?> ctx, final KStream<K, CommandResponse<K>> responseStream) {
         responseStream.to(ctx.topicName(AggregateResources.TopicEntity.command_response), ctx.commandResponseProduced());
     }
 }

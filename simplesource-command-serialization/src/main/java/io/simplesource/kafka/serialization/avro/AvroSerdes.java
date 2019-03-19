@@ -164,6 +164,7 @@ public final class AvroSerdes {
     static class CommandResponseAvroHelper {
         private static final Map<Schema, Schema> schemaCache = new ConcurrentHashMap<>();
 
+        private static final String AGGREGATE_KEY = "key";
         private static final String READ_SEQUENCE = "readSequence";
         private static final String COMMAND_ID = "commandId";
         private static final String RESULT = "result";
@@ -174,15 +175,17 @@ public final class AvroSerdes {
         private static final String WRITE_SEQUENCE = "writeSequence";
 
 
-        static GenericRecord toCommandResponse(
-                final CommandResponse commandResponse) {
-            final Schema schema = commandResponseSchema();
+        static <K> GenericRecord toCommandResponse(
+                final CommandResponse<GenericRecord> commandResponse) {
+            final GenericRecord key = commandResponse.aggregateKey();
+            final Schema schema = commandResponseSchema(key);
             final Schema resultSchema = schema.getField(RESULT).schema();
             final Schema responseFailureSchema = resultSchema.getTypes().get(0);
             final Schema reasonSchema = responseFailureSchema.getField(REASON).schema();
             final Schema responseSuccessSchema = resultSchema.getTypes().get(1);
 
             return new GenericRecordBuilder(schema)
+                    .set(AGGREGATE_KEY, commandResponse.aggregateKey())
                     .set(READ_SEQUENCE, commandResponse.readSequence().getSeq())
                     .set(COMMAND_ID, commandResponse.commandId().toString())
                     .set(RESULT, commandResponse.sequenceResult().fold(
@@ -207,8 +210,9 @@ public final class AvroSerdes {
                     .build();
         }
 
-        static CommandResponse fromCommandResponse(
+        static <K> CommandResponse<GenericRecord> fromCommandResponse(
                 final GenericRecord record) {
+            final GenericRecord aggregateKey = (GenericRecord) record.get(AGGREGATE_KEY);
             final Sequence readSequence = Sequence.position((Long) record.get(READ_SEQUENCE));
             final UUID commandId = UUID.fromString(String.valueOf(record.get(COMMAND_ID)));
             final GenericRecord genericResult = (GenericRecord) record.get(RESULT);
@@ -225,7 +229,7 @@ public final class AvroSerdes {
                 result = Result.failure(new NonEmptyList<>(commandError, additionalCommandErrors));
             }
 
-            return new CommandResponse(commandId, readSequence, result);
+            return new CommandResponse<>(aggregateKey, commandId, readSequence, result);
         }
 
         private static CommandError toCommandError(final GenericRecord record) {
@@ -241,7 +245,7 @@ public final class AvroSerdes {
             return CommandError.of(error, errorMessage);
         }
 
-        private static Schema commandResponseSchema() {
+        private static Schema commandResponseSchema(final GenericRecord key) {
             final Schema reasonSchema = SchemaBuilder
                     .record("Reason")
                     .fields()
@@ -265,6 +269,7 @@ public final class AvroSerdes {
                     .namespace("io.simplesource.kafka.serialization.avro")
                     .fields()
                     .name(READ_SEQUENCE).type().longType().noDefault()
+                    .name(AGGREGATE_KEY).type(key.getSchema()).noDefault()
                     .name(COMMAND_ID).type().stringType().noDefault()
                     .name(RESULT).type(Schema.createUnion(Arrays.asList(updateFailure, updateSuccess))).noDefault()
                     .endRecord();

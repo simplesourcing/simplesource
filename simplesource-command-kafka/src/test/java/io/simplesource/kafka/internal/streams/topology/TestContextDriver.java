@@ -86,7 +86,7 @@ class TestContextDriver<K, C, E, A> {
                 ctx.serdes().valueWithSequence().deserializer()), true, null, null);
     }
 
-    CommandResponse verifyCommandResponse(K k, Consumer<CommandResponse> verifier) {
+    CommandResponse verifyCommandResponse(K k, Consumer<CommandResponse<K>> verifier) {
         return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.command_response),
                 ctx.serdes().aggregateKey().deserializer(),
                 ctx.serdes().commandResponse().deserializer()), false, k, verifier);

@@ -30,11 +30,11 @@ public final class TopologyContext<K, C, E, A> {
     final InitialValue<K, A> initialValue;
 
     final Consumed<K, CommandRequest<K, C>> commandRequestConsumed;
-    final Consumed<K, CommandResponse> commandResponseConsumed;
+    final Consumed<K, CommandResponse<K>> commandResponseConsumed;
     final Produced<K, ValueWithSequence<E>> eventsConsumedProduced;
     final Produced<K, AggregateUpdate<A>> aggregatedUpdateProduced;
-    final Produced<K, CommandResponse> commandResponseProduced;
-    final Serialized<UUID, CommandResponse> serializedCommandResponse;
+    final Produced<K, CommandResponse<K>> commandResponseProduced;
+    final Serialized<UUID, CommandResponse<K>> serializedCommandResponse;
 
     public TopologyContext(AggregateSpec<K, C, E, A> aggregateSpec) {
         this.aggregateSpec = aggregateSpec;

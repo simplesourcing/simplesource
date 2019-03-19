@@ -136,7 +136,7 @@ class EventSourcedTopologyTest {
         ctxDriver.publishCommand( key, new CommandRequest<>(
                 key, new TestCommand.CreateCommand("firstName"), Sequence.first(), UUID.randomUUID()));
         ctxDriver.verifyAggregateUpdate(key, null);
-        CommandResponse response = ctxDriver.verifyCommandResponse(key, null);
+        CommandResponse<String> response = ctxDriver.verifyCommandResponse(key, null);
         ctxDriver.verifyEvents(key, null);
 
         for (int i = 0; i < 10; i++) {
@@ -208,7 +208,7 @@ class EventSourcedTopologyTest {
 
         ctxDriver.publishCommand( key, commandRequest);
 
-        CommandResponse response = ctxDriver.verifyCommandResponse(key, r -> {
+        CommandResponse<String> response = ctxDriver.verifyCommandResponse(key, r -> {
             assertThat(r.sequenceResult().getOrElse(Sequence.position(2000))).isEqualTo(Sequence.first().next());
         });
 
@@ -234,7 +234,7 @@ class EventSourcedTopologyTest {
         TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> ctx = ctxBuilder.buildContext();
         driver = new TestDriverInitializer().build(builder -> {
             EventSourcedTopology.InputStreams<String, TestCommand> inputStreams = EventSourcedTopology.addTopology(ctx, builder);
-            DistributorContext<CommandResponse> context = new DistributorContext<>(
+            DistributorContext<CommandResponse<String>> context = new DistributorContext<>(
                     topicNamesTopic,
                     new DistributorSerdes<>(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()),
                     ctx.aggregateSpec().generation().stateStoreSpec(),
@@ -252,7 +252,7 @@ class EventSourcedTopologyTest {
                 .publish(topicNamesTopic, commandRequest.commandId(), outputTopic);
         ctxDriver.publishCommand( key, commandRequest);
 
-        ProducerRecord<String, CommandResponse> output = driver.readOutput(outputTopic,
+        ProducerRecord<String, CommandResponse<String>> output = driver.readOutput(outputTopic,
                 Serdes.String().deserializer(),
                 ctx.serdes().commandResponse().deserializer());
 

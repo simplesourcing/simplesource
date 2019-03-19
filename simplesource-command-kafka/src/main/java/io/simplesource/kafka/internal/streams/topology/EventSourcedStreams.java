@@ -19,31 +19,31 @@ import java.util.function.BiFunction;
 final class EventSourcedStreams {
     private static final Logger logger = LoggerFactory.getLogger(EventSourcedStreams.class);
 
-    private static <K> long getResponseSequence(CommandResponse response) {
+    private static <K> long getResponseSequence(CommandResponse<K> response) {
         return response.sequenceResult().getOrElse(response.readSequence()).getSeq();
     }
 
-    static <K, C, E, A> Tuple2<KStream<K, CommandRequest<K, C>>, KStream<K, CommandResponse>> getProcessedCommands(
+    static <K, C, E, A> Tuple2<KStream<K, CommandRequest<K, C>>, KStream<K, CommandResponse<K>>> getProcessedCommands(
             TopologyContext<K, C, E, A> ctx,
             final KStream<K, CommandRequest<K, C>> commandRequestStream,
-            final KStream<K, CommandResponse> commandResponseStream) {
+            final KStream<K, CommandResponse<K>> commandResponseStream) {
 
-        final KTable<UUID, CommandResponse> commandResponseById = commandResponseStream
+        final KTable<UUID, CommandResponse<K>> commandResponseById = commandResponseStream
                 .selectKey((key, response) -> response.commandId())
                 .groupByKey(Serialized.with(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()))
                 .reduce((r1, r2) -> getResponseSequence(r1) > getResponseSequence(r2) ? r1 : r2);
 
-        final KStream<K, Tuple2<CommandRequest<K, C>, CommandResponse>> reqResp = commandRequestStream
+        final KStream<K, Tuple2<CommandRequest<K, C>, CommandResponse<K>>> reqResp = commandRequestStream
                 .selectKey((k, v) -> v.commandId())
                 .leftJoin(commandResponseById, Tuple2::new, Joined.with(ctx.serdes().commandResponseKey(), ctx.serdes().commandRequest(), ctx.serdes().commandResponse()))
                 .selectKey((k, v) -> v.v1().aggregateKey());
 
-        KStream<K, Tuple2<CommandRequest<K, C>, CommandResponse>>[] branches =
+        KStream<K, Tuple2<CommandRequest<K, C>, CommandResponse<K>>>[] branches =
                 reqResp.branch((k, tuple) -> tuple.v2() == null, (k, tuple) -> tuple.v2() != null);
 
         KStream<K, CommandRequest<K, C>> unProcessed = branches[0].mapValues((k, tuple) -> tuple.v1());
 
-        KStream<K, CommandResponse> processed = branches[1].mapValues((k, tuple) -> tuple.v2())
+        KStream<K, CommandResponse<K>> processed = branches[1].mapValues((k, tuple) -> tuple.v2())
                 .peek((k, r) -> logger.info("Preprocessed: {}=CommandId:{}", k, r.commandId()));
 
         return new Tuple2<>(unProcessed, processed);
@@ -98,10 +98,10 @@ final class EventSourcedStreams {
                 ));
     }
 
-    static <K, A>  KStream<K, CommandResponse> getCommandResponses(final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream) {
+    static <K, A>  KStream<K, CommandResponse<K>> getCommandResponses(final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream) {
         return aggregateUpdateStream
                 .mapValues((key, update) ->
-                        new CommandResponse(update.commandId(), update.readSequence(), update.updatedAggregateResult().map(AggregateUpdate::sequence))
+                        new CommandResponse<>(key, update.commandId(), update.readSequence(), update.updatedAggregateResult().map(AggregateUpdate::sequence))
                 );
     }
 }

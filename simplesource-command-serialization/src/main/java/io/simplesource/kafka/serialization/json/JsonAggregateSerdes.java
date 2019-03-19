@@ -32,7 +32,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
     private final Serde<UUID> crk;
     private final Serde<ValueWithSequence<E>> vws;
     private final Serde<AggregateUpdate<A>> au;
-    private final Serde<CommandResponse> cr2;
+    private final Serde<CommandResponse<K>> cr2;
 
     public JsonAggregateSerdes() {
         this(jsonDomainMapper(), jsonDomainMapper(), jsonDomainMapper(), jsonDomainMapper());
@@ -109,7 +109,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
     }
 
     @Override
-    public Serde<CommandResponse> commandResponse() {
+    public Serde<CommandResponse<K>> commandResponse() {
         return cr2;
     }
 
@@ -227,10 +227,11 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
         }
     }
 
-    private class CommandResponseAdapter implements JsonSerializer<CommandResponse>, JsonDeserializer<CommandResponse> {
+    private class CommandResponseAdapter implements JsonSerializer<CommandResponse<K>>, JsonDeserializer<CommandResponse> {
 
 
         private static final String READ_SEQUENCE = "readSequence";
+        private static final String AGGREGATE_KEY = "key";
         private static final String COMMAND_ID = "commandId";
         private static final String RESULT = "result";
         private static final String REASON = "reason";
@@ -241,13 +242,14 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
 
         @Override
         public JsonElement serialize(
-                final CommandResponse commandResponse,
+                final CommandResponse<K> commandResponse,
                 final Type type,
                 final JsonSerializationContext jsonSerializationContext
         ) {
             final JsonObject wrapper = new JsonObject();
             wrapper.addProperty(READ_SEQUENCE, commandResponse.readSequence().getSeq());
             wrapper.addProperty(COMMAND_ID, commandResponse.commandId().toString());
+            wrapper.add(AGGREGATE_KEY, keyMapper.toGeneric(commandResponse.aggregateKey()));
             wrapper.add(RESULT, commandResponse.sequenceResult().fold(
                     reasons -> {
                         final JsonObject failureWrapper = new JsonObject();
@@ -295,6 +297,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
                 );
             }
             return new CommandResponse(
+                    keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
                     commandId,
                     readSequence,
                     result);

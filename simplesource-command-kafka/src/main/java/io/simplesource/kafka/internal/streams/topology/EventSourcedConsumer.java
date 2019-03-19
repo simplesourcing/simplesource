@@ -22,7 +22,7 @@ final class EventSourcedConsumer {
         return builder.table(ctx.topicName(aggregate), Consumed.with(ctx.serdes().aggregateKey(), ctx.serdes().aggregateUpdate()));
     }
 
-    static <K, C> KStream<K, CommandResponse> commandResponseStream(TopologyContext<K, C, ?, ?> ctx, final StreamsBuilder builder) {
+    static <K, C> KStream<K, CommandResponse<K>> commandResponseStream(TopologyContext<K, C, ?, ?> ctx, final StreamsBuilder builder) {
         return builder.stream(ctx.topicName(command_response), ctx.commandResponseConsumed());
     }
 }
