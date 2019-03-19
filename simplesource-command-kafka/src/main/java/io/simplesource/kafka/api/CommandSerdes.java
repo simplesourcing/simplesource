@@ -19,5 +19,5 @@ public interface CommandSerdes<K, C> {
     Serde<K> aggregateKey();
     Serde<CommandRequest<K, C>> commandRequest();
     Serde<UUID> commandResponseKey();
-    Serde<CommandResponse> commandResponse();
+    Serde<CommandResponse<K>> commandResponse();
 }

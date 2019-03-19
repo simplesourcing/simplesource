@@ -10,7 +10,8 @@ import java.util.UUID;
 
 @Value
 @AllArgsConstructor
-public final class CommandResponse {
+public final class CommandResponse<K> {
+    private final K aggregateKey;
     private UUID commandId;
     private Sequence readSequence;
     private Result<CommandError, Sequence> sequenceResult;

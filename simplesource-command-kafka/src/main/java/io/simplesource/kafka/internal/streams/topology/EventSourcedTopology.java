@@ -15,22 +15,22 @@ public final class EventSourcedTopology {
     @Value
     static final class InputStreams<K, C> {
         public final KStream<K, CommandRequest<K, C>> commandRequest;
-        public final KStream<K, CommandResponse> commandResponse;
+        public final KStream<K, CommandResponse<K>> commandResponse;
     }
 
     public static <K, C, E, A> InputStreams<K, C> addTopology(TopologyContext<K, C, E, A> ctx, final StreamsBuilder builder) {
         // Consume from topics
         final KStream<K, CommandRequest<K, C>> commandRequestStream = EventSourcedConsumer.commandRequestStream(ctx, builder);
-        final KStream<K, CommandResponse> commandResponseStream = EventSourcedConsumer.commandResponseStream(ctx, builder);
+        final KStream<K, CommandResponse<K>> commandResponseStream = EventSourcedConsumer.commandResponseStream(ctx, builder);
         final KTable<K, AggregateUpdate<A>> aggregateTable = EventSourcedConsumer.aggregateTable(ctx, builder);
-        final DistributorContext<CommandResponse> distCtx = getDistributorContext(ctx);
+        final DistributorContext<CommandResponse<K>> distCtx = getDistributorContext(ctx);
         final KStream<UUID, String> resultsTopicMapStream = ResultDistributor.resultTopicMapStream(distCtx,  builder);
 
         // Handle idempotence by splitting stream into processed and unprocessed
-        Tuple2<KStream<K, CommandRequest<K, C>>, KStream<K, CommandResponse>> reqResp = EventSourcedStreams.getProcessedCommands(
+        Tuple2<KStream<K, CommandRequest<K, C>>, KStream<K, CommandResponse<K>>> reqResp = EventSourcedStreams.getProcessedCommands(
                 ctx, commandRequestStream, commandResponseStream);
         final KStream<K, CommandRequest<K, C>> unprocessedRequests = reqResp.v1();
-        final KStream<K, CommandResponse> processedResponses = reqResp.v2();
+        final KStream<K, CommandResponse<K>> processedResponses = reqResp.v2();
         
         // Transformations
         final KStream<K, CommandEvents<E, A>> commandEvents = EventSourcedStreams.getCommandEvents(ctx, unprocessedRequests, aggregateTable);
@@ -38,7 +38,7 @@ public final class EventSourcedTopology {
 
         final KStream<K, AggregateUpdateResult<A>> aggregateUpdateResults = EventSourcedStreams.getAggregateUpdateResults(ctx, commandEvents);
         final KStream<K, AggregateUpdate<A>> aggregateUpdates = EventSourcedStreams.getAggregateUpdates(aggregateUpdateResults);
-        final KStream<K, CommandResponse>commandResponses = EventSourcedStreams.getCommandResponses(aggregateUpdateResults);
+        final KStream<K, CommandResponse<K>>commandResponses = EventSourcedStreams.getCommandResponses(aggregateUpdateResults);
 
         // Produce to topics
         EventSourcedPublisher.publishEvents(ctx, eventsWithSequence);
@@ -53,7 +53,7 @@ public final class EventSourcedTopology {
         return new InputStreams<>(commandRequestStream, commandResponseStream);
     }
 
-    private static  DistributorContext<CommandResponse> getDistributorContext(TopologyContext<?, ?, ?, ?> ctx) {
+    private static <K> DistributorContext<CommandResponse<K>> getDistributorContext(TopologyContext<?, ?, ?, ?> ctx) {
         return new DistributorContext<>(
                 ctx.aggregateSpec().serialization().resourceNamingStrategy().topicName(ctx.aggregateSpec().aggregateName(), AggregateResources.TopicEntity.command_response_topic_map.toString()),
                 new DistributorSerdes<>(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()),
