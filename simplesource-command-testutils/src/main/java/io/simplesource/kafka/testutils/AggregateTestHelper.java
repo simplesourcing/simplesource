@@ -64,7 +64,7 @@ public final class AggregateTestHelper<K, C, E, A> {
         final UUID commandId = publish(key, readSequence, command);
         final NonEmptyList<Sequence> expectedSequences = validateEvents(key, readSequence, expectedEvents);
 
-        final KeyValue<K, CommandResponse> updateResponse = testAPI.readCommandResponseTopic()
+        final KeyValue<K, CommandResponse<K>> updateResponse = testAPI.readCommandResponseTopic()
                 .orElseGet(() -> fail("Didn't find command response"));
         assertEquals(readSequence, updateResponse.value.readSequence());
         assertEquals(true, updateResponse.value.sequenceResult().isSuccess());
@@ -98,7 +98,7 @@ public final class AggregateTestHelper<K, C, E, A> {
     ) {
         final UUID commandId = publish(key, readSequence, command);
 
-        final KeyValue<K, CommandResponse>  updateResponse = testAPI.readCommandResponseTopic()
+        final KeyValue<K, CommandResponse<K>>  updateResponse = testAPI.readCommandResponseTopic()
                 .orElseGet(() -> fail("Didn't find command response"));
         assertEquals(commandId, updateResponse.value.commandId());
         assertEquals(readSequence, updateResponse.value.readSequence());

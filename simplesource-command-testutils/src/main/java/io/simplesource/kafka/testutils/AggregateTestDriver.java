@@ -68,17 +68,17 @@ public final class AggregateTestDriver<K, C, E, A> {
                 new TestPublisher<>(driver, aggregateSerdes.commandResponseKey(), Serdes.String(), topicName(TopicEntity.command_response_topic_map));
 
         CommandSpec<K, C> commandSpec = SpecUtils.getCommandSpec(aggregateSpec,"localhost");
-        RequestAPIContext<?, ?, CommandResponse> requestCtx =
+        RequestAPIContext<?, ?, CommandResponse<K>> requestCtx =
                 KafkaCommandAPI.getRequestAPIContext(commandSpec, kafkaConfig, scheduledExecutor);
         
-        TestTopologyReceiver.ReceiverSpec<UUID, CommandResponse> receiverSpec = new TestTopologyReceiver.ReceiverSpec<>(
+        TestTopologyReceiver.ReceiverSpec<UUID, CommandResponse<K>> receiverSpec = new TestTopologyReceiver.ReceiverSpec<>(
                 requestCtx.privateResponseTopic(), 400, 4,
                 requestCtx.responseValueSerde(),
                 stringKey -> UUID.fromString(stringKey.substring(stringKey.length() - 36)));
 
         statePollers = new ArrayList<>();
-        final Function<BiConsumer<UUID, CommandResponse>, ResponseSubscription> receiverAttacher = updateTarget -> {
-            TestTopologyReceiver<UUID, CommandResponse> receiver = new TestTopologyReceiver<>(updateTarget, driver, receiverSpec);
+        final Function<BiConsumer<UUID, CommandResponse<K>>, ResponseSubscription> receiverAttacher = updateTarget -> {
+            TestTopologyReceiver<UUID, CommandResponse<K>> receiver = new TestTopologyReceiver<>(updateTarget, driver, receiverSpec);
             statePollers.add(receiver::pollForState);
             return receiver;
         };
@@ -114,8 +114,8 @@ public final class AggregateTestDriver<K, C, E, A> {
                         record.value()));
     }
 
-    Optional<KeyValue<K, CommandResponse>> readCommandResponseTopic() {
-        final ProducerRecord<K, CommandResponse> maybeRecord = driver.readOutput(
+    Optional<KeyValue<K, CommandResponse<K>>> readCommandResponseTopic() {
+        final ProducerRecord<K, CommandResponse<K>> maybeRecord = driver.readOutput(
                 topicName(TopicEntity.command_response),
                 aggregateSerdes.aggregateKey().deserializer(),
                 aggregateSerdes.commandResponse().deserializer()

@@ -87,7 +87,10 @@ public class JsonAggregateSerdeTests {
 
     @Test
     void commandResponseSuccess() {
+        UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
+
         CommandResponse commandResponse = new CommandResponse(
+                aggKey,
                 UUID.randomUUID(),
                 Sequence.first(),
                 Result.success(Sequence.first()));
@@ -99,7 +102,10 @@ public class JsonAggregateSerdeTests {
 
     @Test
     void commandResponseFailure() {
+        UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
+
         CommandResponse commandResponse = new CommandResponse(
+                aggKey,
                 UUID.randomUUID(),
                 Sequence.first(),
                 Result.failure(CommandError.of(CommandError.Reason.InvalidReadSequence, "Invalid sequence")));

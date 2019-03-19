@@ -21,7 +21,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     private final Serde<UUID> crk;
     private final Serde<ValueWithSequence<E>> vws;
     private final Serde<AggregateUpdate<A>> au;
-    private final Serde<CommandResponse> crp;
+    private final Serde<CommandResponse<K>> crp;
 
     public static <K extends GenericRecord, C extends GenericRecord, E extends GenericRecord, A extends GenericRecord> AvroAggregateSerdes<K, C, E, A> of(
             final String schemaRegistryUrl,
@@ -81,8 +81,8 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
                 s -> AggregateUpdateAvroHelper.fromGenericRecord(s)
                         .map(aggregateMapper::fromGeneric));
         crp = GenericSerde.of(valueSerde,
-                CommandResponseAvroHelper::toCommandResponse,
-                CommandResponseAvroHelper::fromCommandResponse);
+                v -> CommandResponseAvroHelper.toCommandResponse(v.map(keyMapper::toGeneric)),
+                s -> CommandResponseAvroHelper.fromCommandResponse(s).map(keyMapper::fromGeneric));
     }
 
     @Override
@@ -111,7 +111,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     }
 
     @Override
-    public Serde<CommandResponse> commandResponse() {
+    public Serde<CommandResponse<K>> commandResponse() {
         return crp;
     }
 

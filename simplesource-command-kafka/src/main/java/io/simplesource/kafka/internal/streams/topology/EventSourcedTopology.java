@@ -53,7 +53,7 @@ public final class EventSourcedTopology {
         return new InputStreams<>(commandRequestStream, commandResponseStream);
     }
 
-    private static <K> DistributorContext<CommandResponse<K>> getDistributorContext(TopologyContext<?, ?, ?, ?> ctx) {
+    private static <K> DistributorContext<CommandResponse<K>> getDistributorContext(TopologyContext<K, ?, ?, ?> ctx) {
         return new DistributorContext<>(
                 ctx.aggregateSpec().serialization().resourceNamingStrategy().topicName(ctx.aggregateSpec().aggregateName(), AggregateResources.TopicEntity.command_response_topic_map.toString()),
                 new DistributorSerdes<>(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()),

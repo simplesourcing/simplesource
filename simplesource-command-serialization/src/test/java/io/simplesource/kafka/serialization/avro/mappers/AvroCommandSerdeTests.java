@@ -62,7 +62,10 @@ class AvroCommandSerdeTests {
 
     @Test
     void commandResponseSuccess() {
-        CommandResponse commandResponse = new CommandResponse(
+        UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
+
+        CommandResponse commandResponse = new CommandResponse<>(
+                aggKey,
                 UUID.randomUUID(),
                 Sequence.first(),
                 Result.success(Sequence.first()));
@@ -74,7 +77,10 @@ class AvroCommandSerdeTests {
 
     @Test
     void commandResponseFailure() {
-        CommandResponse commandResponse = new CommandResponse(
+        UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
+
+        CommandResponse commandResponse = new CommandResponse<>(
+                aggKey,
                 UUID.randomUUID(),
                 Sequence.first(),
                 Result.failure(CommandError.of(CommandError.Reason.InvalidReadSequence, "Invalid sequence")));

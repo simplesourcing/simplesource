@@ -19,7 +19,7 @@ public final class AvroCommandSerdes<K, C> implements CommandSerdes<K, C> {
     private final Serde<K> ak;
     private final Serde<CommandRequest<K, C>> crq;
     private final Serde<UUID> crk;
-    private final Serde<CommandResponse> crp;
+    private final Serde<CommandResponse<K>> crp;
 
     public static <K extends GenericRecord, C extends GenericRecord> AvroCommandSerdes<K, C> of(
             final String schemaRegistryUrl) {
@@ -68,8 +68,8 @@ public final class AvroCommandSerdes<K, C> implements CommandSerdes<K, C> {
                 AvroSerdes.CommandResponseKeyAvroHelper::fromGenericRecord);
 
         crp = GenericSerde.of(valueSerde,
-                AvroSerdes.CommandResponseAvroHelper::toCommandResponse,
-                AvroSerdes.CommandResponseAvroHelper::fromCommandResponse);
+                v -> AvroSerdes.CommandResponseAvroHelper.toCommandResponse(v.map(keyMapper::toGeneric)),
+                s -> AvroSerdes.CommandResponseAvroHelper.fromCommandResponse(s).map(keyMapper::fromGeneric));
     }
 
     @Override
@@ -88,7 +88,7 @@ public final class AvroCommandSerdes<K, C> implements CommandSerdes<K, C> {
     }
 
     @Override
-    public Serde<CommandResponse> commandResponse() {
+    public Serde<CommandResponse<K>> commandResponse() {
         return crp;
     }
 

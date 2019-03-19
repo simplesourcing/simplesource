@@ -31,7 +31,7 @@ public final class JsonCommandSerdes<K, C> extends JsonSerdes<K, C> implements C
     private final Serde<K> ak;
     private final Serde<CommandRequest<K, C>> cr;
     private final Serde<UUID> crk;
-    private final Serde<CommandResponse> cr2;
+    private final Serde<CommandResponse<K>> cr2;
 
     public JsonCommandSerdes() {
         this(jsonDomainMapper(), jsonDomainMapper());
@@ -84,7 +84,7 @@ public final class JsonCommandSerdes<K, C> extends JsonSerdes<K, C> implements C
     }
 
     @Override
-    public Serde<CommandResponse> commandResponse() {
+    public Serde<CommandResponse<K>> commandResponse() {
         return cr2;
     }
 }
