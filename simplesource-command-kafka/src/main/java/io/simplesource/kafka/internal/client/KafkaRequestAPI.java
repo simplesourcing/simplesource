@@ -2,7 +2,6 @@ package io.simplesource.kafka.internal.client;
 
 import io.simplesource.data.FutureResult;
 import io.simplesource.kafka.dsl.KafkaConfig;
-import io.simplesource.api.UuidId;
 import io.simplesource.kafka.spec.TopicSpec;
 import lombok.Value;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -25,7 +24,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public final class KafkaRequestAPI<K, I, RK extends UuidId, R> {
+public final class KafkaRequestAPI<K, I, RK, R> {
     private static final Logger logger = LoggerFactory.getLogger(KafkaRequestAPI.class);
 
     @Value
@@ -91,7 +90,7 @@ public final class KafkaRequestAPI<K, I, RK extends UuidId, R> {
                     ctx.privateResponseTopic(),
                     ctx.responseValueSerde(),
                     receiver,
-                    ctx.idConverter()),
+                    ctx.uuidToResponseId()),
                 true);
     }
 

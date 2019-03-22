@@ -1,7 +1,6 @@
 package io.simplesource.kafka.internal.client;
 
 import io.simplesource.kafka.dsl.KafkaConfig;
-import io.simplesource.api.UuidId;
 import io.simplesource.kafka.spec.TopicSpec;
 import io.simplesource.kafka.spec.WindowSpec;
 import lombok.Builder;
@@ -15,7 +14,7 @@ import java.util.function.Function;
 
 @Value
 @Builder
-public final class RequestAPIContext<K, I, RK extends UuidId, R> {
+public final class RequestAPIContext<K, I, RK, R> {
     final KafkaConfig kafkaConfig;
     final ScheduledExecutorService scheduler;
     final String requestTopic;
@@ -28,5 +27,6 @@ public final class RequestAPIContext<K, I, RK extends UuidId, R> {
     final WindowSpec responseWindowSpec;
     final TopicSpec outputTopicConfig;
     final BiFunction<I, Throwable, R> errorValue;
-    final Function<UUID, RK> idConverter;
+    final Function<UUID, RK> uuidToResponseId;
+    final Function<RK, UUID> responseIdToUuid;
 }

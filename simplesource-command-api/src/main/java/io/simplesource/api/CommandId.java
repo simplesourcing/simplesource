@@ -5,6 +5,6 @@ import lombok.Value;
 import java.util.UUID;
 
 @Value(staticConstructor = "of")
-public final class CommandId implements UuidId {
+public final class CommandId {
     private final UUID id;
 }
