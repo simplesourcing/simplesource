@@ -2,6 +2,7 @@ package io.simplesource.kafka.internal.streams.topology;
 
 import io.simplesource.api.Aggregator;
 import io.simplesource.api.CommandHandler;
+import io.simplesource.api.CommandId;
 import io.simplesource.api.InitialValue;
 import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.AggregateSerdes;
@@ -96,7 +97,7 @@ class TestContextBuilder {
             }
 
             @Override
-            public Serde<UUID> commandResponseKey() {
+            public Serde<CommandId> commandResponseKey() {
                 return new MockInMemorySerde<>();
             }
 

@@ -1,6 +1,7 @@
 package io.simplesource.kafka.serialization.avro;
 
 import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
@@ -51,7 +52,7 @@ public final class AvroSerdes {
         static CommandRequest<GenericRecord, GenericRecord> fromGenericRecord(final GenericRecord record) {
             final GenericRecord aggregateKey = (GenericRecord) record.get(AGGREGATE_KEY);
             final Sequence readSequence = Sequence.position((Long) record.get(READ_SEQUENCE));
-            final UUID commandId = UUID.fromString(String.valueOf(record.get(COMMAND_ID)));
+            final CommandId commandId = CommandId.of(UUID.fromString(String.valueOf(record.get(COMMAND_ID))));
             final GenericRecord command = (GenericRecord) record.get(COMMAND);
             return new CommandRequest<>(aggregateKey, command, readSequence, commandId);
         }
@@ -74,16 +75,16 @@ public final class AvroSerdes {
         private static final String COMMAND_ID = "commandId";
 
         static GenericRecord toGenericRecord(
-                final UUID commandResponseKey
+                final CommandId commandResponseKey
         ) {
             final GenericRecordBuilder builder = new GenericRecordBuilder(schema);
             return builder
-                    .set(COMMAND_ID, commandResponseKey.toString())
+                    .set(COMMAND_ID, commandResponseKey.id().toString())
                     .build();
         }
 
-        static UUID fromGenericRecord(final GenericRecord record) {
-            return UUID.fromString(String.valueOf(record.get(COMMAND_ID)));
+        static CommandId fromGenericRecord(final GenericRecord record) {
+            return CommandId.of(UUID.fromString(String.valueOf(record.get(COMMAND_ID))));
         }
 
         private static Schema commandResponseKeySchema() {
@@ -229,7 +230,7 @@ public final class AvroSerdes {
                 result = Result.failure(new NonEmptyList<>(commandError, additionalCommandErrors));
             }
 
-            return new CommandResponse<>(aggregateKey, commandId, readSequence, result);
+            return new CommandResponse<>(aggregateKey, CommandId.of(commandId), readSequence, result);
         }
 
         private static CommandError toCommandError(final GenericRecord record) {

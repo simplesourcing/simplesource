@@ -1,6 +1,7 @@
 package io.simplesource.kafka.serialization.avro.mappers;
 
 import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.AggregateSerdes;
@@ -41,10 +42,10 @@ public class AvroAggregateSerdeTests {
 
     @Test
     void uuidResponseKey() {
-        UUID responseKey = UUID.randomUUID();
+        CommandId responseKey = CommandId.of(UUID.randomUUID());
 
         byte[] serialised = serdes.commandResponseKey().serializer().serialize(topic, responseKey);
-        UUID deserialised = serdes.commandResponseKey().deserializer().deserialize(topic, serialised);
+        CommandId deserialised = serdes.commandResponseKey().deserializer().deserialize(topic, serialised);
         assertThat(deserialised).isEqualTo(responseKey);
     }
 
@@ -67,7 +68,7 @@ public class AvroAggregateSerdeTests {
                 aggKey,
                 new UserAccountDomainCommand.UpdateUserName("name"),
                 Sequence.first(),
-                UUID.randomUUID());
+                CommandId.of(UUID.randomUUID()));
 
         byte[] serialised = serdes.commandRequest().serializer().serialize(topic, commandRequest);
         CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> deserialised = serdes.commandRequest().deserializer().deserialize(topic, serialised);
@@ -90,7 +91,7 @@ public class AvroAggregateSerdeTests {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
         CommandResponse commandResponse = new CommandResponse(
                 aggKey,
-                UUID.randomUUID(),
+                CommandId.of(UUID.randomUUID()),
                 Sequence.first(),
                 Result.success(Sequence.first()));
 
@@ -104,7 +105,7 @@ public class AvroAggregateSerdeTests {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
         CommandResponse commandResponse = new CommandResponse(
                 aggKey,
-                UUID.randomUUID(),
+                CommandId.of(UUID.randomUUID()),
                 Sequence.first(),
                 Result.failure(CommandError.of(CommandError.Reason.InvalidReadSequence, "Invalid sequence")));
 

@@ -16,6 +16,7 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 final class KafkaConsumerRunner {
     private static final Logger logger = LoggerFactory.getLogger(KafkaConsumerRunner.class);
@@ -26,28 +27,36 @@ final class KafkaConsumerRunner {
         return newProps;
     }
 
-    static <R> ResponseSubscription run(
+    static <KR, R> ResponseSubscription run(
             Map<String, Object> properties,
             String topicName,
             Serde<R> responseSerde,
-            BiConsumer<UUID, R> responseReceiver) {
+            BiConsumer<KR, R> responseReceiver,
+            Function<UUID, KR> idConverter) {
 
-        Properties consumerConfig  = copyProperties(properties);
+        Properties consumerConfig = copyProperties(properties);
         consumerConfig.setProperty(ConsumerConfig.GROUP_ID_CONFIG, String.format("response_consumer_%s", UUID.randomUUID().toString().substring(0, 8)));
-        RunnableConsumer runnableConsumer = new RunnableConsumer<>(consumerConfig, responseSerde, topicName, responseReceiver);
+        RunnableConsumer runnableConsumer = new RunnableConsumer<>(consumerConfig, responseSerde, topicName, responseReceiver, idConverter);
         new Thread(runnableConsumer).start();
         return runnableConsumer::close;
     }
 
-    static class RunnableConsumer<R> implements Runnable {
+    static class RunnableConsumer<KR, R> implements Runnable {
         private final KafkaConsumer<String, R> consumer;
         private final AtomicBoolean closed = new AtomicBoolean(false);
         private final String topicName;
-        private final BiConsumer<UUID, R> receiver;
+        private final BiConsumer<KR, R> receiver;
+        private final Function<UUID, KR> idConverter;
 
-        RunnableConsumer(Properties consumerConfig, Serde<R> responseSerde, String topicName, BiConsumer<UUID, R> receiver) {
+        RunnableConsumer(
+                Properties consumerConfig,
+                Serde<R> responseSerde,
+                String topicName,
+                BiConsumer<KR, R> receiver,
+                Function<UUID, KR> idConverter) {
             this.topicName = topicName;
             this.receiver = receiver;
+            this.idConverter = idConverter;
             consumer = new KafkaConsumer<>(consumerConfig, Serdes.String().deserializer(), responseSerde.deserializer());
         }
 
@@ -58,11 +67,11 @@ final class KafkaConsumerRunner {
                 while (!closed.get()) {
                     ConsumerRecords<String, R> records = consumer.poll(Duration.ofSeconds(1));
                     // Handle new records
-                    records.iterator().forEachRemaining( record -> {
+                    records.iterator().forEachRemaining(record -> {
                         String recordKey = record.key();
                         // TODO factor this out
                         UUID id = UUID.fromString(record.key().substring(recordKey.length() - 36));
-                        receiver.accept(id, record.value());
+                        receiver.accept(idConverter.apply(id), record.value());
                     });
                 }
             } catch (WakeupException e) {

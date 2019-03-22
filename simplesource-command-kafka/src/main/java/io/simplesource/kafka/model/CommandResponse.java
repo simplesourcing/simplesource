@@ -1,6 +1,7 @@
 package io.simplesource.kafka.model;
 
 import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import lombok.AllArgsConstructor;
@@ -13,7 +14,7 @@ import java.util.function.Function;
 @AllArgsConstructor
 public final class CommandResponse<K> {
     private final K aggregateKey;
-    private UUID commandId;
+    private CommandId commandId;
     private Sequence readSequence;
     private Result<CommandError, Sequence> sequenceResult;
 

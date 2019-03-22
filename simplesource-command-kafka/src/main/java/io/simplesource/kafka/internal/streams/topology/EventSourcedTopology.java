@@ -1,5 +1,6 @@
 package io.simplesource.kafka.internal.streams.topology;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.kafka.model.*;
@@ -7,8 +8,6 @@ import lombok.Value;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
-
-import java.util.UUID;
 
 public final class EventSourcedTopology {
 
@@ -23,8 +22,8 @@ public final class EventSourcedTopology {
         final KStream<K, CommandRequest<K, C>> commandRequestStream = EventSourcedConsumer.commandRequestStream(ctx, builder);
         final KStream<K, CommandResponse<K>> commandResponseStream = EventSourcedConsumer.commandResponseStream(ctx, builder);
         final KTable<K, AggregateUpdate<A>> aggregateTable = EventSourcedConsumer.aggregateTable(ctx, builder);
-        final DistributorContext<CommandResponse<K>> distCtx = getDistributorContext(ctx);
-        final KStream<UUID, String> resultsTopicMapStream = ResultDistributor.resultTopicMapStream(distCtx,  builder);
+        final DistributorContext<CommandId, CommandResponse<K>> distCtx = getDistributorContext(ctx);
+        final KStream<CommandId, String> resultsTopicMapStream = ResultDistributor.resultTopicMapStream(distCtx,  builder);
 
         // Handle idempotence by splitting stream into processed and unprocessed
         Tuple2<KStream<K, CommandRequest<K, C>>, KStream<K, CommandResponse<K>>> reqResp = EventSourcedStreams.getProcessedCommands(
@@ -53,7 +52,7 @@ public final class EventSourcedTopology {
         return new InputStreams<>(commandRequestStream, commandResponseStream);
     }
 
-    private static <K> DistributorContext<CommandResponse<K>> getDistributorContext(TopologyContext<K, ?, ?, ?> ctx) {
+    private static <K> DistributorContext<CommandId, CommandResponse<K>> getDistributorContext(TopologyContext<K, ?, ?, ?> ctx) {
         return new DistributorContext<>(
                 ctx.aggregateSpec().serialization().resourceNamingStrategy().topicName(ctx.aggregateSpec().aggregateName(), AggregateResources.TopicEntity.command_response_topic_map.toString()),
                 new DistributorSerdes<>(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()),

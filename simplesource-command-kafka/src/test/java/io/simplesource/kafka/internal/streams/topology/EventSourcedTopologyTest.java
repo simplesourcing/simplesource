@@ -1,6 +1,7 @@
 package io.simplesource.kafka.internal.streams.topology;
 
 import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
@@ -63,7 +64,7 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                key, new TestCommand.CreateCommand("Name"), Sequence.first().next(), UUID.randomUUID());
+                key, new TestCommand.CreateCommand("Name"), Sequence.first().next(), CommandId.of(UUID.randomUUID()));
 
         ctxDriver.publishCommand( key, commandRequest);
         ctxDriver.verifyCommandResponse(key, r -> {
@@ -83,7 +84,7 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                key, new TestCommand.UnsupportedCommand(), Sequence.first(), UUID.randomUUID());
+                key, new TestCommand.UnsupportedCommand(), Sequence.first(), CommandId.of(UUID.randomUUID()));
 
         ctxDriver.publishCommand( key, commandRequest);
         ctxDriver.verifyCommandResponse(key, r -> {
@@ -104,7 +105,7 @@ class EventSourcedTopologyTest {
 
         String name = "name";
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                key, new TestCommand.CreateCommand(name), Sequence.first(), UUID.randomUUID());
+                key, new TestCommand.CreateCommand(name), Sequence.first(), CommandId.of(UUID.randomUUID()));
 
         ctxDriver.publishCommand( key, commandRequest);
         ctxDriver.verifyCommandResponse(key, v -> {
@@ -134,7 +135,7 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         ctxDriver.publishCommand( key, new CommandRequest<>(
-                key, new TestCommand.CreateCommand("firstName"), Sequence.first(), UUID.randomUUID()));
+                key, new TestCommand.CreateCommand("firstName"), Sequence.first(), CommandId.of(UUID.randomUUID())));
         ctxDriver.verifyAggregateUpdate(key, null);
         CommandResponse<String> response = ctxDriver.verifyCommandResponse(key, null);
         ctxDriver.verifyEvents(key, null);
@@ -143,7 +144,7 @@ class EventSourcedTopologyTest {
             String newName = String.format("firstName %d", i);
             Sequence lastSequence = response.sequenceResult().getOrElse(Sequence.first());
             CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                    key, new TestCommand.UpdateWithNothingCommand(newName), lastSequence, UUID.randomUUID());
+                    key, new TestCommand.UpdateWithNothingCommand(newName), lastSequence, CommandId.of(UUID.randomUUID()));
             ctxDriver.publishCommand(key, commandRequest);
 
             List<ValueWithSequence<TestEvent>> events = ctxDriver.verifyEvents(key, iV -> {
@@ -185,7 +186,7 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                key, new TestCommand.CreateCommand("Name 2"), Sequence.position(1000), UUID.randomUUID());
+                key, new TestCommand.CreateCommand("Name 2"), Sequence.position(1000), CommandId.of(UUID.randomUUID()));
 
         ctxDriver.publishCommand( key, commandRequest);
         ctxDriver.verifyCommandResponse(key, r -> {
@@ -204,7 +205,7 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                key, new TestCommand.CreateCommand("Name"), Sequence.first(), UUID.randomUUID());
+                key, new TestCommand.CreateCommand("Name"), Sequence.first(), CommandId.of(UUID.randomUUID()));
 
         ctxDriver.publishCommand( key, commandRequest);
 
@@ -234,19 +235,19 @@ class EventSourcedTopologyTest {
         TopologyContext<String, TestCommand, TestEvent, Optional<TestAggregate>> ctx = ctxBuilder.buildContext();
         driver = new TestDriverInitializer().build(builder -> {
             EventSourcedTopology.InputStreams<String, TestCommand> inputStreams = EventSourcedTopology.addTopology(ctx, builder);
-            DistributorContext<CommandResponse<String>> context = new DistributorContext<>(
+            DistributorContext<CommandId, CommandResponse<String>> context = new DistributorContext<>(
                     topicNamesTopic,
                     new DistributorSerdes<>(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()),
                     ctx.aggregateSpec().generation().stateStoreSpec(),
                     CommandResponse::commandId);
 
-            KStream<UUID, String> topicNames = builder.stream(topicNamesTopic, Consumed.with(ctx.serdes().commandResponseKey(), Serdes.String()));
+            KStream<CommandId, String> topicNames = builder.stream(topicNamesTopic, Consumed.with(ctx.serdes().commandResponseKey(), Serdes.String()));
             ResultDistributor.distribute(context, inputStreams.commandResponse, topicNames);
         });
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                key, new TestCommand.CreateCommand("Name 2"), Sequence.first(), UUID.randomUUID());
+                key, new TestCommand.CreateCommand("Name 2"), Sequence.first(), CommandId.of(UUID.randomUUID()));
 
         ctxDriver.getPublisher(ctx.serdes().commandResponseKey(), Serdes.String())
                 .publish(topicNamesTopic, commandRequest.commandId(), outputTopic);

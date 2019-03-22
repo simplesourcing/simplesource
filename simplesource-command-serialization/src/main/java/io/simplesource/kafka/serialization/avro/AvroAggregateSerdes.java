@@ -1,5 +1,6 @@
 package io.simplesource.kafka.serialization.avro;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.serialization.util.GenericMapper;
 import io.simplesource.kafka.model.*;
@@ -18,7 +19,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
 
     private final Serde<K> ak;
     private final Serde<CommandRequest<K, C>> crq;
-    private final Serde<UUID> crk;
+    private final Serde<CommandId> crk;
     private final Serde<ValueWithSequence<E>> vws;
     private final Serde<AggregateUpdate<A>> au;
     private final Serde<CommandResponse<K>> crp;
@@ -96,7 +97,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     }
 
     @Override
-    public Serde<UUID> commandResponseKey() {
+    public Serde<CommandId> commandResponseKey() {
         return crk;
     }
 

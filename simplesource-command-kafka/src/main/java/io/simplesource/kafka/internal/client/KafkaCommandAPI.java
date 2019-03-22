@@ -8,6 +8,7 @@ import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.api.ResourceNamingStrategy;
 import io.simplesource.kafka.dsl.KafkaConfig;
+import io.simplesource.api.CommandId;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.spec.CommandSpec;
@@ -24,13 +25,13 @@ import static io.simplesource.kafka.api.AggregateResources.TopicEntity.*;
 
 public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
 
-    private KafkaRequestAPI<K, CommandRequest<K, C>, CommandResponse<K>> requestApi;
+    private KafkaRequestAPI<K, CommandRequest<K, C>, CommandId, CommandResponse<K>> requestApi;
 
     public KafkaCommandAPI(
             final CommandSpec<K, C> commandSpec,
             final KafkaConfig kafkaConfig,
             final ScheduledExecutorService scheduler) {
-        RequestAPIContext<K, CommandRequest<K, C>, CommandResponse<K>> ctx = getRequestAPIContext(
+        RequestAPIContext<K, CommandRequest<K, C>, CommandId, CommandResponse<K>> ctx = getRequestAPIContext(
                 commandSpec,
                 kafkaConfig,
                 scheduler);
@@ -42,10 +43,10 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
             final KafkaConfig kafkaConfig,
             final ScheduledExecutorService scheduler,
             final RequestPublisher<K, CommandRequest<K, C>> requestSender,
-            final RequestPublisher<UUID, String> responseTopicMapSender,
-            final Function<BiConsumer<UUID, CommandResponse<K>>, ResponseSubscription> attachReceiver) {
+            final RequestPublisher<CommandId, String> responseTopicMapSender,
+            final Function<BiConsumer<CommandId, CommandResponse<K>>, ResponseSubscription> attachReceiver) {
 
-        RequestAPIContext<K, CommandRequest<K, C>, CommandResponse<K>> ctx = getRequestAPIContext(
+        RequestAPIContext<K, CommandRequest<K, C>, CommandId, CommandResponse<K>> ctx = getRequestAPIContext(
                 commandSpec,
                 kafkaConfig,
                 scheduler);
@@ -59,7 +60,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
     }
 
     @Override
-    public FutureResult<CommandError, UUID> publishCommand(final Request<K, C> request) {
+    public FutureResult<CommandError, CommandId> publishCommand(final Request<K, C> request) {
         final CommandRequest<K, C> commandRequest = new CommandRequest<>(
                 request.key(), request.command(), request.readSequence(), request.commandId());
 
@@ -70,13 +71,13 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
     }
 
     @Override
-    public FutureResult<CommandError, Sequence> queryCommandResult(final UUID commandId, final Duration timeout) {
+    public FutureResult<CommandError, Sequence> queryCommandResult(final CommandId commandId, final Duration timeout) {
         CompletableFuture<CommandResponse<K>> completableFuture = requestApi.queryResponse(commandId, timeout);
 
         return FutureResult.ofCompletableFuture(completableFuture.thenApply(CommandResponse::sequenceResult));
     }
 
-    public static <K, C> RequestAPIContext<K, CommandRequest<K, C>, CommandResponse<K>> getRequestAPIContext(
+    public static <K, C> RequestAPIContext<K, CommandRequest<K, C>, CommandId, CommandResponse<K>> getRequestAPIContext(
             CommandSpec<K, C> commandSpec,
             KafkaConfig kafkaConfig,
             ScheduledExecutorService scheduler) {
@@ -87,7 +88,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 command_response.name());
 
         String privateResponseTopic =  String.format("%s_%s", responseTopicBase, commandSpec.clientId());
-        return RequestAPIContext.<K, CommandRequest<K, C>, CommandResponse<K>>builder()
+        return RequestAPIContext.<K, CommandRequest<K, C>, CommandId, CommandResponse<K>>builder()
                 .kafkaConfig(kafkaConfig)
                 .requestTopic(namingStrategy.topicName(
                         commandSpec.aggregateName(),

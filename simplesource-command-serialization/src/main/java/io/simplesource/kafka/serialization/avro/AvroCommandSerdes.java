@@ -1,5 +1,6 @@
 package io.simplesource.kafka.serialization.avro;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
@@ -18,7 +19,7 @@ public final class AvroCommandSerdes<K, C> implements CommandSerdes<K, C> {
 
     private final Serde<K> ak;
     private final Serde<CommandRequest<K, C>> crq;
-    private final Serde<UUID> crk;
+    private final Serde<CommandId> crk;
     private final Serde<CommandResponse<K>> crp;
 
     public static <K extends GenericRecord, C extends GenericRecord> AvroCommandSerdes<K, C> of(
@@ -83,7 +84,7 @@ public final class AvroCommandSerdes<K, C> implements CommandSerdes<K, C> {
     }
 
     @Override
-    public Serde<UUID> commandResponseKey() {
+    public Serde<CommandId> commandResponseKey() {
         return crk;
     }
 

@@ -2,6 +2,7 @@ package io.simplesource.kafka.internal.client;
 
 import io.simplesource.data.FutureResult;
 import io.simplesource.kafka.dsl.KafkaConfig;
+import io.simplesource.api.UuidId;
 import io.simplesource.kafka.spec.TopicSpec;
 import lombok.Value;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -24,7 +25,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public final class KafkaRequestAPI<K, I, O> {
+public final class KafkaRequestAPI<K, I, RK extends UuidId, O> {
     private static final Logger logger = LoggerFactory.getLogger(KafkaRequestAPI.class);
 
     @Value
@@ -53,11 +54,11 @@ public final class KafkaRequestAPI<K, I, O> {
         }
     }
 
-    private final RequestAPIContext<K, I, O> ctx;
+    private final RequestAPIContext<K, I, RK, O> ctx;
     private final ResponseSubscription responseSubscription;
-    private final ExpiringMap<UUID, ResponseHandler<I, O>> responseHandlers;
+    private final ExpiringMap<RK, ResponseHandler<I, O>> responseHandlers;
     private final RequestPublisher<K, I> requestSender;
-    private final RequestPublisher<UUID, String> responseTopicMapSender;
+    private final RequestPublisher<RK, String> responseTopicMapSender;
 
     private static <K, V> RequestPublisher<K, V> kakfaProducerSender(
             KafkaConfig kafkaConfig,
@@ -81,7 +82,7 @@ public final class KafkaRequestAPI<K, I, O> {
         };
     }
 
-    public KafkaRequestAPI(final RequestAPIContext<K, I, O> ctx) {
+    public KafkaRequestAPI(final RequestAPIContext<K, I, RK, O> ctx) {
         this(ctx,
                 kakfaProducerSender(ctx.kafkaConfig(), ctx.requestTopic(), ctx.requestKeySerde(), ctx.requestValueSerde()),
                 kakfaProducerSender(ctx.kafkaConfig(), ctx.responseTopicMapTopic(), ctx.responseKeySerde(), Serdes.String()),
@@ -89,15 +90,16 @@ public final class KafkaRequestAPI<K, I, O> {
                     ctx.kafkaConfig().consumerConfig(),
                     ctx.privateResponseTopic(),
                     ctx.responseValueSerde(),
-                    receiver),
+                    receiver,
+                    ctx.idConverter()),
                 true);
     }
 
     public KafkaRequestAPI(
-            final RequestAPIContext<K, I, O> ctx,
+            final RequestAPIContext<K, I, RK, O> ctx,
             final RequestPublisher<K, I> requestSender,
-            final RequestPublisher<UUID, String> responseTopicMapSender,
-            final Function<BiConsumer<UUID, O>, ResponseSubscription> responseSubscriber,
+            final RequestPublisher<RK, String> responseTopicMapSender,
+            final Function<BiConsumer<RK, O>, ResponseSubscription> responseSubscriber,
             boolean createTopics) {
         KafkaConfig kafkaConfig = ctx.kafkaConfig();
 
@@ -122,7 +124,7 @@ public final class KafkaRequestAPI<K, I, O> {
         }
 
         responseHandlers = new ExpiringMap<>(retentionInSeconds, Clock.systemUTC());
-        ResponseReceiver<UUID, ResponseHandler<I, O>, O> responseReceiver =
+        ResponseReceiver<RK, ResponseHandler<I, O>, O> responseReceiver =
             new ResponseReceiver<>(responseHandlers, (h, r) -> {
                 h.forEachFuture(future -> future.complete(r));
                 return ResponseHandler.initialise(h.input, Optional.of(r));
@@ -133,7 +135,7 @@ public final class KafkaRequestAPI<K, I, O> {
         Runtime.getRuntime().addShutdownHook(new Thread(this::close));
     }
 
-    public FutureResult<Exception, RequestPublisher.PublishResult> publishRequest(final K key, UUID requestId, final I request) {
+    public FutureResult<Exception, RequestPublisher.PublishResult> publishRequest(final K key, RK requestId, final I request) {
 
         FutureResult<Exception, RequestPublisher.PublishResult> result = responseTopicMapSender.publish(requestId, ctx.privateResponseTopic())
                 .flatMap(r -> requestSender.publish(key, request)).map(r -> {
@@ -148,7 +150,7 @@ public final class KafkaRequestAPI<K, I, O> {
         return result;
     }
 
-    public CompletableFuture<O> queryResponse(final UUID requestId, final Duration timeout) {
+    public CompletableFuture<O> queryResponse(final RK requestId, final Duration timeout) {
 
         CompletableFuture<O> completableFuture = new CompletableFuture<>();
         ResponseHandler handler = responseHandlers.computeIfPresent(requestId, h -> {
