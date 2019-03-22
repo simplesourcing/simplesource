@@ -3,34 +3,29 @@ package io.simplesource.kafka.internal.streams.topology;
 import io.simplesource.api.CommandError;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
-import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
-import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.dsl.InvalidSequenceStrategy;
 import io.simplesource.kafka.internal.streams.MockInMemorySerde;
 import io.simplesource.kafka.internal.streams.model.TestAggregate;
 import io.simplesource.kafka.internal.streams.model.TestCommand;
 import io.simplesource.kafka.internal.streams.model.TestEvent;
 import io.simplesource.kafka.internal.streams.model.TestHandlers;
-import io.simplesource.kafka.model.*;
+import io.simplesource.kafka.model.CommandRequest;
+import io.simplesource.kafka.model.CommandResponse;
+import io.simplesource.kafka.model.ValueWithSequence;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Windowed;
-import org.apache.kafka.streams.state.KeyValueIterator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import scala.collection.immutable.Stream;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,7 +59,7 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                CommandId.of(UUID.randomUUID()), key, Sequence.first().next(), new TestCommand.CreateCommand("Name"));
+                CommandId.random(), key, Sequence.first().next(), new TestCommand.CreateCommand("Name"));
 
         ctxDriver.publishCommand( key, commandRequest);
         ctxDriver.verifyCommandResponse(key, r -> {
@@ -84,7 +79,7 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                CommandId.of(UUID.randomUUID()), key, Sequence.first(), new TestCommand.UnsupportedCommand());
+                CommandId.random(), key, Sequence.first(), new TestCommand.UnsupportedCommand());
 
         ctxDriver.publishCommand( key, commandRequest);
         ctxDriver.verifyCommandResponse(key, r -> {
@@ -105,7 +100,7 @@ class EventSourcedTopologyTest {
 
         String name = "name";
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                CommandId.of(UUID.randomUUID()), key, Sequence.first(), new TestCommand.CreateCommand(name));
+                CommandId.random(), key, Sequence.first(), new TestCommand.CreateCommand(name));
 
         ctxDriver.publishCommand( key, commandRequest);
         ctxDriver.verifyCommandResponse(key, v -> {
@@ -135,7 +130,7 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         ctxDriver.publishCommand( key, new CommandRequest<>(
-                CommandId.of(UUID.randomUUID()), key, Sequence.first(), new TestCommand.CreateCommand("firstName")));
+                CommandId.random(), key, Sequence.first(), new TestCommand.CreateCommand("firstName")));
         ctxDriver.verifyAggregateUpdate(key, null);
         CommandResponse<String> response = ctxDriver.verifyCommandResponse(key, null);
         ctxDriver.verifyEvents(key, null);
@@ -144,7 +139,7 @@ class EventSourcedTopologyTest {
             String newName = String.format("firstName %d", i);
             Sequence lastSequence = response.sequenceResult().getOrElse(Sequence.first());
             CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                    CommandId.of(UUID.randomUUID()), key, lastSequence, new TestCommand.UpdateWithNothingCommand(newName));
+                    CommandId.random(), key, lastSequence, new TestCommand.UpdateWithNothingCommand(newName));
             ctxDriver.publishCommand(key, commandRequest);
 
             List<ValueWithSequence<TestEvent>> events = ctxDriver.verifyEvents(key, iV -> {
@@ -186,7 +181,7 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                CommandId.of(UUID.randomUUID()), key, Sequence.position(1000), new TestCommand.CreateCommand("Name 2"));
+                CommandId.random(), key, Sequence.position(1000), new TestCommand.CreateCommand("Name 2"));
 
         ctxDriver.publishCommand( key, commandRequest);
         ctxDriver.verifyCommandResponse(key, r -> {
@@ -205,7 +200,7 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                CommandId.of(UUID.randomUUID()), key, Sequence.first(), new TestCommand.CreateCommand("Name"));
+                CommandId.random(), key, Sequence.first(), new TestCommand.CreateCommand("Name"));
 
         ctxDriver.publishCommand( key, commandRequest);
 
@@ -248,7 +243,7 @@ class EventSourcedTopologyTest {
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
 
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
-                CommandId.of(UUID.randomUUID()), key, Sequence.first(), new TestCommand.CreateCommand("Name 2"));
+                CommandId.random(), key, Sequence.first(), new TestCommand.CreateCommand("Name 2"));
 
         ctxDriver.getPublisher(ctx.serdes().commandResponseKey(), Serdes.String())
                 .publish(topicNamesTopic, commandRequest.commandId(), outputTopic);

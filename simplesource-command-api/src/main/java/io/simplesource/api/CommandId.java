@@ -6,5 +6,9 @@ import java.util.UUID;
 
 @Value(staticConstructor = "of")
 public final class CommandId {
-    private final UUID id;
+    public final UUID id;
+
+    public static CommandId random() {
+        return new CommandId(UUID.randomUUID());
+    }
 }

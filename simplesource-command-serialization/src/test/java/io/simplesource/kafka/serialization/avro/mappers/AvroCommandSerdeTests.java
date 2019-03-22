@@ -12,7 +12,6 @@ import io.simplesource.kafka.serialization.avro.mappers.domain.UserAccountDomain
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,7 +38,7 @@ class AvroCommandSerdeTests {
 
     @Test
     void uuidResponseKey() {
-        CommandId responseKey = CommandId.of(UUID.randomUUID());
+        CommandId responseKey = CommandId.random();
 
         byte[] serialised = serdes.commandResponseKey().serializer().serialize(topic, responseKey);
         CommandId deserialised = serdes.commandResponseKey().deserializer().deserialize(topic, serialised);
@@ -51,7 +50,7 @@ class AvroCommandSerdeTests {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
         CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = new CommandRequest<>(
-                CommandId.of(UUID.randomUUID()),
+                CommandId.random(),
                 aggKey,
                 Sequence.first(),
                 new UserAccountDomainCommand.UpdateUserName("name"));
@@ -66,7 +65,7 @@ class AvroCommandSerdeTests {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
         CommandResponse commandResponse = new CommandResponse<>(
-                CommandId.of(UUID.randomUUID()),
+                CommandId.random(),
                 aggKey,
                 Sequence.first(),
                 Result.success(Sequence.first()));
@@ -81,7 +80,7 @@ class AvroCommandSerdeTests {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
         CommandResponse commandResponse = new CommandResponse<>(
-                CommandId.of(UUID.randomUUID()),
+                CommandId.random(),
                 aggKey,
                 Sequence.first(),
                 Result.failure(CommandError.of(CommandError.Reason.InvalidReadSequence, "Invalid sequence")));

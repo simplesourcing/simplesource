@@ -9,19 +9,21 @@ import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.dsl.AggregateBuilder;
 import io.simplesource.kafka.dsl.InvalidSequenceStrategy;
 import io.simplesource.kafka.internal.streams.MockInMemorySerde;
-import io.simplesource.kafka.util.PrefixResourceNamingStrategy;
 import io.simplesource.kafka.internal.streams.model.TestAggregate;
 import io.simplesource.kafka.internal.streams.model.TestCommand;
 import io.simplesource.kafka.internal.streams.model.TestEvent;
-import io.simplesource.kafka.model.*;
+import io.simplesource.kafka.model.AggregateUpdate;
+import io.simplesource.kafka.model.CommandRequest;
+import io.simplesource.kafka.model.CommandResponse;
+import io.simplesource.kafka.model.ValueWithSequence;
 import io.simplesource.kafka.spec.TopicSpec;
+import io.simplesource.kafka.util.PrefixResourceNamingStrategy;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.UUID;
 
 class TestContextBuilder {
 

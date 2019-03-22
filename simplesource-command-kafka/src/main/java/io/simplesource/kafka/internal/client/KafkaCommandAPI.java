@@ -14,7 +14,6 @@ import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.spec.CommandSpec;
 
 import java.time.Duration;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;

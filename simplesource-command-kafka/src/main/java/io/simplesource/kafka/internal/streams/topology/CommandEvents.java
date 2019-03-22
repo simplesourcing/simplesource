@@ -9,8 +9,6 @@ import io.simplesource.kafka.model.ValueWithSequence;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 
-import java.util.UUID;
-
 /**
  * @param <E> all events generated for this aggregate
  * @param <A> the aggregate aggregate_update

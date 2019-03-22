@@ -7,7 +7,6 @@ import io.simplesource.data.Sequence;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 
-import java.util.UUID;
 import java.util.function.Function;
 
 @Value

@@ -1,25 +1,18 @@
 package io.simplesource.kafka.serialization.json;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
-import io.simplesource.api.CommandError;
-import io.simplesource.api.CommandError.Reason;
 import io.simplesource.api.CommandId;
-import io.simplesource.data.NonEmptyList;
-import io.simplesource.data.Result;
-import io.simplesource.data.Sequence;
-import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.api.CommandSerdes;
-import io.simplesource.kafka.model.*;
+import io.simplesource.kafka.model.CommandRequest;
+import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.serialization.util.GenericMapper;
 import io.simplesource.kafka.serialization.util.GenericSerde;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
-
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 import static io.simplesource.kafka.serialization.json.JsonGenericMapper.jsonDomainMapper;
 

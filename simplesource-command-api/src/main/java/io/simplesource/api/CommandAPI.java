@@ -5,7 +5,6 @@ import io.simplesource.data.Sequence;
 import lombok.Value;
 
 import java.time.Duration;
-import java.util.UUID;
 
 /**
  * The public API for submitting commands against a given aggregate and

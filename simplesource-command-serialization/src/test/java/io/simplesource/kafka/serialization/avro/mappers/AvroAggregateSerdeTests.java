@@ -12,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,7 +41,7 @@ public class AvroAggregateSerdeTests {
 
     @Test
     void uuidResponseKey() {
-        CommandId responseKey = CommandId.of(UUID.randomUUID());
+        CommandId responseKey = CommandId.random();
 
         byte[] serialised = serdes.commandResponseKey().serializer().serialize(topic, responseKey);
         CommandId deserialised = serdes.commandResponseKey().deserializer().deserialize(topic, serialised);
@@ -65,7 +64,7 @@ public class AvroAggregateSerdeTests {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
         CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = new CommandRequest<>(
-                CommandId.of(UUID.randomUUID()),
+                CommandId.random(),
                 aggKey,
                 Sequence.first(),
                 new UserAccountDomainCommand.UpdateUserName("name"));
@@ -90,7 +89,7 @@ public class AvroAggregateSerdeTests {
     void commandResponseSuccess() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
         CommandResponse commandResponse = new CommandResponse(
-                CommandId.of(UUID.randomUUID()),
+                CommandId.random(),
                 aggKey,
                 Sequence.first(),
                 Result.success(Sequence.first()));
@@ -104,7 +103,7 @@ public class AvroAggregateSerdeTests {
     void commandResponseFailure() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
         CommandResponse commandResponse = new CommandResponse(
-                CommandId.of(UUID.randomUUID()),
+                CommandId.random(),
                 aggKey,
                 Sequence.first(),
                 Result.failure(CommandError.of(CommandError.Reason.InvalidReadSequence, "Invalid sequence")));

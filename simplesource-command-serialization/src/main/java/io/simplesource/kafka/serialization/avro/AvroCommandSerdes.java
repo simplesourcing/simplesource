@@ -11,7 +11,6 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.common.serialization.Serde;
 
 import java.util.Arrays;
-import java.util.UUID;
 
 import static io.simplesource.kafka.serialization.avro.AvroSpecificGenericMapper.specificDomainMapper;
 

@@ -16,7 +16,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -41,7 +40,7 @@ public final class AggregateTestHelper<K, C, E, A> {
         final K key,
         final Sequence readSequence,
         final C command) {
-        final CommandId commandId = CommandId.of(UUID.randomUUID());
+        final CommandId commandId = CommandId.random();
         final Result<CommandError, CommandId> result = testAPI.publishCommand(new CommandAPI.Request<>(key, readSequence, commandId, command))
             .unsafePerform(AggregateTestHelper::commandError);
         return result.fold(
