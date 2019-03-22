@@ -63,12 +63,12 @@ public interface CommandAPI<K, C> {
 
     @Value
     class Request<K, C> {
+        // unique id for this command
+        private final CommandId commandId;
         // the aggregate key the command applies to
         private final K key;
         // the version of the aggregate this command is based on
         private final Sequence readSequence;
-        // unique id for this command
-        private final CommandId commandId;
         // the command we wish to apply to the aggregate
         private final C command;
     }

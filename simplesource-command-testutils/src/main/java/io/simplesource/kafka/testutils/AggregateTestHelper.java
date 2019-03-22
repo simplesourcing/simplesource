@@ -41,7 +41,7 @@ public final class AggregateTestHelper<K, C, E, A> {
         final Sequence readSequence,
         final C command) {
         final CommandId commandId = CommandId.random();
-        final Result<CommandError, CommandId> result = testAPI.publishCommand(new CommandAPI.Request<>(key, readSequence, commandId, command))
+        final Result<CommandError, CommandId> result = testAPI.publishCommand(new CommandAPI.Request<>(commandId, key, readSequence, command))
             .unsafePerform(AggregateTestHelper::commandError);
         return result.fold(
             reasons -> {
