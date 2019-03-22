@@ -62,7 +62,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
     @Override
     public FutureResult<CommandError, CommandId> publishCommand(final Request<K, C> request) {
         final CommandRequest<K, C> commandRequest = new CommandRequest<>(
-                request.key(), request.command(), request.readSequence(), request.commandId());
+                request.commandId(), request.key(), request.readSequence(), request.command());
 
         FutureResult<Exception, RequestPublisher.PublishResult> publishResult = requestApi.publishRequest(request.key(), request.commandId(), commandRequest);
 
@@ -106,8 +106,8 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 .scheduler(scheduler)
                 .errorValue((i, e) ->
                         new CommandResponse(
-                                i.aggregateKey(),
                                 i.commandId(),
+                                i.aggregateKey(),
                                 i.readSequence(),
                                 Result.failure(getCommandError(e))))
                 .build();

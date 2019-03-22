@@ -141,10 +141,10 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
         ) throws JsonParseException {
             final JsonObject wrapper = jsonElement.getAsJsonObject();
             return new CommandRequest<>(
+                    CommandId.of(UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString())),
                     keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
-                    commandMapper.fromGeneric(wrapper.get(COMMAND)),
                     Sequence.position(wrapper.getAsJsonPrimitive(READ_SEQUENCE).getAsLong()),
-                    CommandId.of(UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString())));
+                    commandMapper.fromGeneric(wrapper.get(COMMAND)));
         }
     }
 
@@ -298,8 +298,8 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
                 );
             }
             return new CommandResponse(
-                    keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
                     commandId,
+                    keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
                     readSequence,
                     result);
         }

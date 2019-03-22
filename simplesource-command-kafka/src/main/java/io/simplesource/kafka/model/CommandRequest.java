@@ -12,12 +12,12 @@ import java.util.function.Function;
  */
 @Value
 public final class CommandRequest<K, C> {
+    private CommandId commandId;
     private final K aggregateKey;
+    private Sequence readSequence;
     private final C command;
-    private final Sequence readSequence;
-    private final CommandId commandId;
 
     public <KR, CR> CommandRequest<KR, CR> map2(final Function<K, KR> fk, final Function<C, CR> fc) {
-        return new CommandRequest<>(fk.apply(aggregateKey), fc.apply(command), readSequence, commandId);
+        return new CommandRequest<>(commandId, fk.apply(aggregateKey), readSequence, fc.apply(command));
     }
 }

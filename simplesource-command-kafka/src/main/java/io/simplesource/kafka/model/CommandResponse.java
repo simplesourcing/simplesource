@@ -13,12 +13,12 @@ import java.util.function.Function;
 @Value
 @AllArgsConstructor
 public final class CommandResponse<K> {
-    private final K aggregateKey;
     private CommandId commandId;
+    private final K aggregateKey;
     private Sequence readSequence;
     private Result<CommandError, Sequence> sequenceResult;
 
     public <KR> CommandResponse<KR> map(final Function<K, KR> fk) {
-        return new CommandResponse<>(fk.apply(aggregateKey), commandId, readSequence, sequenceResult);
+        return new CommandResponse<>(commandId, fk.apply(aggregateKey), readSequence, sequenceResult);
     }
 }

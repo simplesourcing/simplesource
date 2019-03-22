@@ -47,10 +47,10 @@ class JsonCommandSerdeTests {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
         CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = new CommandRequest<>(
+                CommandId.of(UUID.randomUUID()),
                 aggKey,
-                new UserAccountDomainCommand.UpdateUserName("name"),
                 Sequence.first(),
-                CommandId.of(UUID.randomUUID()));
+                new UserAccountDomainCommand.UpdateUserName("name"));
 
         byte[] serialised = serdes.commandRequest().serializer().serialize(topic, commandRequest);
         CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> deserialised = serdes.commandRequest().deserializer().deserialize(topic, serialised);
@@ -62,8 +62,8 @@ class JsonCommandSerdeTests {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
         CommandResponse commandResponse = new CommandResponse(
-                aggKey,
                 CommandId.of(UUID.randomUUID()),
+                aggKey,
                 Sequence.first(),
                 Result.success(Sequence.first()));
 
@@ -77,8 +77,8 @@ class JsonCommandSerdeTests {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
         CommandResponse commandResponse = new CommandResponse(
-                aggKey,
                 CommandId.of(UUID.randomUUID()),
+                aggKey,
                 Sequence.first(),
                 Result.failure(CommandError.of(CommandError.Reason.InvalidReadSequence, "Invalid sequence")));
 

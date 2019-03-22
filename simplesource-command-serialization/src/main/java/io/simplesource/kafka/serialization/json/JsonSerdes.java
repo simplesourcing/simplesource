@@ -51,10 +51,10 @@ class JsonSerdes<K, C> {
         ) throws JsonParseException {
             final JsonObject wrapper = jsonElement.getAsJsonObject();
             return new CommandRequest<>(
+                    CommandId.of(UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString())),
                     keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
-                    commandMapper.fromGeneric(wrapper.get(COMMAND)),
                     Sequence.position(wrapper.getAsJsonPrimitive(READ_SEQUENCE).getAsLong()),
-                    CommandId.of(UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString())));
+                    commandMapper.fromGeneric(wrapper.get(COMMAND)));
         }
     }
 
@@ -152,8 +152,8 @@ class JsonSerdes<K, C> {
                 );
             }
             return new CommandResponse<>(
-                    keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
                     commandId,
+                    keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
                     readSequence,
                     result);
         }

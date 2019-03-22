@@ -44,7 +44,7 @@ public final class AvroSerdes {
             return builder
                     .set(AGGREGATE_KEY, commandRequest.aggregateKey())
                     .set(READ_SEQUENCE, commandRequest.readSequence().getSeq())
-                    .set(COMMAND_ID, commandRequest.commandId().toString())
+                    .set(COMMAND_ID, commandRequest.commandId().id().toString())
                     .set(COMMAND, command)
                     .build();
         }
@@ -54,7 +54,7 @@ public final class AvroSerdes {
             final Sequence readSequence = Sequence.position((Long) record.get(READ_SEQUENCE));
             final CommandId commandId = CommandId.of(UUID.fromString(String.valueOf(record.get(COMMAND_ID))));
             final GenericRecord command = (GenericRecord) record.get(COMMAND);
-            return new CommandRequest<>(aggregateKey, command, readSequence, commandId);
+            return new CommandRequest<>(commandId, aggregateKey, readSequence, command);
         }
 
         private static Schema commandRequestSchema(final GenericRecord command, final GenericRecord key) {
@@ -188,7 +188,7 @@ public final class AvroSerdes {
             return new GenericRecordBuilder(schema)
                     .set(AGGREGATE_KEY, commandResponse.aggregateKey())
                     .set(READ_SEQUENCE, commandResponse.readSequence().getSeq())
-                    .set(COMMAND_ID, commandResponse.commandId().toString())
+                    .set(COMMAND_ID, commandResponse.commandId().id().toString())
                     .set(RESULT, commandResponse.sequenceResult().fold(
                             reasons -> new GenericRecordBuilder(responseFailureSchema)
                                     .set(REASON, fromReason(reasonSchema, reasons.head()))
@@ -230,7 +230,7 @@ public final class AvroSerdes {
                 result = Result.failure(new NonEmptyList<>(commandError, additionalCommandErrors));
             }
 
-            return new CommandResponse<>(aggregateKey, CommandId.of(commandId), readSequence, result);
+            return new CommandResponse<>(CommandId.of(commandId), aggregateKey, readSequence, result);
         }
 
         private static CommandError toCommandError(final GenericRecord record) {

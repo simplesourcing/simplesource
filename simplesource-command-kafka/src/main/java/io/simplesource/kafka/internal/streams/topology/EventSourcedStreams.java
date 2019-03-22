@@ -101,7 +101,7 @@ final class EventSourcedStreams {
     static <K, A>  KStream<K, CommandResponse<K>> getCommandResponses(final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream) {
         return aggregateUpdateStream
                 .mapValues((key, update) ->
-                        new CommandResponse<>(key, update.commandId(), update.readSequence(), update.updatedAggregateResult().map(AggregateUpdate::sequence))
+                        new CommandResponse<>(update.commandId(), key, update.readSequence(), update.updatedAggregateResult().map(AggregateUpdate::sequence))
                 );
     }
 }
