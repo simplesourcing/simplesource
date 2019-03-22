@@ -1,6 +1,7 @@
 package io.simplesource.kafka.serialization.avro.mappers;
 
 import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.model.CommandRequest;
@@ -11,7 +12,6 @@ import io.simplesource.kafka.serialization.avro.mappers.domain.UserAccountDomain
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,11 +38,11 @@ class AvroCommandSerdeTests {
 
     @Test
     void uuidResponseKey() {
-        UUID responseKey = UUID.randomUUID();
+        CommandId responseKey = CommandId.random();
 
         byte[] serialised = serdes.commandResponseKey().serializer().serialize(topic, responseKey);
-        UUID deserialised = serdes.commandResponseKey().deserializer().deserialize(topic, serialised);
-        assertThat(deserialised).isEqualTo(responseKey);
+        CommandId deserialised = serdes.commandResponseKey().deserializer().deserialize(topic, serialised);
+        assertThat(deserialised).isEqualToComparingFieldByField(responseKey);
     }
 
     @Test
@@ -50,10 +50,10 @@ class AvroCommandSerdeTests {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
         CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = new CommandRequest<>(
+                CommandId.random(),
                 aggKey,
-                new UserAccountDomainCommand.UpdateUserName("name"),
                 Sequence.first(),
-                UUID.randomUUID());
+                new UserAccountDomainCommand.UpdateUserName("name"));
 
         byte[] serialised = serdes.commandRequest().serializer().serialize(topic, commandRequest);
         CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> deserialised = serdes.commandRequest().deserializer().deserialize(topic, serialised);
@@ -65,8 +65,8 @@ class AvroCommandSerdeTests {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
         CommandResponse commandResponse = new CommandResponse<>(
+                CommandId.random(),
                 aggKey,
-                UUID.randomUUID(),
                 Sequence.first(),
                 Result.success(Sequence.first()));
 
@@ -80,8 +80,8 @@ class AvroCommandSerdeTests {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
         CommandResponse commandResponse = new CommandResponse<>(
+                CommandId.random(),
                 aggKey,
-                UUID.randomUUID(),
                 Sequence.first(),
                 Result.failure(CommandError.of(CommandError.Reason.InvalidReadSequence, "Invalid sequence")));
 

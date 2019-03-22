@@ -2,6 +2,7 @@ package io.simplesource.kafka.serialization.json;
 
 import com.google.gson.*;
 import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
@@ -39,7 +40,7 @@ class JsonSerdes<K, C> {
             final JsonObject wrapper = new JsonObject();
             wrapper.add(AGGREGATE_KEY, keyMapper.toGeneric(commandRequest.aggregateKey()));
             wrapper.addProperty(READ_SEQUENCE, commandRequest.readSequence().getSeq());
-            wrapper.addProperty(COMMAND_ID, commandRequest.commandId().toString());
+            wrapper.addProperty(COMMAND_ID, commandRequest.commandId().id().toString());
             wrapper.add(COMMAND, commandMapper.toGeneric(commandRequest.command()));
             return wrapper;
         }
@@ -50,34 +51,34 @@ class JsonSerdes<K, C> {
         ) throws JsonParseException {
             final JsonObject wrapper = jsonElement.getAsJsonObject();
             return new CommandRequest<>(
+                    CommandId.of(UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString())),
                     keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
-                    commandMapper.fromGeneric(wrapper.get(COMMAND)),
                     Sequence.position(wrapper.getAsJsonPrimitive(READ_SEQUENCE).getAsLong()),
-                    UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString()));
+                    commandMapper.fromGeneric(wrapper.get(COMMAND)));
         }
     }
 
-    class UUIDAdapter implements JsonSerializer<UUID>, JsonDeserializer<UUID> {
+    class CommandIdAdapter implements JsonSerializer<CommandId>, JsonDeserializer<CommandId> {
 
         private static final String COMMAND_ID = "commandId";
 
         @Override
         public JsonElement serialize(
-                final UUID uuid,
+                final CommandId commandId,
                 final Type type,
                 final JsonSerializationContext jsonSerializationContext
         ) {
             final JsonObject wrapper = new JsonObject();
-            wrapper.addProperty(COMMAND_ID, uuid.toString());
+            wrapper.addProperty(COMMAND_ID, commandId.id().toString());
             return wrapper;
         }
 
         @Override
-        public UUID deserialize(
+        public CommandId deserialize(
                 final JsonElement jsonElement, final Type type, final JsonDeserializationContext jsonDeserializationContext
         ) throws JsonParseException {
             final JsonObject wrapper = jsonElement.getAsJsonObject();
-            return UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString());
+            return CommandId.of(UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString()));
         }
     }
 
@@ -102,7 +103,7 @@ class JsonSerdes<K, C> {
         ) {
             final JsonObject wrapper = new JsonObject();
             wrapper.addProperty(READ_SEQUENCE, commandResponse.readSequence().getSeq());
-            wrapper.addProperty(COMMAND_ID, commandResponse.commandId().toString());
+            wrapper.addProperty(COMMAND_ID, commandResponse.commandId().id().toString());
             wrapper.add(AGGREGATE_KEY, keyMapper.toGeneric(commandResponse.aggregateKey()));
             wrapper.add(RESULT, commandResponse.sequenceResult().fold(
                     reasons -> {
@@ -135,7 +136,7 @@ class JsonSerdes<K, C> {
         ) throws JsonParseException {
             final JsonObject wrapper = jsonElement.getAsJsonObject();
             final Sequence readSequence = Sequence.position(wrapper.getAsJsonPrimitive(READ_SEQUENCE).getAsLong());
-            final UUID commandId = UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString());
+            final CommandId commandId = CommandId.of(UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString()));
             final JsonObject resultWrapper = wrapper.getAsJsonObject(RESULT);
             final Result result;
             if (resultWrapper.has(REASON)) {
@@ -151,8 +152,8 @@ class JsonSerdes<K, C> {
                 );
             }
             return new CommandResponse<>(
-                    keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
                     commandId,
+                    keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
                     readSequence,
                     result);
         }

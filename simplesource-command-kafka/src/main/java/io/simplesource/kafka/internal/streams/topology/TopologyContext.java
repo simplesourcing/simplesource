@@ -1,6 +1,7 @@
 package io.simplesource.kafka.internal.streams.topology;
 
 import io.simplesource.api.Aggregator;
+import io.simplesource.api.CommandId;
 import io.simplesource.api.InitialValue;
 import io.simplesource.kafka.api.AggregateResources;
 import io.simplesource.kafka.api.AggregateSerdes;
@@ -11,8 +12,6 @@ import lombok.Value;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.Serialized;
-
-import java.util.UUID;
 
 /**
  * @param <A> the aggregate aggregate_update
@@ -34,7 +33,7 @@ public final class TopologyContext<K, C, E, A> {
     final Produced<K, ValueWithSequence<E>> eventsConsumedProduced;
     final Produced<K, AggregateUpdate<A>> aggregatedUpdateProduced;
     final Produced<K, CommandResponse<K>> commandResponseProduced;
-    final Serialized<UUID, CommandResponse<K>> serializedCommandResponse;
+    final Serialized<CommandId, CommandResponse<K>> serializedCommandResponse;
 
     public TopologyContext(AggregateSpec<K, C, E, A> aggregateSpec) {
         this.aggregateSpec = aggregateSpec;

@@ -2,6 +2,7 @@ package io.simplesource.kafka.testutils;
 
 import io.simplesource.api.CommandAPI;
 import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.FutureResult;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.AggregateResources;
@@ -64,21 +65,21 @@ public final class AggregateTestDriver<K, C, E, A> {
         // create a version of the command API that pipes stuff in and out of the TestTopologyDriver
         RequestPublisher<K, CommandRequest<K, C>> commandRequestPublisher =
                 new TestPublisher<>(driver, aggregateSerdes.aggregateKey(), aggregateSerdes.commandRequest(), topicName(TopicEntity.command_request));
-        final RequestPublisher<UUID, String> responseTopicMapPublisher =
+        final RequestPublisher<CommandId, String> responseTopicMapPublisher =
                 new TestPublisher<>(driver, aggregateSerdes.commandResponseKey(), Serdes.String(), topicName(TopicEntity.command_response_topic_map));
 
         CommandSpec<K, C> commandSpec = SpecUtils.getCommandSpec(aggregateSpec,"localhost");
-        RequestAPIContext<?, ?, CommandResponse<K>> requestCtx =
+        RequestAPIContext<?, ?, CommandId, CommandResponse<K>> requestCtx =
                 KafkaCommandAPI.getRequestAPIContext(commandSpec, kafkaConfig, scheduledExecutor);
         
-        TestTopologyReceiver.ReceiverSpec<UUID, CommandResponse<K>> receiverSpec = new TestTopologyReceiver.ReceiverSpec<>(
+        TestTopologyReceiver.ReceiverSpec<CommandId, CommandResponse<K>> receiverSpec = new TestTopologyReceiver.ReceiverSpec<>(
                 requestCtx.privateResponseTopic(), 400, 4,
                 requestCtx.responseValueSerde(),
-                stringKey -> UUID.fromString(stringKey.substring(stringKey.length() - 36)));
+                stringKey -> CommandId.of(UUID.fromString(stringKey.substring(stringKey.length() - 36))));
 
         statePollers = new ArrayList<>();
-        final Function<BiConsumer<UUID, CommandResponse<K>>, ResponseSubscription> receiverAttacher = updateTarget -> {
-            TestTopologyReceiver<UUID, CommandResponse<K>> receiver = new TestTopologyReceiver<>(updateTarget, driver, receiverSpec);
+        final Function<BiConsumer<CommandId, CommandResponse<K>>, ResponseSubscription> receiverAttacher = updateTarget -> {
+            TestTopologyReceiver<CommandId, CommandResponse<K>> receiver = new TestTopologyReceiver<CommandId, CommandResponse<K>>(updateTarget, driver, receiverSpec);
             statePollers.add(receiver::pollForState);
             return receiver;
         };
@@ -91,12 +92,12 @@ public final class AggregateTestDriver<K, C, E, A> {
                 receiverAttacher);
     }
 
-    public FutureResult<CommandError, UUID> publishCommand(final CommandAPI.Request<K, C> request) {
+    public FutureResult<CommandError, CommandId> publishCommand(final CommandAPI.Request<K, C> request) {
         return commandAPI.publishCommand(request);
     }
 
     public FutureResult<CommandError, Sequence> queryCommandResult(
-        final UUID commandId,
+        final CommandId commandId,
         final Duration timeout) {
         pollForApiResponse();
         return commandAPI.queryCommandResult(commandId, timeout);

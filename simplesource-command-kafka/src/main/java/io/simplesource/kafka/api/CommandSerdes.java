@@ -1,10 +1,9 @@
 package io.simplesource.kafka.api;
 
+import io.simplesource.api.CommandId;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import org.apache.kafka.common.serialization.Serde;
-
-import java.util.UUID;
 
 /**
  * Responsible for providing the mechanism for reading and writing to Kafka from the Simple Sourcing
@@ -18,6 +17,6 @@ import java.util.UUID;
 public interface CommandSerdes<K, C> {
     Serde<K> aggregateKey();
     Serde<CommandRequest<K, C>> commandRequest();
-    Serde<UUID> commandResponseKey();
+    Serde<CommandId> commandResponseKey();
     Serde<CommandResponse<K>> commandResponse();
 }

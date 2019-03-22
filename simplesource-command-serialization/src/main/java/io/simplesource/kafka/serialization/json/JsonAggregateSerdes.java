@@ -4,6 +4,7 @@ import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import io.simplesource.api.CommandError.Reason;
 import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
@@ -29,7 +30,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
 
     private final Serde<K> ak;
     private final Serde<CommandRequest<K, C>> cr;
-    private final Serde<UUID> crk;
+    private final Serde<CommandId> crk;
     private final Serde<ValueWithSequence<E>> vws;
     private final Serde<AggregateUpdate<A>> au;
     private final Serde<CommandResponse<K>> cr2;
@@ -51,7 +52,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
 
         final GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(CommandRequest.class, new CommandRequestAdapter());
-        gsonBuilder.registerTypeAdapter(UUID.class, new UUIDAdapter());
+        gsonBuilder.registerTypeAdapter(CommandId.class, new CommandIdAdapter());
         gsonBuilder.registerTypeAdapter(ValueWithSequence.class, new ValueWithSequenceAdapter());
         gsonBuilder.registerTypeAdapter(AggregateUpdate.class, new AggregateUpdateAdapter());
         gsonBuilder.registerTypeAdapter(CommandResponse.class, new CommandResponseAdapter());
@@ -67,7 +68,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
                 }.getType()));
         crk = GenericSerde.of(serde,
                 gson::toJson,
-                s -> gson.fromJson(s, new TypeToken<UUID>() {
+                s -> gson.fromJson(s, new TypeToken<CommandId>() {
                 }.getType()));
         vws = GenericSerde.of(serde,
                 gson::toJson,
@@ -94,7 +95,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
     }
 
     @Override
-    public Serde<UUID> commandResponseKey() {
+    public Serde<CommandId> commandResponseKey() {
         return crk;
     }
 
@@ -129,7 +130,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
             final JsonObject wrapper = new JsonObject();
             wrapper.add(AGGREGATE_KEY, keyMapper.toGeneric(commandRequest.aggregateKey()));
             wrapper.addProperty(READ_SEQUENCE, commandRequest.readSequence().getSeq());
-            wrapper.addProperty(COMMAND_ID, commandRequest.commandId().toString());
+            wrapper.addProperty(COMMAND_ID, commandRequest.commandId().id().toString());
             wrapper.add(COMMAND, commandMapper.toGeneric(commandRequest.command()));
             return wrapper;
         }
@@ -140,34 +141,34 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
         ) throws JsonParseException {
             final JsonObject wrapper = jsonElement.getAsJsonObject();
             return new CommandRequest<>(
+                    CommandId.of(UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString())),
                     keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
-                    commandMapper.fromGeneric(wrapper.get(COMMAND)),
                     Sequence.position(wrapper.getAsJsonPrimitive(READ_SEQUENCE).getAsLong()),
-                    UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString()));
+                    commandMapper.fromGeneric(wrapper.get(COMMAND)));
         }
     }
 
-    private class UUIDAdapter implements JsonSerializer<UUID>, JsonDeserializer<UUID> {
+    private class CommandIdAdaptor implements JsonSerializer<CommandId>, JsonDeserializer<CommandId> {
 
         private static final String COMMAND_ID = "commandId";
 
         @Override
         public JsonElement serialize(
-                final UUID uuid,
+                final CommandId commandId,
                 final Type type,
                 final JsonSerializationContext jsonSerializationContext
         ) {
             final JsonObject wrapper = new JsonObject();
-            wrapper.addProperty(COMMAND_ID, uuid.toString());
+            wrapper.addProperty(COMMAND_ID, commandId.id().toString());
             return wrapper;
         }
 
         @Override
-        public UUID deserialize(
+        public CommandId deserialize(
                 final JsonElement jsonElement, final Type type, final JsonDeserializationContext jsonDeserializationContext
         ) throws JsonParseException {
             final JsonObject wrapper = jsonElement.getAsJsonObject();
-            return UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString());
+            return CommandId.of(UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString()));
         }
     }
 
@@ -248,7 +249,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
         ) {
             final JsonObject wrapper = new JsonObject();
             wrapper.addProperty(READ_SEQUENCE, commandResponse.readSequence().getSeq());
-            wrapper.addProperty(COMMAND_ID, commandResponse.commandId().toString());
+            wrapper.addProperty(COMMAND_ID, commandResponse.commandId().id().toString());
             wrapper.add(AGGREGATE_KEY, keyMapper.toGeneric(commandResponse.aggregateKey()));
             wrapper.add(RESULT, commandResponse.sequenceResult().fold(
                     reasons -> {
@@ -281,7 +282,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
         ) throws JsonParseException {
             final JsonObject wrapper = jsonElement.getAsJsonObject();
             final Sequence readSequence = Sequence.position(wrapper.getAsJsonPrimitive(READ_SEQUENCE).getAsLong());
-            final UUID commandId = UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString());
+            final CommandId commandId = CommandId.of(UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString()));
             final JsonObject resultWrapper = wrapper.getAsJsonObject(RESULT);
             final Result result;
             if (resultWrapper.has(REASON)) {
@@ -297,8 +298,8 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
                 );
             }
             return new CommandResponse(
-                    keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
                     commandId,
+                    keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
                     readSequence,
                     result);
         }

@@ -5,7 +5,6 @@ import io.simplesource.data.Sequence;
 import lombok.Value;
 
 import java.time.Duration;
-import java.util.UUID;
 
 /**
  * The public API for submitting commands against a given aggregate and
@@ -28,7 +27,7 @@ public interface CommandAPI<K, C> {
      * @return a <code>FutureResult</code> with the commandId echoed back if the command was successfully queued,
      * otherwise a list of reasons for the failure.
      */
-    FutureResult<CommandError, UUID> publishCommand(Request<K, C> request);
+    FutureResult<CommandError, CommandId> publishCommand(Request<K, C> request);
 
     /**
      * Get the result of the execution of the command identified by the provided UUID.
@@ -39,12 +38,12 @@ public interface CommandAPI<K, C> {
      * If a command is queried outside the retention window it will keep trying for the
      * given timeout duration then fail with a <code>Timeout</code> error code.
      *
-     * @param commandId the UUID of the command to lookup the result for.
+     * @param commandId the CommandId of the command to lookup the result for.
      * @param timeout how long to wait attempting to fetch the result before timing out.
      * @return sequence number of aggregate.
      */
     FutureResult<CommandError, Sequence> queryCommandResult(
-        UUID commandId,
+        CommandId commandId,
         Duration timeout
     );
 
@@ -69,7 +68,7 @@ public interface CommandAPI<K, C> {
         // the version of the aggregate this command is based on
         private final Sequence readSequence;
         // unique id for this command
-        private final UUID commandId;
+        private final CommandId commandId;
         // the command we wish to apply to the aggregate
         private final C command;
     }

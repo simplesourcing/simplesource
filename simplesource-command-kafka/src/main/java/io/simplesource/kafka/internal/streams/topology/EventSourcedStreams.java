@@ -1,6 +1,7 @@
 package io.simplesource.kafka.internal.streams.topology;
 
 import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.internal.util.Tuple2;
 import io.simplesource.kafka.model.*;
@@ -13,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.UUID;
 import java.util.function.BiFunction;
 
 final class EventSourcedStreams {
@@ -28,7 +28,7 @@ final class EventSourcedStreams {
             final KStream<K, CommandRequest<K, C>> commandRequestStream,
             final KStream<K, CommandResponse<K>> commandResponseStream) {
 
-        final KTable<UUID, CommandResponse<K>> commandResponseById = commandResponseStream
+        final KTable<CommandId, CommandResponse<K>> commandResponseById = commandResponseStream
                 .selectKey((key, response) -> response.commandId())
                 .groupByKey(Serialized.with(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()))
                 .reduce((r1, r2) -> getResponseSequence(r1) > getResponseSequence(r2) ? r1 : r2);
@@ -101,7 +101,7 @@ final class EventSourcedStreams {
     static <K, A>  KStream<K, CommandResponse<K>> getCommandResponses(final KStream<K, AggregateUpdateResult<A>> aggregateUpdateStream) {
         return aggregateUpdateStream
                 .mapValues((key, update) ->
-                        new CommandResponse<>(key, update.commandId(), update.readSequence(), update.updatedAggregateResult().map(AggregateUpdate::sequence))
+                        new CommandResponse<>(update.commandId(), key, update.readSequence(), update.updatedAggregateResult().map(AggregateUpdate::sequence))
                 );
     }
 }

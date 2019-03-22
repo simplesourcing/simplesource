@@ -10,10 +10,11 @@ import org.apache.kafka.common.serialization.Serde;
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 @Value
 @Builder
-public final class RequestAPIContext<K, I, O> {
+public final class RequestAPIContext<K, I, RK, R> {
     final KafkaConfig kafkaConfig;
     final ScheduledExecutorService scheduler;
     final String requestTopic;
@@ -21,9 +22,11 @@ public final class RequestAPIContext<K, I, O> {
     final String privateResponseTopic;
     final Serde<K> requestKeySerde;
     final Serde<I> requestValueSerde;
-    final Serde<UUID> responseKeySerde;
-    final Serde<O> responseValueSerde;
+    final Serde<RK> responseKeySerde;
+    final Serde<R> responseValueSerde;
     final WindowSpec responseWindowSpec;
     final TopicSpec outputTopicConfig;
-    final BiFunction<I, Throwable, O> errorValue;
+    final BiFunction<I, Throwable, R> errorValue;
+    final Function<UUID, RK> uuidToResponseId;
+    final Function<RK, UUID> responseIdToUuid;
 }

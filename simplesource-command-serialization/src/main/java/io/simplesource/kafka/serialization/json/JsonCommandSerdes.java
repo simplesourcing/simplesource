@@ -1,24 +1,18 @@
 package io.simplesource.kafka.serialization.json;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
-import io.simplesource.api.CommandError;
-import io.simplesource.api.CommandError.Reason;
-import io.simplesource.data.NonEmptyList;
-import io.simplesource.data.Result;
-import io.simplesource.data.Sequence;
-import io.simplesource.kafka.api.AggregateSerdes;
+import io.simplesource.api.CommandId;
 import io.simplesource.kafka.api.CommandSerdes;
-import io.simplesource.kafka.model.*;
+import io.simplesource.kafka.model.CommandRequest;
+import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.serialization.util.GenericMapper;
 import io.simplesource.kafka.serialization.util.GenericSerde;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
-
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 import static io.simplesource.kafka.serialization.json.JsonGenericMapper.jsonDomainMapper;
 
@@ -30,7 +24,7 @@ public final class JsonCommandSerdes<K, C> extends JsonSerdes<K, C> implements C
 
     private final Serde<K> ak;
     private final Serde<CommandRequest<K, C>> cr;
-    private final Serde<UUID> crk;
+    private final Serde<CommandId> crk;
     private final Serde<CommandResponse<K>> cr2;
 
     public JsonCommandSerdes() {
@@ -46,7 +40,7 @@ public final class JsonCommandSerdes<K, C> extends JsonSerdes<K, C> implements C
 
         final GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(CommandRequest.class, new CommandRequestAdapter());
-        gsonBuilder.registerTypeAdapter(UUID.class, new UUIDAdapter());
+        gsonBuilder.registerTypeAdapter(CommandId.class, new CommandIdAdapter());
         gsonBuilder.registerTypeAdapter(CommandResponse.class, new CommandResponseAdapter());
         gson = gsonBuilder.create();
         parser = new JsonParser();
@@ -60,7 +54,7 @@ public final class JsonCommandSerdes<K, C> extends JsonSerdes<K, C> implements C
                 }.getType()));
         crk = GenericSerde.of(serde,
                 gson::toJson,
-                s -> gson.fromJson(s, new TypeToken<UUID>() {
+                s -> gson.fromJson(s, new TypeToken<CommandId>() {
                 }.getType()));
         cr2 = GenericSerde.of(serde,
                 gson::toJson,
@@ -79,7 +73,7 @@ public final class JsonCommandSerdes<K, C> extends JsonSerdes<K, C> implements C
     }
 
     @Override
-    public Serde<UUID> commandResponseKey() {
+    public Serde<CommandId> commandResponseKey() {
         return crk;
     }
 

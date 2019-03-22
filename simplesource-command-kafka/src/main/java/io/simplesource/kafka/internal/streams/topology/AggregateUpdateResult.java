@@ -1,6 +1,7 @@
 package io.simplesource.kafka.internal.streams.topology;
 
 import io.simplesource.api.CommandError;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.model.AggregateUpdate;
@@ -12,7 +13,7 @@ import java.util.UUID;
 @Value
 @AllArgsConstructor
 final class AggregateUpdateResult<A> {
-    private UUID commandId;
+    private CommandId commandId;
     private Sequence readSequence;
     private Result<CommandError, AggregateUpdate<A>> updatedAggregateResult;
 }

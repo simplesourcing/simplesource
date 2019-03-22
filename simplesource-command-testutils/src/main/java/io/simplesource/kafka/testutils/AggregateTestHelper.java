@@ -3,6 +3,7 @@ package io.simplesource.kafka.testutils;
 import io.simplesource.api.CommandAPI;
 import io.simplesource.api.CommandError;
 import io.simplesource.api.CommandError.Reason;
+import io.simplesource.api.CommandId;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
@@ -15,7 +16,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -36,12 +36,12 @@ public final class AggregateTestHelper<K, C, E, A> {
         return new PublishBuilder(key, readSequence, command);
     }
 
-    private UUID publish(
+    private CommandId publish(
         final K key,
         final Sequence readSequence,
         final C command) {
-        final UUID commandId = UUID.randomUUID();
-        final Result<CommandError, UUID> result = testAPI.publishCommand(new CommandAPI.Request<>(key, readSequence, commandId, command))
+        final CommandId commandId = CommandId.random();
+        final Result<CommandError, CommandId> result = testAPI.publishCommand(new CommandAPI.Request<>(key, readSequence, commandId, command))
             .unsafePerform(AggregateTestHelper::commandError);
         return result.fold(
             reasons -> {
@@ -61,7 +61,7 @@ public final class AggregateTestHelper<K, C, E, A> {
         final NonEmptyList<E> expectedEvents,
         final A expectedAggregate
     ) {
-        final UUID commandId = publish(key, readSequence, command);
+        final CommandId commandId = publish(key, readSequence, command);
         final NonEmptyList<Sequence> expectedSequences = validateEvents(key, readSequence, expectedEvents);
 
         final KeyValue<K, CommandResponse<K>> updateResponse = testAPI.readCommandResponseTopic()
@@ -96,7 +96,7 @@ public final class AggregateTestHelper<K, C, E, A> {
         final C command,
         final Consumer<NonEmptyList<CommandError>> failureValidator
     ) {
-        final UUID commandId = publish(key, readSequence, command);
+        final CommandId commandId = publish(key, readSequence, command);
 
         final KeyValue<K, CommandResponse<K>>  updateResponse = testAPI.readCommandResponseTopic()
                 .orElseGet(() -> fail("Didn't find command response"));
