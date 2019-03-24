@@ -95,7 +95,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
     }
 
     @Override
-    public Serde<CommandId> commandResponseKey() {
+    public Serde<CommandId> commandId() {
         return crk;
     }
 

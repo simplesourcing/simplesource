@@ -32,9 +32,8 @@ class TestDriverInitializer {
         props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 0);
         props.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0);
 
-        Topology topology = streamsBuilder.build();
-
         builderConsumer.accept(streamsBuilder);
+        Topology topology = streamsBuilder.build();
         return new TopologyTestDriver(topology, props);
     }
 }

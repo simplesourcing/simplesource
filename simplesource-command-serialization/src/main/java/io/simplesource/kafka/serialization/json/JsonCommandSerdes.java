@@ -73,7 +73,7 @@ public final class JsonCommandSerdes<K, C> extends JsonSerdes<K, C> implements C
     }
 
     @Override
-    public Serde<CommandId> commandResponseKey() {
+    public Serde<CommandId> commandId() {
         return crk;
     }
 

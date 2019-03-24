@@ -83,7 +83,7 @@ public final class AvroCommandSerdes<K, C> implements CommandSerdes<K, C> {
     }
 
     @Override
-    public Serde<CommandId> commandResponseKey() {
+    public Serde<CommandId> commandId() {
         return crk;
     }
 

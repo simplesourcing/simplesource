@@ -15,8 +15,8 @@ import org.apache.kafka.common.serialization.Serde;
  * @param <C> base type of all commands for this aggregate
  */
 public interface CommandSerdes<K, C> {
+    Serde<CommandId> commandId();
     Serde<K> aggregateKey();
     Serde<CommandRequest<K, C>> commandRequest();
-    Serde<CommandId> commandResponseKey();
     Serde<CommandResponse<K>> commandResponse();
 }

@@ -30,12 +30,12 @@ final class EventSourcedStreams {
 
         final KTable<CommandId, CommandResponse<K>> commandResponseById = commandResponseStream
                 .selectKey((key, response) -> response.commandId())
-                .groupByKey(Serialized.with(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()))
+                .groupByKey(Serialized.with(ctx.serdes().commandId(), ctx.serdes().commandResponse()))
                 .reduce((r1, r2) -> getResponseSequence(r1) > getResponseSequence(r2) ? r1 : r2);
 
         final KStream<K, Tuple2<CommandRequest<K, C>, CommandResponse<K>>> reqResp = commandRequestStream
                 .selectKey((k, v) -> v.commandId())
-                .leftJoin(commandResponseById, Tuple2::new, Joined.with(ctx.serdes().commandResponseKey(), ctx.serdes().commandRequest(), ctx.serdes().commandResponse()))
+                .leftJoin(commandResponseById, Tuple2::new, Joined.with(ctx.serdes().commandId(), ctx.serdes().commandRequest(), ctx.serdes().commandResponse()))
                 .selectKey((k, v) -> v.v1().aggregateKey());
 
         KStream<K, Tuple2<CommandRequest<K, C>, CommandResponse<K>>>[] branches =
