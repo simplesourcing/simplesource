@@ -45,7 +45,7 @@ public final class TopologyContext<K, C, E, A> {
         eventsConsumedProduced = Produced.with(serdes().aggregateKey(), serdes().valueWithSequence());
         aggregatedUpdateProduced = Produced.with(serdes().aggregateKey(), serdes().aggregateUpdate());
         commandResponseProduced = Produced.with(serdes().aggregateKey(), serdes().commandResponse());
-        serializedCommandResponse = Serialized.with(serdes().commandResponseKey(), serdes().commandResponse());
+        serializedCommandResponse = Serialized.with(serdes().commandId(), serdes().commandResponse());
         aggregator = aggregateSpec.generation().aggregator();
         initialValue = aggregateSpec.generation().initialValue();
     }

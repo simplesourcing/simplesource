@@ -99,7 +99,7 @@ class TestContextBuilder {
             }
 
             @Override
-            public Serde<CommandId> commandResponseKey() {
+            public Serde<CommandId> commandId() {
                 return new MockInMemorySerde<>();
             }
 

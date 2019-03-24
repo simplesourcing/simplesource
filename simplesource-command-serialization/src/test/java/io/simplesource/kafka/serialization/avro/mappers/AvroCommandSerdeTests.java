@@ -40,8 +40,8 @@ class AvroCommandSerdeTests {
     void uuidResponseKey() {
         CommandId responseKey = CommandId.random();
 
-        byte[] serialised = serdes.commandResponseKey().serializer().serialize(topic, responseKey);
-        CommandId deserialised = serdes.commandResponseKey().deserializer().deserialize(topic, serialised);
+        byte[] serialised = serdes.commandId().serializer().serialize(topic, responseKey);
+        CommandId deserialised = serdes.commandId().deserializer().deserialize(topic, serialised);
         assertThat(deserialised).isEqualToComparingFieldByField(responseKey);
     }
 
