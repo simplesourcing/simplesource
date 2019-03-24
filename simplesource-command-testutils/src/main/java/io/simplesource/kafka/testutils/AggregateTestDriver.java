@@ -66,7 +66,7 @@ public final class AggregateTestDriver<K, C, E, A> {
         RequestPublisher<K, CommandRequest<K, C>> commandRequestPublisher =
                 new TestPublisher<>(driver, aggregateSerdes.aggregateKey(), aggregateSerdes.commandRequest(), topicName(TopicEntity.command_request));
         final RequestPublisher<CommandId, String> responseTopicMapPublisher =
-                new TestPublisher<>(driver, aggregateSerdes.commandResponseKey(), Serdes.String(), topicName(TopicEntity.command_response_topic_map));
+                new TestPublisher<>(driver, aggregateSerdes.commandId(), Serdes.String(), topicName(TopicEntity.command_response_topic_map));
 
         CommandSpec<K, C> commandSpec = SpecUtils.getCommandSpec(aggregateSpec,"localhost");
         RequestAPIContext<?, ?, CommandId, CommandResponse<K>> requestCtx =

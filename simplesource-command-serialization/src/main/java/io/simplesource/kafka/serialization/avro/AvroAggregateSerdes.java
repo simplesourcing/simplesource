@@ -97,7 +97,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     }
 
     @Override
-    public Serde<CommandId> commandResponseKey() {
+    public Serde<CommandId> commandId() {
         return crk;
     }
 

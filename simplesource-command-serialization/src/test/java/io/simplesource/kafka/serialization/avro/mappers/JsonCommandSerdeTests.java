@@ -35,8 +35,8 @@ class JsonCommandSerdeTests {
     void uuidResponseKey() {
         CommandId responseKey = CommandId.random();
 
-        byte[] serialised = serdes.commandResponseKey().serializer().serialize(topic, responseKey);
-        CommandId deserialised = serdes.commandResponseKey().deserializer().deserialize(topic, serialised);
+        byte[] serialised = serdes.commandId().serializer().serialize(topic, responseKey);
+        CommandId deserialised = serdes.commandId().deserializer().deserialize(topic, serialised);
         assertThat(deserialised).isEqualTo(responseKey);
     }
 
@@ -59,7 +59,7 @@ class JsonCommandSerdeTests {
     void commandResponseSuccess() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandResponse commandResponse = new CommandResponse(
+        CommandResponse commandResponse = new CommandResponse<>(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),
@@ -74,7 +74,7 @@ class JsonCommandSerdeTests {
     void commandResponseFailure() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandResponse commandResponse = new CommandResponse(
+        CommandResponse commandResponse = new CommandResponse<>(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),

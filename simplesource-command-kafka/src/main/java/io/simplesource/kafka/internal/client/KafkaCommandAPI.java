@@ -98,7 +98,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 .privateResponseTopic(privateResponseTopic)
                 .requestKeySerde(serdes.aggregateKey())
                 .requestValueSerde(serdes.commandRequest())
-                .responseKeySerde(serdes.commandResponseKey())
+                .responseKeySerde(serdes.commandId())
                 .responseValueSerde(serdes.commandResponse())
                 .responseWindowSpec(commandSpec.commandResponseWindowSpec())
                 .outputTopicConfig(commandSpec.outputTopicConfig())

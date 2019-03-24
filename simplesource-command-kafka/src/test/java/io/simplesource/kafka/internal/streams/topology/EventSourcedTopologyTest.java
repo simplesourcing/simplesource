@@ -232,12 +232,12 @@ class EventSourcedTopologyTest {
             EventSourcedTopology.InputStreams<String, TestCommand> inputStreams = EventSourcedTopology.addTopology(ctx, builder);
             DistributorContext<CommandId, CommandResponse<String>> context = new DistributorContext<>(
                     topicNamesTopic,
-                    new DistributorSerdes<>(ctx.serdes().commandResponseKey(), ctx.serdes().commandResponse()),
+                    new DistributorSerdes<>(ctx.serdes().commandId(), ctx.serdes().commandResponse()),
                     ctx.aggregateSpec().generation().stateStoreSpec(),
                     CommandResponse::commandId,
                     CommandId::id);
 
-            KStream<CommandId, String> topicNames = builder.stream(topicNamesTopic, Consumed.with(ctx.serdes().commandResponseKey(), Serdes.String()));
+            KStream<CommandId, String> topicNames = builder.stream(topicNamesTopic, Consumed.with(ctx.serdes().commandId(), Serdes.String()));
             ResultDistributor.distribute(context, inputStreams.commandResponse, topicNames);
         });
         TestContextDriver<String, TestCommand, TestEvent, Optional<TestAggregate>> ctxDriver = new TestContextDriver<>(ctx, driver);
@@ -245,7 +245,7 @@ class EventSourcedTopologyTest {
         CommandRequest<String, TestCommand> commandRequest = new CommandRequest<>(
                 CommandId.random(), key, Sequence.first(), new TestCommand.CreateCommand("Name 2"));
 
-        ctxDriver.getPublisher(ctx.serdes().commandResponseKey(), Serdes.String())
+        ctxDriver.getPublisher(ctx.serdes().commandId(), Serdes.String())
                 .publish(topicNamesTopic, commandRequest.commandId(), outputTopic);
         ctxDriver.publishCommand( key, commandRequest);
 
