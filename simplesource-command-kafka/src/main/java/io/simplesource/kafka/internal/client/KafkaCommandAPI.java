@@ -103,6 +103,8 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 .responseWindowSpec(commandSpec.commandResponseWindowSpec())
                 .outputTopicConfig(commandSpec.outputTopicConfig())
                 .scheduler(scheduler)
+                .uuidToResponseId(CommandId::of)
+                .responseIdToUuid(CommandId::id)
                 .errorValue((i, e) ->
                         new CommandResponse(
                                 i.commandId(),
