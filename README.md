@@ -5,7 +5,7 @@
 
 Simple Sourcing is an API for building event sourcing systems where the data is stored in Kafka.
 
-See the [documentation](http://simplesource.io/docs_home.html)
+See the [documentation](https://simplesource.io/simple_sourcing_docs_home.html)
 for more details.
 
 See the [Quick Start](http://simplesource.io/quickstart.html) for
