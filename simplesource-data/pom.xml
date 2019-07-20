@@ -6,12 +6,12 @@
     <parent>
         <groupId>io.simplesource</groupId>
         <artifactId>simplesource-command-parent</artifactId>
-        <version>0.2.7-SNAPSHOT</version>
+        <version>0.2.7</version>
         <relativePath>../</relativePath>
     </parent>
 
     <artifactId>simplesource-data</artifactId>
-    <version>0.2.7-SNAPSHOT</version>
+    <version>0.2.7</version>
 
     <packaging>jar</packaging>
 
