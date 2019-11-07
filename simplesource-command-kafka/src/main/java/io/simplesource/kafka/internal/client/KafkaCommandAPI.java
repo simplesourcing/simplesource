@@ -52,10 +52,11 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
         requestApi = new KafkaRequestAPI<>(ctx, requestSender, responseTopicMapSender, attachReceiver, false);
     }
 
-    private static CommandError getCommandError(Throwable e) {
-        if (e instanceof TimeoutException)
-            return CommandError.of(CommandError.Reason.Timeout, e);
-        return CommandError.of(CommandError.Reason.CommandPublishError, e);
+    private static CommandError getCommandError(Exception e) {
+        if (e instanceof TimeoutException) {
+            return new CommandError.Timeout(e);
+        }
+        return new CommandError.CommandPublishError(e);
     }
 
     @Override

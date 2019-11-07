@@ -1,14 +1,12 @@
 package io.simplesource.dsl;
 
-import io.simplesource.api.CommandHandler;
 import io.simplesource.api.CommandError;
-import io.simplesource.api.CommandError.Reason;
+import io.simplesource.api.CommandHandler;
 import io.simplesource.data.Result;
+import lombok.val;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * An builder for creating an {@link CommandHandler} that can handle several different commands types by adding
@@ -45,8 +43,8 @@ public final class CommandHandlerBuilder<K, C, E, A> {
         return (key, currentAggregate, command) -> {
             final CommandHandler<K, SC, E, A> commandHandler = (CommandHandler<K, SC, E, A>) ch.get(command.getClass());
             if (commandHandler == null) {
-                return Result.failure(CommandError.of(Reason.InvalidCommand, String.format("Unhandled command type: %s",
-                        command.getClass().getSimpleName())));
+                val message = String.format("Unhandled command type: %s", command.getClass().getSimpleName());
+                return Result.failure(new CommandError.UnhandledCommandType(message));
             }
 
             return commandHandler.interpretCommand(key, currentAggregate, command);

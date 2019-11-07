@@ -9,9 +9,11 @@ import io.simplesource.data.Sequence;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.serialization.util.GenericMapper;
+import org.apache.commons.lang3.SerializationUtils;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -92,7 +94,7 @@ class JsonSerdes<K, C> {
         private static final String REASON = "reason";
         private static final String ADDITIONAL_REASONS = "additionalReasons";
         private static final String ERROR_MESSAGE = "errorMessage";
-        private static final String ERROR_CODE = "errorCode";
+        private static final String ERROR = "error";
         private static final String WRITE_SEQUENCE = "writeSequence";
 
         @Override
@@ -126,7 +128,7 @@ class JsonSerdes<K, C> {
         private JsonElement serializeReason(final CommandError commandError) {
             final JsonObject wrapper = new JsonObject();
             wrapper.addProperty(ERROR_MESSAGE, commandError.getMessage());
-            wrapper.addProperty(ERROR_CODE, commandError.getReason().name());
+            wrapper.addProperty(ERROR, Base64.getEncoder().encodeToString(SerializationUtils.serialize(commandError)));
             return wrapper;
         }
 
@@ -140,10 +142,10 @@ class JsonSerdes<K, C> {
             final JsonObject resultWrapper = wrapper.getAsJsonObject(RESULT);
             final Result result;
             if (resultWrapper.has(REASON)) {
-                final CommandError headCommandError = deserializeReason(resultWrapper.getAsJsonObject(REASON));
+                final CommandError headCommandError = deserializeCommandError(resultWrapper.getAsJsonObject(REASON));
                 final List<CommandError> tailCommandErrors = new ArrayList<>();
                 resultWrapper.getAsJsonArray(ADDITIONAL_REASONS)
-                        .forEach(reason -> tailCommandErrors.add(deserializeReason(reason.getAsJsonObject())));
+                        .forEach(reason -> tailCommandErrors.add(deserializeCommandError(reason.getAsJsonObject())));
                 result = Result.<CommandError, Sequence>failure(new NonEmptyList<>(headCommandError, tailCommandErrors));
             } else {
                 result = Result.success(
@@ -158,10 +160,8 @@ class JsonSerdes<K, C> {
                     result);
         }
 
-        private CommandError deserializeReason(final JsonObject element) {
-            return CommandError.of(
-                    CommandError.Reason.valueOf(element.getAsJsonPrimitive(ERROR_CODE).getAsString()),
-                    element.getAsJsonPrimitive(ERROR_MESSAGE).getAsString());
+        private CommandError deserializeCommandError(final JsonObject element) {
+            return SerializationUtils.deserialize(Base64.getDecoder().decode(element.getAsJsonPrimitive(ERROR).getAsString()));
         }
     }
 

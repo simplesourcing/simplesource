@@ -109,7 +109,7 @@ class UserAvroKStreamTest {
                 id,
                 Sequence.first(),
                 new UserCommand.UpdateName(firstName, lastName))
-                .expectingFailure(NonEmptyList.of(CommandError.Reason.InvalidCommand));
+                .expectingFailure(new CommandError.InvalidCommand());
     }
 
     @Test
@@ -122,7 +122,7 @@ class UserAvroKStreamTest {
                 id,
                 Sequence.position(666L),
                 new UserCommand.InsertUser(firstName, lastName))
-                .expectingFailure(NonEmptyList.of(CommandError.Reason.InvalidReadSequence));
+                .expectingFailure(new CommandError.InvalidReadSequence());
     }
 
     @Test
@@ -141,9 +141,8 @@ class UserAvroKStreamTest {
                         NonEmptyList.of(new UserEvent.UserInserted(firstName, lastName)),
                         Optional.of(new User(firstName, lastName, null))
                 )
-                .thenPublish(update ->
-                        new ValueWithSequence<>(new UserCommand.UpdateName(updatedFirstName, updatedLastName), Sequence.first()))
-                .expectingFailure(NonEmptyList.of(CommandError.Reason.InvalidReadSequence));
+                .thenPublish(update -> new ValueWithSequence<>(new UserCommand.UpdateName(updatedFirstName, updatedLastName), Sequence.first()))
+                .expectingFailure(new CommandError.InvalidReadSequence());
     }
 
     @Test
@@ -154,7 +153,7 @@ class UserAvroKStreamTest {
                 id,
                 Sequence.first(),
                 new UserCommand.UnhandledCommand())
-                .expectingFailure(NonEmptyList.of(CommandError.Reason.InvalidCommand));
+                .expectingFailure(new CommandError.InvalidCommand());
     }
 
     @Test
@@ -165,7 +164,7 @@ class UserAvroKStreamTest {
                 id,
                 Sequence.first(),
                 new UserCommand.BuggyCommand(true, false))
-                .expectingFailure(NonEmptyList.of(CommandError.Reason.CommandHandlerFailed));
+                .expectingFailure(new CommandError.CommandHandlerFailed());
     }
 
     @Test
@@ -177,7 +176,7 @@ class UserAvroKStreamTest {
                         id,
                         Sequence.first(),
                         new UserCommand.BuggyCommand(false, true))
-                        .expectingFailure(NonEmptyList.of(CommandError.Reason.CommandPublishError))
+                        .expectingFailure(new CommandError.CommandPublishError())
         );
     }
 

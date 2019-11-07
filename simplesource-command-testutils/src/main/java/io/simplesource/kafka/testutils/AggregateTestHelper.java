@@ -2,7 +2,6 @@ package io.simplesource.kafka.testutils;
 
 import io.simplesource.api.CommandAPI;
 import io.simplesource.api.CommandError;
-import io.simplesource.api.CommandError.Reason;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Sequence;
 import io.simplesource.data.NonEmptyList;
@@ -149,7 +148,7 @@ public final class AggregateTestHelper<K, C, E, A> {
     }
 
     private static CommandError commandError(final Exception e) {
-        return CommandError.of(Reason.InternalError, e);
+        return new CommandError.InternalError(e.getMessage());
     }
 
 
@@ -182,8 +181,7 @@ public final class AggregateTestHelper<K, C, E, A> {
          *
          * @param failureValidator the failure reasons are provided for validation
          */
-        public void expectingFailure(
-            final Consumer<NonEmptyList<CommandError>> failureValidator) {
+        public void expectingFailure(final Consumer<NonEmptyList<CommandError>> failureValidator) {
             publishExpectingError(key, readSequence, command, failureValidator);
         }
 
@@ -192,11 +190,18 @@ public final class AggregateTestHelper<K, C, E, A> {
          *
          * @param expectedErrorCodes expected error codes contains in each of the generated failure reasons
          */
-        public void expectingFailure(
-            final NonEmptyList<CommandError.Reason> expectedErrorCodes) {
-            final Consumer<NonEmptyList<CommandError>> failureValidator = reasons ->
-                assertEquals(expectedErrorCodes, reasons.map(CommandError::getReason));
+        public void expectingFailure(final NonEmptyList<CommandError> expectedErrorCodes) {
+            final Consumer<NonEmptyList<CommandError>> failureValidator = reasons -> assertEquals(expectedErrorCodes, reasons);
             expectingFailure(failureValidator);
+        }
+
+        /**
+         * Publish the command and assert that the call failed.
+         *
+         * @param expectedErrorCode expected error code contains in each of the generated failure reasons
+         */
+        public void expectingFailure(final CommandError expectedErrorCode) {
+            expectingFailure(NonEmptyList.of(expectedErrorCode));
         }
     }
 

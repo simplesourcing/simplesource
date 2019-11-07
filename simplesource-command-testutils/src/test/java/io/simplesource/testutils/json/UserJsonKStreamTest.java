@@ -109,7 +109,7 @@ class UserJsonKStreamTest {
             id,
             Sequence.first(),
             new UserCommand.UpdateName(firstName, lastName))
-            .expectingFailure(NonEmptyList.of(CommandError.Reason.InvalidCommand));
+            .expectingFailure(new CommandError.InvalidCommand());
     }
 
     @Test
@@ -122,7 +122,7 @@ class UserJsonKStreamTest {
             id,
             Sequence.position(666L),
             new UserCommand.InsertUser(firstName, lastName))
-            .expectingFailure(NonEmptyList.of(CommandError.Reason.InvalidReadSequence));
+            .expectingFailure(new CommandError.InvalidReadSequence());
     }
 
     @Test
@@ -143,7 +143,7 @@ class UserJsonKStreamTest {
             )
             .thenPublish(update ->
                 new ValueWithSequence<>(new UserCommand.UpdateName(updatedFirstName, updatedLastName), Sequence.first()))
-            .expectingFailure(NonEmptyList.of(CommandError.Reason.InvalidReadSequence));
+            .expectingFailure(new CommandError.InvalidReadSequence());
     }
 
     @Test
@@ -154,7 +154,7 @@ class UserJsonKStreamTest {
             id,
             Sequence.first(),
             new UserCommand.UnhandledCommand())
-            .expectingFailure(NonEmptyList.of(CommandError.Reason.InvalidCommand));
+            .expectingFailure(new CommandError.InvalidCommand());
     }
 
     @Test
@@ -165,7 +165,7 @@ class UserJsonKStreamTest {
             id,
             Sequence.first(),
             new UserCommand.BuggyCommand(true, false))
-            .expectingFailure(NonEmptyList.of(CommandError.Reason.CommandHandlerFailed));
+            .expectingFailure(new CommandError.CommandHandlerFailed());
     }
 
     @Test
@@ -177,7 +177,7 @@ class UserJsonKStreamTest {
                 id,
                 Sequence.first(),
                 new UserCommand.BuggyCommand(false, true))
-                .expectingFailure(NonEmptyList.of(CommandError.Reason.InvalidCommand))
+                .expectingFailure(new CommandError.InvalidCommand())
         );
     }
 

@@ -14,14 +14,14 @@ public class TestHandlers {
                 if (command instanceof TestCommand.CreateCommand) {
                     TestCommand.CreateCommand create = (TestCommand.CreateCommand) command;
                     if (currentAggregate.isPresent())
-                        return Result.failure(CommandError.of(CommandError.Reason.InvalidCommand, "Already exists"));
+                        return Result.failure(new CommandError.InvalidCommand("Already exists"));
                     return Result.success(NonEmptyList.of(new TestEvent.Created(create.name())));
                 }
 
                 if (command instanceof TestCommand.UpdateCommand) {
                     TestCommand.UpdateCommand update = (TestCommand.UpdateCommand) command;
                     if (!currentAggregate.isPresent())
-                        return Result.failure(CommandError.of(CommandError.Reason.InvalidCommand, "Doesn't exist"));
+                        return Result.failure(new CommandError.InvalidCommand("Doesn't exist"));
                     return Result.success(NonEmptyList.of(new TestEvent.Updated(update.name())));
                 }
 
@@ -33,7 +33,7 @@ public class TestHandlers {
                             new TestEvent.DoesNothing()));
                 }
 
-                return Result.failure(CommandError.of(CommandError.Reason.InvalidCommand, "Command not supported"));
+                return Result.failure(new CommandError.InvalidCommand("Command not supported"));
             };
 
     static public Aggregator<TestEvent, Optional<TestAggregate>> eventAggregator =

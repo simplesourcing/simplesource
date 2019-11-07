@@ -26,7 +26,7 @@ public final class RequestAPIContext<K, I, RK, R> {
     final Serde<R> responseValueSerde;
     final WindowSpec responseWindowSpec;
     final TopicSpec outputTopicConfig;
-    final BiFunction<I, Throwable, R> errorValue;
+    final BiFunction<I, Exception, R> errorValue;
     final Function<UUID, RK> uuidToResponseId;
     final Function<RK, UUID> responseIdToUuid;
 }

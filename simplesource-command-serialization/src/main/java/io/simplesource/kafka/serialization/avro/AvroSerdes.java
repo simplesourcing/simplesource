@@ -8,15 +8,15 @@ import io.simplesource.data.Sequence;
 import io.simplesource.kafka.model.AggregateUpdate;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
+import lombok.val;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
+import org.apache.avro.util.Utf8;
+import org.apache.commons.lang3.SerializationUtils;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -107,28 +107,19 @@ public final class AvroSerdes {
         private static final String REASON = "reason";
         private static final String ADDITIONAL_REASONS = "additionalReasons";
         private static final String ERROR_MESSAGE = "errorMessage";
-        private static final String ERROR_CODE = "errorCode";
+        private static final String ERROR = "error";
         private static final String WRITE_SEQUENCE = "writeSequence";
         private static final String AGGREGATION = "aggregate_update";
 
         private static GenericRecord fromReason(final Schema schema, final CommandError commandError) {
             return new GenericRecordBuilder(schema)
                     .set(ERROR_MESSAGE, commandError.getMessage())
-                    .set(ERROR_CODE, commandError.getReason().name())
+                    .set(ERROR, Base64.getEncoder().encodeToString( SerializationUtils.serialize(commandError)))
                     .build();
         }
 
         private static CommandError toCommandError(final GenericRecord record) {
-            String errorMessage = String.valueOf(record.get(ERROR_MESSAGE));
-            final String errorCodeStr = String.valueOf(record.get(ERROR_CODE));
-            CommandError.Reason error;
-            try {
-                error = CommandError.Reason.valueOf(errorCodeStr);
-            } catch (final IllegalArgumentException e) {
-                error = CommandError.Reason.UnexpectedErrorCode;
-                errorMessage += "Unexpected errorCode " + errorCodeStr;
-            }
-            return CommandError.of(error, errorMessage);
+            return SerializationUtils.deserialize(Base64.getDecoder().decode(((Utf8)record.get(ERROR)).getBytes()));
         }
 
         private static Schema aggregateUpdateResultSchema(final Schema aggregateSchema) {
@@ -136,7 +127,7 @@ public final class AvroSerdes {
                     .record(aggregateSchema.getName() + "Reason")
                     .fields()
                     .name(ERROR_MESSAGE).type().stringType().noDefault()
-                    .name(ERROR_CODE).type().stringType().noDefault()
+                    .name(ERROR).type().stringType().noDefault()
                     .endRecord();
             final Schema updateFailure = SchemaBuilder
                     .record(aggregateSchema.getName() + "CommandResponseFailure")
@@ -172,7 +163,7 @@ public final class AvroSerdes {
         private static final String REASON = "reason";
         private static final String ADDITIONAL_REASONS = "additionalReasons";
         private static final String ERROR_MESSAGE = "errorMessage";
-        private static final String ERROR_CODE = "errorCode";
+        private static final String ERROR = "error";
         private static final String WRITE_SEQUENCE = "writeSequence";
 
 
@@ -207,7 +198,7 @@ public final class AvroSerdes {
         private static GenericRecord fromReason(final Schema schema, final CommandError commandError) {
             return new GenericRecordBuilder(schema)
                     .set(ERROR_MESSAGE, commandError.getMessage())
-                    .set(ERROR_CODE, commandError.getReason().name())
+                    .set(ERROR, Base64.getEncoder().encodeToString(SerializationUtils.serialize(commandError)))
                     .build();
         }
 
@@ -234,16 +225,7 @@ public final class AvroSerdes {
         }
 
         private static CommandError toCommandError(final GenericRecord record) {
-            String errorMessage = String.valueOf(record.get(ERROR_MESSAGE));
-            final String errorCodeStr = String.valueOf(record.get(ERROR_CODE));
-            CommandError.Reason error;
-            try {
-                error = CommandError.Reason.valueOf(errorCodeStr);
-            } catch (final IllegalArgumentException e) {
-                error = CommandError.Reason.UnexpectedErrorCode;
-                errorMessage += "Unexpected errorCode " + errorCodeStr;
-            }
-            return CommandError.of(error, errorMessage);
+            return SerializationUtils.deserialize(Base64.getDecoder().decode(((Utf8)record.get(ERROR)).getBytes()));
         }
 
         private static Schema commandResponseSchema(final GenericRecord key) {
@@ -251,10 +233,10 @@ public final class AvroSerdes {
                     .record("Reason")
                     .fields()
                     .name(ERROR_MESSAGE).type().stringType().noDefault()
-                    .name(ERROR_CODE).type().stringType().noDefault()
+                    .name(ERROR).type().stringType().noDefault()
                     .endRecord();
             final Schema updateFailure = SchemaBuilder
-                    .record( "CommandResponseFailure")
+                    .record("CommandResponseFailure")
                     .fields()
                     .name(REASON).type(reasonSchema).noDefault()
                     .name(ADDITIONAL_REASONS).type().array().items(reasonSchema).noDefault()

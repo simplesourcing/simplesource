@@ -2,7 +2,6 @@ package io.simplesource.kafka.serialization.json;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import io.simplesource.api.CommandError.Reason;
 import io.simplesource.api.CommandError;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Sequence;
@@ -12,6 +11,7 @@ import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.serialization.util.GenericMapper;
 import io.simplesource.kafka.model.*;
 import io.simplesource.kafka.serialization.util.GenericSerde;
+import org.apache.commons.lang3.SerializationUtils;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 
@@ -44,7 +44,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
             final GenericMapper<C, JsonElement> commandMapper,
             final GenericMapper<E, JsonElement> eventMapper,
             final GenericMapper<A, JsonElement> aggregateMapper
-            ) {
+    ) {
         super(keyMapper, commandMapper);
         this.aggregateMapper = aggregateMapper;
         this.eventMapper = eventMapper;
@@ -238,7 +238,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
         private static final String REASON = "reason";
         private static final String ADDITIONAL_REASONS = "additionalReasons";
         private static final String ERROR_MESSAGE = "errorMessage";
-        private static final String ERROR_CODE = "errorCode";
+        private static final String ERROR = "error";
         private static final String WRITE_SEQUENCE = "writeSequence";
 
         @Override
@@ -272,7 +272,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
         private JsonElement serializeReason(final CommandError commandError) {
             final JsonObject wrapper = new JsonObject();
             wrapper.addProperty(ERROR_MESSAGE, commandError.getMessage());
-            wrapper.addProperty(ERROR_CODE, commandError.getReason().name());
+            wrapper.addProperty(ERROR, Base64.getEncoder().encodeToString(SerializationUtils.serialize(commandError)));
             return wrapper;
         }
 
@@ -305,9 +305,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
         }
 
         private CommandError deserializeReason(final JsonObject element) {
-            return CommandError.of(
-                    Reason.valueOf(element.getAsJsonPrimitive(ERROR_CODE).getAsString()),
-                    element.getAsJsonPrimitive(ERROR_MESSAGE).getAsString());
+            return SerializationUtils.deserialize(Base64.getDecoder().decode(element.getAsJsonPrimitive(ERROR).getAsString()));
         }
     }
 }

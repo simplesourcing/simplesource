@@ -65,7 +65,7 @@ class EventSourcedTopologyTest {
         ctxDriver.verifyCommandResponse(key, r -> {
             assertThat(r.sequenceResult().isSuccess()).isEqualTo(false);
             assertThat(r.sequenceResult().failureReasons()).isEqualTo(
-                    Optional.of(NonEmptyList.of(CommandError.of(CommandError.Reason.InvalidReadSequence, "Command received with read sequence 1 when expecting 0"))));
+                    Optional.of(NonEmptyList.of(new CommandError.InvalidReadSequence("Command received with read sequence 1 when expecting 0"))));
         });
         ctxDriver.verifyNoEvent();
         ctxDriver.verifyNoAggregateUpdate();
@@ -85,7 +85,7 @@ class EventSourcedTopologyTest {
         ctxDriver.verifyCommandResponse(key, r -> {
             assertThat(r.sequenceResult().isSuccess()).isEqualTo(false);
             assertThat(r.sequenceResult().failureReasons()).isEqualTo(
-                    Optional.of(NonEmptyList.of(CommandError.of(CommandError.Reason.InvalidCommand, "Command not supported"))));
+                    Optional.of(NonEmptyList.of(new CommandError.InvalidCommand("Command not supported"))));
         });
         ctxDriver.verifyNoEvent();
         ctxDriver.verifyNoAggregateUpdate();

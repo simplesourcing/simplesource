@@ -108,7 +108,7 @@ public class JsonAggregateSerdeTests {
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),
-                Result.failure(CommandError.of(CommandError.Reason.InvalidReadSequence, "Invalid sequence")));
+                Result.failure(new CommandError.InvalidReadSequence("Invalid sequence")));
 
         byte[] serialised = serdes.commandResponse().serializer().serialize(topic, commandResponse);
         CommandResponse deserialised = serdes.commandResponse().deserializer().deserialize(topic, serialised);

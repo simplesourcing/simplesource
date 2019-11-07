@@ -54,7 +54,7 @@ final class CommandRequestTransformer {
         } catch (final Exception e) {
             logger.warn("[{} aggregate] Failed to apply command handler on key {} to request {}",
                     ctx.aggregateSpec().aggregateName(), readOnlyKey, request, e);
-            commandResult = failure(CommandError.of(CommandError.Reason.CommandHandlerFailed, e));
+            commandResult = failure(new CommandError.CommandHandlerFailed(e));
         }
         final Result<CommandError, NonEmptyList<ValueWithSequence<E>>> eventsResult = commandResult.map(
                 eventList -> {

@@ -1,69 +1,168 @@
 package io.simplesource.api;
 
-import io.simplesource.data.Error;
-import lombok.Value;
+import lombok.EqualsAndHashCode;
 
 /**
- * A CommandError explains failures. They can be constructed from the reason type,
- * with either a {@link String} or a {@link Throwable} for more context.
+ * A CommandError explains failures.
  */
-@Value
-public class CommandError {
-    /**
-     * Construct a {@link CommandError} from a {@link Throwable}.
-     *
-     * @param reason the reason value
-     * @param throwable for more context
-     * @return the constructed {@link CommandError}
-     */
-    public static CommandError of(final Reason reason, final Throwable throwable) {
-        return new CommandError(Error.of(reason, throwable));
+@EqualsAndHashCode
+public abstract class CommandError extends RuntimeException {
+
+    protected CommandError() {
+        super();
     }
 
-    /**
-     * Construct a {@link CommandError} from a {@link Throwable}.
-     *
-     * @param reason the reason value
-     * @param msg for more context
-     * @return the constructed {@link CommandError}
-     */
-    public static CommandError of(final Reason reason, final String msg) {
-        return new CommandError(Error.of(reason, msg));
+    protected CommandError(String message) {
+        super(message);
     }
 
-    /**
-     * The reason value accessor.
-     *
-     * @return the reason
-     */
-    public Reason getReason() {
-        return error.getReason();
+    protected CommandError(Exception exception) {
+        super(exception);
     }
 
-    /**
-     * The error message accessor
-     *
-     * @return the error message
-     */
-    public String getMessage() {
-        return error.getMessage();
+    public static class InvalidCommand extends CommandError {
+        private static final long serialVersionUID = -1790183317621500950L;
+
+        public InvalidCommand() {
+            super();
+        }
+
+        public InvalidCommand(String message) {
+            super(message);
+        }
+
+        public InvalidCommand(Exception exception) {
+            super(exception);
+        }
     }
 
-    private final Error<Reason> error;
+    public static class InvalidReadSequence extends CommandError {
+        private static final long serialVersionUID = -2496767690062272814L;
 
-    private CommandError(final Error<Reason> error) {
-        this.error = error;
+        public InvalidReadSequence() {
+            super();
+        }
+
+        public InvalidReadSequence(String message) {
+            super(message);
+        }
+
+        public InvalidReadSequence(Exception exception) {
+            super(exception);
+        }
     }
 
-    public enum Reason {
-        InvalidCommand,
-        InvalidReadSequence,
-        CommandHandlerFailed,
-        AggregateNotFound,
-        Timeout,
-        RemoteLookupFailed,
-        CommandPublishError,
-        InternalError,
-        UnexpectedErrorCode
+    public static class CommandHandlerFailed extends CommandError {
+        private static final long serialVersionUID = 5243263599400133549L;
+
+        public CommandHandlerFailed() {
+            super();
+        }
+
+        public CommandHandlerFailed(String message) {
+            super(message);
+        }
+
+        public CommandHandlerFailed(Exception exception) {
+            super(exception);
+        }
     }
+
+    public static class AggregateNotFound extends CommandError {
+        private static final long serialVersionUID = -8322425056292085507L;
+
+        public AggregateNotFound() {
+            super();
+        }
+
+        public AggregateNotFound(String message) {
+            super(message);
+        }
+
+        public AggregateNotFound(Exception exception) {
+            super(exception);
+        }
+    }
+
+    public static class Timeout extends CommandError {
+        private static final long serialVersionUID = 2571850763360665431L;
+
+        public Timeout() {
+            super();
+        }
+
+        public Timeout(String message) {
+            super(message);
+        }
+
+        public Timeout(Exception exception) {
+            super(exception);
+        }
+    }
+
+    public static class RemoteLookupFailed extends CommandError {
+        private static final long serialVersionUID = 5877483197829555210L;
+
+        public RemoteLookupFailed() {
+            super();
+        }
+
+        public RemoteLookupFailed(String message) {
+            super(message);
+        }
+
+        public RemoteLookupFailed(Exception exception) {
+            super(exception);
+        }
+    }
+
+    public static class CommandPublishError extends CommandError {
+        private static final long serialVersionUID = -6900063712198941295L;
+
+        public CommandPublishError() {
+            super();
+        }
+
+        public CommandPublishError(String message) {
+            super(message);
+        }
+
+        public CommandPublishError(Exception exception) {
+            super(exception);
+        }
+    }
+
+    public static class InternalError extends CommandError {
+        private static final long serialVersionUID = -6091546263840539333L;
+
+        public InternalError() {
+            super();
+        }
+
+        public InternalError(String message) {
+            super(message);
+        }
+
+        public InternalError(Exception exception) {
+            super(exception);
+        }
+    }
+
+    public static class UnhandledCommandType extends CommandError {
+        private static final long serialVersionUID = -1977890441958111949L;
+
+        public UnhandledCommandType() {
+            super();
+        }
+
+        public UnhandledCommandType(String message) {
+            super(message);
+        }
+
+        public UnhandledCommandType(Exception exception) {
+            super(exception);
+        }
+    }
+
 }
+
