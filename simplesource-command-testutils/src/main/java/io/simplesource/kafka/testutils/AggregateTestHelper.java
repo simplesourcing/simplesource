@@ -148,7 +148,7 @@ public final class AggregateTestHelper<K, C, E, A> {
     }
 
     private static CommandError commandError(final Exception e) {
-        return new CommandError.InternalError(e.getMessage());
+        return new CommandError.InternalError(e);
     }
 
 
