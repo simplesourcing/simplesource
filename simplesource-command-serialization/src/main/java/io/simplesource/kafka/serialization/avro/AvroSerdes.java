@@ -114,12 +114,12 @@ public final class AvroSerdes {
         private static GenericRecord fromReason(final Schema schema, final CommandError commandError) {
             return new GenericRecordBuilder(schema)
                     .set(ERROR_MESSAGE, commandError.getMessage())
-                    .set(ERROR, Base64.getEncoder().encodeToString( SerializationUtils.serialize(commandError)))
+                    .set(ERROR, Base64.getEncoder().encodeToString(SerializationUtils.serialize(commandError)))
                     .build();
         }
 
         private static CommandError toCommandError(final GenericRecord record) {
-            return SerializationUtils.deserialize(Base64.getDecoder().decode(((Utf8)record.get(ERROR)).getBytes()));
+            return SerializationUtils.deserialize(Base64.getDecoder().decode(((Utf8) record.get(ERROR)).getBytes()));
         }
 
         private static Schema aggregateUpdateResultSchema(final Schema aggregateSchema) {
@@ -225,7 +225,7 @@ public final class AvroSerdes {
         }
 
         private static CommandError toCommandError(final GenericRecord record) {
-            return SerializationUtils.deserialize(Base64.getDecoder().decode(((Utf8)record.get(ERROR)).getBytes()));
+            return SerializationUtils.deserialize(Base64.getDecoder().decode(((Utf8) record.get(ERROR)).getBytes()));
         }
 
         private static Schema commandResponseSchema(final GenericRecord key) {
