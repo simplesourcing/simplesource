@@ -238,6 +238,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
         private static final String REASON = "reason";
         private static final String ADDITIONAL_REASONS = "additionalReasons";
         private static final String ERROR_MESSAGE = "errorMessage";
+        private static final String ERROR_CLASS = "errorClass";
         private static final String ERROR = "error";
         private static final String WRITE_SEQUENCE = "writeSequence";
 
@@ -272,6 +273,7 @@ public final class JsonAggregateSerdes<K, C, E, A> extends JsonSerdes<K, C> impl
         private JsonElement serializeReason(final CommandError commandError) {
             final JsonObject wrapper = new JsonObject();
             wrapper.addProperty(ERROR_MESSAGE, commandError.getMessage());
+            wrapper.addProperty(ERROR_CLASS, commandError.getClass().getCanonicalName());
             wrapper.addProperty(ERROR, Base64.getEncoder().encodeToString(SerializationUtils.serialize(commandError)));
             return wrapper;
         }

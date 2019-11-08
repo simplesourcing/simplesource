@@ -107,6 +107,7 @@ public final class AvroSerdes {
         private static final String REASON = "reason";
         private static final String ADDITIONAL_REASONS = "additionalReasons";
         private static final String ERROR_MESSAGE = "errorMessage";
+        private static final String ERROR_CLASS = "errorClass";
         private static final String ERROR = "error";
         private static final String WRITE_SEQUENCE = "writeSequence";
         private static final String AGGREGATION = "aggregate_update";
@@ -114,6 +115,7 @@ public final class AvroSerdes {
         private static GenericRecord fromReason(final Schema schema, final CommandError commandError) {
             return new GenericRecordBuilder(schema)
                     .set(ERROR_MESSAGE, commandError.getMessage())
+                    .set(ERROR_CLASS, commandError.getClass().getCanonicalName())
                     .set(ERROR, Base64.getEncoder().encodeToString(SerializationUtils.serialize(commandError)))
                     .build();
         }
@@ -127,6 +129,7 @@ public final class AvroSerdes {
                     .record(aggregateSchema.getName() + "Reason")
                     .fields()
                     .name(ERROR_MESSAGE).type().stringType().noDefault()
+                    .name(ERROR_CLASS).type().stringType().noDefault()
                     .name(ERROR).type().stringType().noDefault()
                     .endRecord();
             final Schema updateFailure = SchemaBuilder
@@ -163,6 +166,7 @@ public final class AvroSerdes {
         private static final String REASON = "reason";
         private static final String ADDITIONAL_REASONS = "additionalReasons";
         private static final String ERROR_MESSAGE = "errorMessage";
+        private static final String ERROR_CLASS = "errorClass";
         private static final String ERROR = "error";
         private static final String WRITE_SEQUENCE = "writeSequence";
 
@@ -198,6 +202,7 @@ public final class AvroSerdes {
         private static GenericRecord fromReason(final Schema schema, final CommandError commandError) {
             return new GenericRecordBuilder(schema)
                     .set(ERROR_MESSAGE, commandError.getMessage())
+                    .set(ERROR_CLASS, commandError.getClass().getCanonicalName())
                     .set(ERROR, Base64.getEncoder().encodeToString(SerializationUtils.serialize(commandError)))
                     .build();
         }
@@ -233,6 +238,7 @@ public final class AvroSerdes {
                     .record("Reason")
                     .fields()
                     .name(ERROR_MESSAGE).type().stringType().noDefault()
+                    .name(ERROR_CLASS).type().stringType().noDefault()
                     .name(ERROR).type().stringType().noDefault()
                     .endRecord();
             final Schema updateFailure = SchemaBuilder
