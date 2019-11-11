@@ -67,7 +67,6 @@ public final class AvroSerdes {
                     .name(COMMAND).type(command.getSchema()).noDefault()
                     .endRecord();
         }
-
     }
 
     static class CommandResponseKeyAvroHelper {

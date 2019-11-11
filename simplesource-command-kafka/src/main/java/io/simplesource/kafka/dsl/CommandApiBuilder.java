@@ -23,7 +23,7 @@ public final class CommandApiBuilder<K, C> {
     private TopicSpec outputTopicSpec;
     private WindowSpec commandResponseStoreSpec;
 
-    public static <K, C, E, A> CommandApiBuilder<K, C> newBuilder() {
+    public static <K, C> CommandApiBuilder<K, C> newBuilder() {
         return new CommandApiBuilder<>();
     }
 
