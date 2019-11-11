@@ -33,35 +33,24 @@ public final class EventSourcedClient {
         return this;
     }
 
-    public <K, C> EventSourcedClient addCommands(
-            final Consumer<CommandApiBuilder<K, C>> buildSteps) {
-        CommandApiBuilder<K, C> builder = CommandApiBuilder.newBuilder();
-        buildSteps.accept(builder);
-        final CommandSpec<K, C> spec = builder.build();
-        commandConfigMap.put(spec.aggregateName(), spec);
-        return this;
-    }
-
-    public <K, C> EventSourcedClient addCommands(final CommandSpec<K, C> spec) {
-        commandConfigMap.put(spec.aggregateName(), spec);
-        return this;
-    }
-
     public EventSourcedClient withScheduler(final ScheduledExecutorService scheduler) {
         this.scheduler = scheduler;
         return this;
     }
 
-    CommandAPI<?, ?> createCommandApi(
-            final CommandSpec<?, ?> commandSpec
-    ) {
+    CommandAPI<?, ?> createCommandApi(final Consumer<CommandSpecBuilder<?, ?>> buildSteps) {
+        CommandSpecBuilder<?, ?> builder = CommandSpecBuilder.newBuilder();
+        buildSteps.accept(builder);
+        final CommandSpec<?, ?> commandSpec = builder.build();
+        return createCommandApi(commandSpec);
+    }
+
+    CommandAPI<?, ?> createCommandApi(final CommandSpec<?, ?> commandSpec) {
         requireNonNull(scheduler, "Scheduler has not been defined. Please define with with 'withScheduler' method.");
-        return
-                    new KafkaCommandAPI(
-                            commandSpec,
-                            kafkaConfig,
-                            scheduler);
+
+        return new KafkaCommandAPI(
+                        commandSpec,
+                        kafkaConfig,
+                        scheduler);
     }
 }
-
-
