@@ -1,6 +1,7 @@
 package io.simplesource.kafka.dsl;
 
-import io.simplesource.api.CommandAPISet;
+import io.simplesource.api.CommandAPI;
+import io.simplesource.kafka.internal.client.KafkaCommandAPI;
 import io.simplesource.kafka.internal.streams.EventSourcedStreamsApp;
 import io.simplesource.kafka.internal.util.NamedThreadFactory;
 import io.simplesource.kafka.spec.AggregateSetSpec;
@@ -14,7 +15,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
@@ -70,21 +70,21 @@ public final class EventSourcedApp {
     }
 
     /**
-     * Creates a CommandAPISet instance
+     * Creates a CommandAPI instance
      *
-     * Used for directly exposing a CommandAPISet from within a Simple Sourcing application
-     * If creating a CommandAPISet from an external application, rather use the CommandAPISetBuilder DSL
+     * Used for directly exposing a CommandAPI from within a Simple Sourcing application
+     * If creating a CommandAPI from an external application, rather use the CommandAPIBuilder DSL
      *
-     * @return a CommandAPISet
+     * @return a CommandAPI
      */
-    public CommandAPISet getCommandAPISet(String clientId) {
+    public CommandAPI createCommandAPI(String clientId, String aggregateName) {
         requireNonNull(aggregateSetSpec, "App has not been started. start() must be called before getCommandAPISet");
         requireNonNull(scheduler, "Scheduler has not been defined. Please define with with 'withScheduler' method.");
-        Stream<CommandSpec<?, ?>> commandSpecs = aggregateSetSpec
-                .aggregateConfigMap()
-                .values()
-                .stream()
-                .map(aggregateSpec -> SpecUtils.getCommandSpec(aggregateSpec, clientId));
+        AggregateSpec<?, ?, ?, ?> aggregateSpec = aggregateSetSpec.aggregateConfigMap().get(aggregateName);
+        if (aggregateSpec == null) {
 
-        return EventSourcedClient.getCommandAPISet(commandSpecs, aggregateSetSpec.kafkaConfig(), scheduler);
-    }}
+        }
+        CommandSpec<?, ?> commandSpec = SpecUtils.getCommandSpec(aggregateSpec, clientId);
+        return new KafkaCommandAPI(commandSpec, kafkaConfig, scheduler);
+    }
+}
