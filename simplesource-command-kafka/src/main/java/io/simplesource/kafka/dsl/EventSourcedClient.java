@@ -38,8 +38,8 @@ public final class EventSourcedClient {
         return this;
     }
 
-    CommandAPI<?, ?> createCommandApi(final Consumer<CommandSpecBuilder<?, ?>> buildSteps) {
-        CommandSpecBuilder<?, ?> builder = CommandSpecBuilder.newBuilder();
+    CommandAPI<?, ?> createCommandApi(final Consumer<CommandAPIBuilder<?, ?>> buildSteps) {
+        CommandAPIBuilder<?, ?> builder = CommandAPIBuilder.newBuilder();
         buildSteps.accept(builder);
         final CommandSpec<?, ?> commandSpec = builder.build();
         return createCommandApi(commandSpec);
