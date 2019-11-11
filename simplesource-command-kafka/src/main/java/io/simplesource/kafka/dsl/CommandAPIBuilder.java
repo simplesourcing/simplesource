@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 import static java.util.Objects.requireNonNull;
 
-public final class CommandSpecBuilder<K, C> {
+public final class CommandAPIBuilder<K, C> {
     private String name;
     private String clientId;
     private ResourceNamingStrategy resourceNamingStrategy;
@@ -23,46 +23,46 @@ public final class CommandSpecBuilder<K, C> {
     private TopicSpec outputTopicSpec;
     private WindowSpec commandResponseStoreSpec;
 
-    public static <K, C> CommandSpecBuilder<K, C> newBuilder() {
-        return new CommandSpecBuilder<>();
+    public static <K, C> CommandAPIBuilder<K, C> newBuilder() {
+        return new CommandAPIBuilder<>();
     }
 
-    private CommandSpecBuilder() {
+    private CommandAPIBuilder() {
         outputTopicSpec = defaultTopicConfig(1, 1);
         commandResponseStoreSpec = new WindowSpec(TimeUnit.DAYS.toSeconds(1L));
     }
 
-    public CommandSpecBuilder<K, C> withName(final String name) {
+    public CommandAPIBuilder<K, C> withName(final String name) {
         this.name = name;
         return this;
     }
 
-    public CommandSpecBuilder<K, C> withClientId(final String clientId) {
+    public CommandAPIBuilder<K, C> withClientId(final String clientId) {
         this.clientId = clientId;
         return this;
     }
 
-    public CommandSpecBuilder<K, C> withResourceNamingStrategy(final ResourceNamingStrategy resourceNamingStrategy) {
+    public CommandAPIBuilder<K, C> withResourceNamingStrategy(final ResourceNamingStrategy resourceNamingStrategy) {
         this.resourceNamingStrategy = resourceNamingStrategy;
         return this;
     }
 
-    public CommandSpecBuilder<K, C> withSerdes(final CommandSerdes<K, C> commandSerdes) {
+    public CommandAPIBuilder<K, C> withSerdes(final CommandSerdes<K, C> commandSerdes) {
         this.commandSerdes = commandSerdes;
         return this;
     }
 
-    public CommandSpecBuilder<K, C> withTopicSpec(int partitions, int replication) {
+    public CommandAPIBuilder<K, C> withTopicSpec(int partitions, int replication) {
         this.outputTopicSpec = defaultTopicConfig(partitions, replication);
         return this;
     }
 
-    public CommandSpecBuilder<K, C> withTopicSpec(final TopicSpec topicSpec) {
+    public CommandAPIBuilder<K, C> withTopicSpec(final TopicSpec topicSpec) {
         this.outputTopicSpec = topicSpec;
         return this;
     }
 
-    public CommandSpecBuilder<K, C> withCommandResponseRetention(final long retentionInSeconds) {
+    public CommandAPIBuilder<K, C> withCommandResponseRetention(final long retentionInSeconds) {
         commandResponseStoreSpec = new WindowSpec(retentionInSeconds);
         return this;
     }
