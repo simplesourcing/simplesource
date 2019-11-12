@@ -1,7 +1,8 @@
-package io.simplesource.kafka.dsl;
+package io.simplesource.kafka.client;
 
 
 import io.simplesource.api.CommandAPI;
+import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.internal.client.KafkaCommandAPI;
 import io.simplesource.kafka.internal.util.NamedThreadFactory;
 import io.simplesource.kafka.spec.CommandSpec;

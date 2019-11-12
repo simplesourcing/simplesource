@@ -1,4 +1,4 @@
-package io.simplesource.kafka.dsl;
+package io.simplesource.kafka.client;
 
 import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.api.ResourceNamingStrategy;
