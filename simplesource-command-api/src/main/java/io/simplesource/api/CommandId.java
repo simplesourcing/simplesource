@@ -11,4 +11,6 @@ public final class CommandId {
     public static CommandId random() {
         return new CommandId(UUID.randomUUID());
     }
+
+    public static CommandId fromString(String uuidString) { return new CommandId(UUID.fromString(uuidString)); }
 }

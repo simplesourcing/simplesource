@@ -63,7 +63,7 @@ public class JsonAggregateSerdeTests {
     void commandRequest() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = new CommandRequest<>(
+        CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = CommandRequest.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),
@@ -89,7 +89,7 @@ public class JsonAggregateSerdeTests {
     void commandResponseSuccess() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandResponse commandResponse = new CommandResponse(
+        CommandResponse commandResponse = CommandResponse.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),
@@ -104,7 +104,7 @@ public class JsonAggregateSerdeTests {
     void commandResponseFailure() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandResponse commandResponse = new CommandResponse(
+        CommandResponse commandResponse = CommandResponse.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),

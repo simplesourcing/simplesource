@@ -50,7 +50,7 @@ class JsonSerdes<K, C> {
                 final JsonElement jsonElement, final Type type, final JsonDeserializationContext jsonDeserializationContext
         ) throws JsonParseException {
             final JsonObject wrapper = jsonElement.getAsJsonObject();
-            return new CommandRequest<>(
+            return CommandRequest.of(
                     CommandId.of(UUID.fromString(wrapper.getAsJsonPrimitive(COMMAND_ID).getAsString())),
                     keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
                     Sequence.position(wrapper.getAsJsonPrimitive(READ_SEQUENCE).getAsLong()),
@@ -151,7 +151,7 @@ class JsonSerdes<K, C> {
                         )
                 );
             }
-            return new CommandResponse<>(
+            return CommandResponse.of(
                     commandId,
                     keyMapper.fromGeneric(wrapper.get(AGGREGATE_KEY)),
                     readSequence,

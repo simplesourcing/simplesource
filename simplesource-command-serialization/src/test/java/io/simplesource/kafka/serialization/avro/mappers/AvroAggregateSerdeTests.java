@@ -63,7 +63,7 @@ public class AvroAggregateSerdeTests {
     void commandRequest() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = new CommandRequest<>(
+        CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = CommandRequest.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),
@@ -88,7 +88,7 @@ public class AvroAggregateSerdeTests {
     @Test
     void commandResponseSuccess() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
-        CommandResponse commandResponse = new CommandResponse(
+        CommandResponse commandResponse = CommandResponse.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),
@@ -102,7 +102,7 @@ public class AvroAggregateSerdeTests {
     @Test
     void commandResponseFailure() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
-        CommandResponse commandResponse = new CommandResponse(
+        CommandResponse commandResponse = CommandResponse.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),

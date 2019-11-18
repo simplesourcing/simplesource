@@ -46,12 +46,6 @@
             <scope>test</scope>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.junit.platform</groupId>-->
-<!--            <artifactId>junit-platform-engine</artifactId>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
@@ -79,6 +73,7 @@
                         </goals>
 
                         <configuration>
+                            <sourceDirectory>${project.basedir}/src/main/avro</sourceDirectory>
                             <testSourceDirectory>${project.basedir}/src/test/resources</testSourceDirectory>
                             <stringType>String</stringType>
                             <enableDecimalLogicalType>true</enableDecimalLogicalType>

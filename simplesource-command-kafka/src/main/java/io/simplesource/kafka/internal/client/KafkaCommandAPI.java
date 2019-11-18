@@ -60,7 +60,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
 
     @Override
     public FutureResult<CommandError, CommandId> publishCommand(final Request<K, C> request) {
-        final CommandRequest<K, C> commandRequest = new CommandRequest<>(
+        final CommandRequest<K, C> commandRequest = CommandRequest.of(
                 request.commandId(), request.key(), request.readSequence(), request.command());
 
         FutureResult<Exception, RequestPublisher.PublishResult> publishResult = requestAPI.publishRequest(request.key(), request.commandId(), commandRequest);
@@ -106,7 +106,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 .uuidToResponseId(CommandId::of)
                 .responseIdToUuid(CommandId::id)
                 .errorValue((i, e) ->
-                        new CommandResponse(
+                        CommandResponse.of(
                                 i.commandId(),
                                 i.aggregateKey(),
                                 i.readSequence(),

@@ -10,7 +10,7 @@ import java.util.function.Function;
  * @param <K> the aggregate key
  * @param <C> all commands for this aggregate
  */
-@Value
+@Value(staticConstructor = "of")
 public final class CommandRequest<K, C> {
     private CommandId commandId;
     private final K aggregateKey;

@@ -44,7 +44,7 @@ class JsonCommandSerdeTests {
     void commandRequest() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = new CommandRequest<>(
+        CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = CommandRequest.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),
@@ -59,7 +59,7 @@ class JsonCommandSerdeTests {
     void commandResponseSuccess() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandResponse commandResponse = new CommandResponse<>(
+        CommandResponse commandResponse = CommandResponse.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),
@@ -74,7 +74,7 @@ class JsonCommandSerdeTests {
     void commandResponseFailure() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandResponse commandResponse = new CommandResponse<>(
+        CommandResponse commandResponse = CommandResponse.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),

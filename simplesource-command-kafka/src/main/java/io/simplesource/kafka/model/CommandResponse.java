@@ -9,8 +9,7 @@ import lombok.Value;
 
 import java.util.function.Function;
 
-@Value
-@AllArgsConstructor
+@Value(staticConstructor = "of")
 public final class CommandResponse<K> {
     private CommandId commandId;
     private final K aggregateKey;

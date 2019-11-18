@@ -54,7 +54,7 @@ public final class AvroSerdes {
             final Sequence readSequence = Sequence.position((Long) record.get(READ_SEQUENCE));
             final CommandId commandId = CommandId.of(UUID.fromString(String.valueOf(record.get(COMMAND_ID))));
             final GenericRecord command = (GenericRecord) record.get(COMMAND);
-            return new CommandRequest<>(commandId, aggregateKey, readSequence, command);
+            return CommandRequest.of(commandId, aggregateKey, readSequence, command);
         }
 
         private static Schema commandRequestSchema(final GenericRecord command, final GenericRecord key) {
@@ -229,7 +229,7 @@ public final class AvroSerdes {
                 result = Result.failure(new NonEmptyList<>(commandError, additionalCommandErrors));
             }
 
-            return new CommandResponse<>(CommandId.of(commandId), aggregateKey, readSequence, result);
+            return CommandResponse.of(CommandId.of(commandId), aggregateKey, readSequence, result);
         }
 
         private static CommandError toCommandError(final GenericRecord record) {
