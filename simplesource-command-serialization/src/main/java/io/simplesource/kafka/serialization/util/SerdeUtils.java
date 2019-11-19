@@ -2,6 +2,7 @@ package io.simplesource.kafka.serialization.util;
 
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.util.Map;
@@ -49,27 +50,7 @@ public class SerdeUtils {
             }
         };
 
-        return new Serde<V>() {
-            @Override
-            public void configure(Map<String, ?> configs, boolean isKey) {
-                sSerde.configure(configs, isKey);
-            }
-
-            @Override
-            public void close() {
-                sSerde.close();
-            }
-
-            @Override
-            public Serializer<V> serializer() {
-                return serializer;
-            }
-
-            @Override
-            public Deserializer<V> deserializer() {
-                return deserializer;
-            }
-        };
+        return Serdes.serdeFrom(serializer, deserializer);
     }
 
 

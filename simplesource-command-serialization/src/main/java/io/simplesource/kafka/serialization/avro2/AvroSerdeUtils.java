@@ -1,11 +1,11 @@
-package io.simplesource.kafka.serialization.avrow;
+package io.simplesource.kafka.serialization.avro2;
 
 import org.apache.kafka.common.serialization.Serde;
 
 import java.nio.ByteBuffer;
 
 final class AvroSerdeUtils {
-    static String PAYLOAD_TOPIC_SUFFIX = "payload";
+    private static String PAYLOAD_TOPIC_SUFFIX = "payload";
     static String PAYLOAD_TYPE_KEY = "aggregate-key";
     static String PAYLOAD_TYPE_COMMAND = "command";
     static String PAYLOAD_TYPE_EVENT = "event";

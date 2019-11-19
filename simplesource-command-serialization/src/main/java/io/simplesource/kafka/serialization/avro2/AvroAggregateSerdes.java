@@ -1,4 +1,4 @@
-package io.simplesource.kafka.serialization.avrow;
+package io.simplesource.kafka.serialization.avro2;
 
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
@@ -13,8 +13,8 @@ import org.apache.kafka.common.serialization.Serde;
 
 import java.nio.ByteBuffer;
 
-import static io.simplesource.kafka.serialization.avrow.AvroSerdeUtils.PAYLOAD_TYPE_AGGREGATE;
-import static io.simplesource.kafka.serialization.avrow.AvroSerdeUtils.PAYLOAD_TYPE_EVENT;
+import static io.simplesource.kafka.serialization.avro2.AvroSerdeUtils.PAYLOAD_TYPE_AGGREGATE;
+import static io.simplesource.kafka.serialization.avro2.AvroSerdeUtils.PAYLOAD_TYPE_EVENT;
 
 final class AvroAggregateSerdes<K, C, E, A> extends AvroCommandSerdes<K, C> implements AggregateSerdes<K, C, E, A> {
 

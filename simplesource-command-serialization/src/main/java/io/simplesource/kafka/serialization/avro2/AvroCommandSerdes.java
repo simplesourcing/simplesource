@@ -1,4 +1,4 @@
-package io.simplesource.kafka.serialization.avrow;
+package io.simplesource.kafka.serialization.avro2;
 
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
@@ -7,18 +7,15 @@ import io.simplesource.api.CommandId;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
-import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.api.CommandSerdes;
-import io.simplesource.kafka.model.AggregateUpdate;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
-import io.simplesource.kafka.model.ValueWithSequence;
 import io.simplesource.kafka.serialization.util.SerdeUtils;
 import io.simplesource.serialization.avro.generated.*;
 import org.apache.avro.generic.GenericArray;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
-import static io.simplesource.kafka.serialization.avrow.AvroSerdeUtils.*;
+import static io.simplesource.kafka.serialization.avro2.AvroSerdeUtils.*;
 
 import java.nio.ByteBuffer;
 import java.util.List;

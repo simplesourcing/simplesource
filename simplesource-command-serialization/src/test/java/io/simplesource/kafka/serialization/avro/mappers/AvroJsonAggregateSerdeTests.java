@@ -9,31 +9,36 @@ import io.simplesource.kafka.model.AggregateUpdate;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
 import io.simplesource.kafka.model.ValueWithSequence;
-import io.simplesource.kafka.serialization.avro.generated.*;
-import io.simplesource.kafka.serialization.avrow.AvroSerdes;
+import io.simplesource.kafka.serialization.avro.mappers.domain.*;
+import io.simplesource.kafka.serialization.avro2.AvroSerdes;
+import io.simplesource.kafka.serialization.util.SerdeUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class AvrowAggregateSerdeTests {
+class AvroJsonAggregateSerdeTests {
     private static final String topic = "topic";
-    private AggregateSerdes<UserAccountId, AccountCommand, AccountEvent, UserAccount> serdes;
+    private AggregateSerdes<UserAccountDomainKey, UserAccountDomainCommand, UserAccountDomainEvent, Optional<UserAccountDomain>> serdes;
 
     @BeforeEach
     void setup() {
-        serdes = AvroSerdes.Specific.aggregateSerdes(
+        serdes = AvroSerdes.aggregateSerdes(
+                GsonSerde.of(UserAccountDomainKey.class),
+                GsonADTSerde.of(UserAccountDomainCommand.class),
+                GsonADTSerde.of(UserAccountDomainEvent.class),
+                SerdeUtils.iMap(GsonSerde.of(UserAccountDomain.class), Optional::get, Optional::ofNullable),
                 "http://localhost:8081",
                 true);
     }
 
     @Test
     void aggregateKey() {
-        UserAccountId aggKey = new UserAccountId("userId");
+        UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
         byte[] serialised = serdes.aggregateKey().serializer().serialize(topic, aggKey);
-        UserAccountId deserialised = serdes.aggregateKey().deserializer().deserialize(topic, serialised);
+        UserAccountDomainKey deserialised = serdes.aggregateKey().deserializer().deserialize(topic, serialised);
         assertThat(deserialised).isEqualToComparingFieldByField(aggKey);
     }
 
@@ -48,66 +53,68 @@ public class AvrowAggregateSerdeTests {
 
     @Test
     void aggregateUpdate() {
-        AggregateUpdate<UserAccount> update = new AggregateUpdate<>(
-                new UserAccount("Name", BigDecimal.valueOf(1000, 4)),
-                Sequence.position(101L));
+        AggregateUpdate<Optional<UserAccountDomain>> update = new AggregateUpdate<>(
+                Optional.of(new UserAccountDomain("Name", Money.valueOf("100"))),
+                Sequence.first());
 
         byte[] serialised = serdes.aggregateUpdate().serializer().serialize(topic, update);
-        AggregateUpdate<UserAccount> deserialised = serdes.aggregateUpdate().deserializer().deserialize(topic, serialised);
+        AggregateUpdate<Optional<UserAccountDomain>> deserialised = serdes.aggregateUpdate().deserializer().deserialize(topic, serialised);
         assertThat(deserialised).isEqualToComparingFieldByField(update);
     }
 
     @Test
     void commandRequest() {
-        UserAccountId aggKey = new UserAccountId("userId");
+        UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandRequest<UserAccountId, AccountCommand> commandRequest = CommandRequest.of(
+        CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = CommandRequest.of(
                 CommandId.random(),
                 aggKey,
-                Sequence.position(102L),
-                new AccountCommand(new UpdateUserName("new name")));
+                Sequence.first(),
+                new UserAccountDomainCommand.UpdateUserName("name"));
 
         byte[] serialised = serdes.commandRequest().serializer().serialize(topic, commandRequest);
-        CommandRequest<UserAccountId, AccountCommand> deserialised = serdes.commandRequest().deserializer().deserialize(topic, serialised);
+        CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> deserialised = serdes.commandRequest().deserializer().deserialize(topic, serialised);
         assertThat(deserialised).isEqualToComparingFieldByField(commandRequest);
     }
 
     @Test
     void eventWithSequence() {
-        ValueWithSequence<AccountEvent> eventSeq = new ValueWithSequence<>(
-                new AccountEvent(new AccountCreated("name", BigDecimal.valueOf(1000, 4))),
-                Sequence.position(103L));
+        ValueWithSequence<UserAccountDomainEvent> eventSeq = new ValueWithSequence<>(
+                new UserAccountDomainEvent.AccountCreated("name", Money.valueOf("100")),
+                Sequence.first()                );
 
         byte[] serialised = serdes.valueWithSequence().serializer().serialize(topic, eventSeq);
-        ValueWithSequence<AccountEvent> deserialised = serdes.valueWithSequence().deserializer().deserialize(topic, serialised);
+        ValueWithSequence<UserAccountDomainEvent> deserialised = serdes.valueWithSequence().deserializer().deserialize(topic, serialised);
         assertThat(deserialised).isEqualToComparingFieldByField(eventSeq);
     }
 
     @Test
     void commandResponseSuccess() {
-        UserAccountId aggKey = new UserAccountId("userId");
-        CommandResponse<UserAccountId> commandResponse = CommandResponse.of(
+        UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
+
+        CommandResponse commandResponse = CommandResponse.of(
                 CommandId.random(),
                 aggKey,
-                Sequence.position(104L),
-                Result.success(Sequence.position(105L)));
+                Sequence.first(),
+                Result.success(Sequence.first()));
 
         byte[] serialised = serdes.commandResponse().serializer().serialize(topic, commandResponse);
-        CommandResponse<UserAccountId> deserialised = serdes.commandResponse().deserializer().deserialize(topic, serialised);
+        CommandResponse deserialised = serdes.commandResponse().deserializer().deserialize(topic, serialised);
         assertThat(deserialised).isEqualToComparingFieldByField(commandResponse);
     }
 
     @Test
     void commandResponseFailure() {
-        UserAccountId aggKey = new UserAccountId("userId");
-        CommandResponse<UserAccountId> commandResponse = CommandResponse.of(
+        UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
+
+        CommandResponse commandResponse = CommandResponse.of(
                 CommandId.random(),
                 aggKey,
-                Sequence.position(106L),
+                Sequence.first(),
                 Result.failure(CommandError.of(CommandError.Reason.InvalidReadSequence, "Invalid sequence")));
 
         byte[] serialised = serdes.commandResponse().serializer().serialize(topic, commandResponse);
-        CommandResponse<UserAccountId> deserialised = serdes.commandResponse().deserializer().deserialize(topic, serialised);
+        CommandResponse deserialised = serdes.commandResponse().deserializer().deserialize(topic, serialised);
         assertThat(deserialised).isEqualToComparingFieldByField(commandResponse);
     }
 }

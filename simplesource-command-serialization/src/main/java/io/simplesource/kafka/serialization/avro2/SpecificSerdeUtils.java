@@ -1,4 +1,4 @@
-package io.simplesource.kafka.serialization.avrow;
+package io.simplesource.kafka.serialization.avro2;
 
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig;

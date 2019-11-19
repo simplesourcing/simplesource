@@ -1,4 +1,4 @@
-package io.simplesource.kafka.serialization.avrow;
+package io.simplesource.kafka.serialization.avro2;
 
 import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
@@ -8,18 +8,6 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.serialization.Serde;
 
-/**
- * Factory methods for Avro Serdes.
- *
- * Avro is the recommended format for serialization format for Saga applications. In addition, if your application is written in Java, it is suggested to create
- * to define your data types, and in particular the data representations of your action command types (the type {@code A}) using AVDL, and then set up the Avro Maven plugin to generate Java objects that correspond to your AVDL definitions. An
- * example of how to do this is available in the {@code pom.xml} file for this module. These generated classes are of type {@link SpecificRecord},
- * so you can choose {@code A} to be {@code SpecifiRecord}.
- * You can then use the {@link Specific AvroSerdes.Specific} methods to generate all the Serdes you need without having to do any custom marshalling.
- * <p>
- * If choose a different concrete type for {@code A}, you can use the methods of {@link AvroSerdes below}, but it does require you to provide an
- * appropriate {@code payloadSerde} for {@code A}, which may involve writing a little more boilerplate code.
- */
 final public class AvroSerdes {
 
     public static <K, C> CommandSerdes<K, C> commandSerdes(
