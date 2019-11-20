@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
@@ -23,49 +22,52 @@ public final class EventSourcedApp {
     private Map<String, AggregateSpec<?, ?, ?, ?>> aggregateConfigMap = new HashMap<>();
     private AggregateSetSpec aggregateSetSpec;
     private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
-            new NamedThreadFactory("EventSourcedApp-scheduler"));;
+            new NamedThreadFactory("EventSourcedApp-scheduler"));
 
-    public EventSourcedApp withKafkaConfig(
-            final Function<KafkaConfig.Builder, KafkaConfig> builder) {
-        kafkaConfig = builder.apply(new KafkaConfig.Builder());
-        return this;
-    }
+    public static final class EventSourcedAppBuilder {
+        EventSourcedApp app = new EventSourcedApp();
 
-    public EventSourcedApp withKafkaConfig(final KafkaConfig kafkaConfig) {
-        this.kafkaConfig = kafkaConfig;
-        return this;
-    }
+        public EventSourcedAppBuilder withKafkaConfig(
+                final Function<KafkaConfig.Builder, KafkaConfig> builder) {
+            app.kafkaConfig = builder.apply(new KafkaConfig.Builder());
+            return this;
+        }
 
-    public EventSourcedApp withScheduler(final ScheduledExecutorService scheduler) {
-        this.scheduler = scheduler;
-        return this;
-    }
+        public EventSourcedAppBuilder withKafkaConfig(final KafkaConfig kafkaConfig) {
+            app.kafkaConfig = kafkaConfig;
+            return this;
+        }
 
-    public <K, C, E, A> EventSourcedApp addAggregate(
-            final Consumer<AggregateBuilder<K, C, E, A>> buildSteps) {
-        AggregateBuilder<K, C, E, A> builder = AggregateBuilder.newBuilder();
-        buildSteps.accept(builder);
-        final AggregateSpec<K, C, E, A> spec = builder.build();
-        aggregateConfigMap.put(spec.aggregateName(), spec);
-        return this;
-    }
+        public EventSourcedAppBuilder withScheduler(final ScheduledExecutorService scheduler) {
+            app.scheduler = scheduler;
+            return this;
+        }
 
-    public <K, C, E, A> EventSourcedApp addAggregate(final AggregateSpec<K, C, E, A> spec) {
-        aggregateConfigMap.put(spec.aggregateName(), spec);
-        return this;
-    }
+        public <K, C, E, A> EventSourcedAppBuilder addAggregate(
+                final Function<AggregateBuilder<K, C, E, A>, AggregateSpec<K, C, E, A>> buildSteps) {
+            AggregateBuilder<K, C, E, A> builder = AggregateBuilder.newBuilder();
+            final AggregateSpec<K, C, E, A> spec = buildSteps.apply(builder);
+            app.aggregateConfigMap.put(spec.aggregateName(), spec);
+            return this;
+        }
 
-    public EventSourcedApp start() {
-        final AggregateSetSpec aggregateSetSpec = new AggregateSetSpec(
-                kafkaConfig,
-                aggregateConfigMap);
+        public <K, C, E, A> EventSourcedAppBuilder addAggregate(final AggregateSpec<K, C, E, A> spec) {
+            app.aggregateConfigMap.put(spec.aggregateName(), spec);
+            return this;
+        }
 
-        final EventSourcedStreamsApp app =
-                new EventSourcedStreamsApp(aggregateSetSpec);
+        public EventSourcedApp start() {
+            requireNonNull(app.kafkaConfig, "KafkaConfig has not been defined. Please define it with 'withKafkaConfig' method.");
 
-        app.start();
-        this.aggregateSetSpec = aggregateSetSpec;
-        return this;
+            final AggregateSetSpec aggregateSetSpec = new AggregateSetSpec(
+                    app.kafkaConfig,
+                    app.aggregateConfigMap);
+
+            new EventSourcedStreamsApp(aggregateSetSpec).start();
+
+            app.aggregateSetSpec = aggregateSetSpec;
+            return app;
+        }
     }
 
     /**
@@ -76,14 +78,10 @@ public final class EventSourcedApp {
      *
      * @return a CommandAPI
      */
-    public CommandAPI createCommandAPI(String clientId, String aggregateName) {
-        requireNonNull(aggregateSetSpec, "App has not been started. start() must be called before getCommandAPISet");
-        requireNonNull(scheduler, "Scheduler has not been defined. Please define with with 'withScheduler' method.");
-        AggregateSpec<?, ?, ?, ?> aggregateSpec = aggregateSetSpec.aggregateConfigMap().get(aggregateName);
-        if (aggregateSpec == null) {
+    public <K, C> CommandAPI<K, C> createCommandAPI(String clientId, String aggregateName) {
+        AggregateSpec<K, C, ?, ?> aggregateSpec = (AggregateSpec<K, C, ?, ?>) aggregateSetSpec.aggregateConfigMap().get(aggregateName);
 
-        }
-        CommandSpec<?, ?> commandSpec = SpecUtils.getCommandSpec(aggregateSpec, clientId);
-        return new KafkaCommandAPI(commandSpec, kafkaConfig, scheduler);
+        CommandSpec<K, C> commandSpec = SpecUtils.getCommandSpec(aggregateSpec, clientId);
+        return new KafkaCommandAPI<>(commandSpec, kafkaConfig, scheduler);
     }
 }
