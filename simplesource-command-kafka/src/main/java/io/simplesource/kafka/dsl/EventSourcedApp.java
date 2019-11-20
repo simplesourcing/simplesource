@@ -25,47 +25,48 @@ public final class EventSourcedApp {
     private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
             new NamedThreadFactory("EventSourcedApp-scheduler"));;
 
-    public EventSourcedApp withKafkaConfig(
-            final Function<KafkaConfig.Builder, KafkaConfig> builder) {
-        kafkaConfig = builder.apply(new KafkaConfig.Builder());
-        return this;
-    }
+    public static final class EventSourcedAppBuilder {
+        EventSourcedApp app = new EventSourcedApp();
 
-    public EventSourcedApp withKafkaConfig(final KafkaConfig kafkaConfig) {
-        this.kafkaConfig = kafkaConfig;
-        return this;
-    }
+        public EventSourcedAppBuilder withKafkaConfig(
+                final Function<KafkaConfig.Builder, KafkaConfig> builder) {
+            app.kafkaConfig = builder.apply(new KafkaConfig.Builder());
+            return this;
+        }
 
-    public EventSourcedApp withScheduler(final ScheduledExecutorService scheduler) {
-        this.scheduler = scheduler;
-        return this;
-    }
+        public EventSourcedAppBuilder withKafkaConfig(final KafkaConfig kafkaConfig) {
+            app.kafkaConfig = kafkaConfig;
+            return this;
+        }
 
-    public <K, C, E, A> EventSourcedApp addAggregate(
-            final Consumer<AggregateBuilder<K, C, E, A>> buildSteps) {
-        AggregateBuilder<K, C, E, A> builder = AggregateBuilder.newBuilder();
-        buildSteps.accept(builder);
-        final AggregateSpec<K, C, E, A> spec = builder.build();
-        aggregateConfigMap.put(spec.aggregateName(), spec);
-        return this;
-    }
+        public EventSourcedAppBuilder withScheduler(final ScheduledExecutorService scheduler) {
+            app.scheduler = scheduler;
+            return this;
+        }
 
-    public <K, C, E, A> EventSourcedApp addAggregate(final AggregateSpec<K, C, E, A> spec) {
-        aggregateConfigMap.put(spec.aggregateName(), spec);
-        return this;
-    }
+        public <K, C, E, A> EventSourcedAppBuilder addAggregate(
+                final Function<AggregateBuilder<K, C, E, A>, AggregateSpec<K, C, E, A>> buildSteps) {
+            AggregateBuilder<K, C, E, A> builder = AggregateBuilder.newBuilder();
+            final AggregateSpec<K, C, E, A> spec = buildSteps.apply(builder);
+            app.aggregateConfigMap.put(spec.aggregateName(), spec);
+            return this;
+        }
 
-    public EventSourcedApp start() {
-        final AggregateSetSpec aggregateSetSpec = new AggregateSetSpec(
-                kafkaConfig,
-                aggregateConfigMap);
+        public <K, C, E, A> EventSourcedAppBuilder addAggregate(final AggregateSpec<K, C, E, A> spec) {
+            app.aggregateConfigMap.put(spec.aggregateName(), spec);
+            return this;
+        }
 
-        final EventSourcedStreamsApp app =
-                new EventSourcedStreamsApp(aggregateSetSpec);
+        public EventSourcedApp start() {
+            final AggregateSetSpec aggregateSetSpec = new AggregateSetSpec(
+                    app.kafkaConfig,
+                    app.aggregateConfigMap);
 
-        app.start();
-        this.aggregateSetSpec = aggregateSetSpec;
-        return this;
+            new EventSourcedStreamsApp(aggregateSetSpec).start();
+
+            app.aggregateSetSpec = aggregateSetSpec;
+            return app;
+        }
     }
 
     /**
