@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
@@ -23,7 +22,7 @@ public final class EventSourcedApp {
     private Map<String, AggregateSpec<?, ?, ?, ?>> aggregateConfigMap = new HashMap<>();
     private AggregateSetSpec aggregateSetSpec;
     private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
-            new NamedThreadFactory("EventSourcedApp-scheduler"));;
+            new NamedThreadFactory("EventSourcedApp-scheduler"));
 
     public static final class EventSourcedAppBuilder {
         EventSourcedApp app = new EventSourcedApp();
@@ -58,6 +57,8 @@ public final class EventSourcedApp {
         }
 
         public EventSourcedApp start() {
+            requireNonNull(app.kafkaConfig, "KafkaConfig has not been defined. Please define it with 'withKafkaConfig' method.");
+
             final AggregateSetSpec aggregateSetSpec = new AggregateSetSpec(
                     app.kafkaConfig,
                     app.aggregateConfigMap);
@@ -77,14 +78,10 @@ public final class EventSourcedApp {
      *
      * @return a CommandAPI
      */
-    public CommandAPI createCommandAPI(String clientId, String aggregateName) {
-        requireNonNull(aggregateSetSpec, "App has not been started. start() must be called before getCommandAPISet");
-        requireNonNull(scheduler, "Scheduler has not been defined. Please define with with 'withScheduler' method.");
-        AggregateSpec<?, ?, ?, ?> aggregateSpec = aggregateSetSpec.aggregateConfigMap().get(aggregateName);
-        if (aggregateSpec == null) {
+    public <K, C> CommandAPI<K, C> createCommandAPI(String clientId, String aggregateName) {
+        AggregateSpec<K, C, ?, ?> aggregateSpec = (AggregateSpec<K, C, ?, ?>) aggregateSetSpec.aggregateConfigMap().get(aggregateName);
 
-        }
-        CommandSpec<?, ?> commandSpec = SpecUtils.getCommandSpec(aggregateSpec, clientId);
-        return new KafkaCommandAPI(commandSpec, kafkaConfig, scheduler);
+        CommandSpec<K, C> commandSpec = SpecUtils.getCommandSpec(aggregateSpec, clientId);
+        return new KafkaCommandAPI<>(commandSpec, kafkaConfig, scheduler);
     }
 }
