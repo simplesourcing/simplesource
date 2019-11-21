@@ -24,7 +24,7 @@ import static io.simplesource.kafka.api.AggregateResources.TopicEntity.*;
 
 public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
 
-    private KafkaRequestAPI<K, CommandRequest<K, C>, CommandId, CommandResponse<K>> requestApi;
+    private KafkaRequestAPI<K, CommandRequest<K, C>, CommandId, CommandResponse<K>> requestAPI;
 
     public KafkaCommandAPI(
             final CommandSpec<K, C> commandSpec,
@@ -34,7 +34,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 commandSpec,
                 kafkaConfig,
                 scheduler);
-        requestApi = new KafkaRequestAPI<>(ctx);
+        requestAPI = new KafkaRequestAPI<>(ctx);
     }
 
     public KafkaCommandAPI(
@@ -49,7 +49,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
                 commandSpec,
                 kafkaConfig,
                 scheduler);
-        requestApi = new KafkaRequestAPI<>(ctx, requestSender, responseTopicMapSender, attachReceiver, false);
+        requestAPI = new KafkaRequestAPI<>(ctx, requestSender, responseTopicMapSender, attachReceiver, false);
     }
 
     private static CommandError getCommandError(Throwable e) {
@@ -63,7 +63,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
         final CommandRequest<K, C> commandRequest = new CommandRequest<>(
                 request.commandId(), request.key(), request.readSequence(), request.command());
 
-        FutureResult<Exception, RequestPublisher.PublishResult> publishResult = requestApi.publishRequest(request.key(), request.commandId(), commandRequest);
+        FutureResult<Exception, RequestPublisher.PublishResult> publishResult = requestAPI.publishRequest(request.key(), request.commandId(), commandRequest);
 
         return publishResult.errorMap(KafkaCommandAPI::getCommandError)
                 .map(r -> request.commandId());
@@ -71,7 +71,7 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
 
     @Override
     public FutureResult<CommandError, Sequence> queryCommandResult(final CommandId commandId, final Duration timeout) {
-        CompletableFuture<CommandResponse<K>> completableFuture = requestApi.queryResponse(commandId, timeout);
+        CompletableFuture<CommandResponse<K>> completableFuture = requestAPI.queryResponse(commandId, timeout);
 
         return FutureResult.ofCompletableFuture(completableFuture.thenApply(CommandResponse::sequenceResult));
     }
