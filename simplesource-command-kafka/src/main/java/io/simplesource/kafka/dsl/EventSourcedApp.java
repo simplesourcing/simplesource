@@ -75,7 +75,7 @@ public final class EventSourcedApp {
                 kafkaConfig,
                 aggregateConfigMap);
 
-        EventSourcedStreamsApp x = new EventSourcedStreamsApp(aggregateSetSpec);
-        x.start();
+        EventSourcedStreamsApp app = new EventSourcedStreamsApp(aggregateSetSpec);
+        app.start();
     }
 }
