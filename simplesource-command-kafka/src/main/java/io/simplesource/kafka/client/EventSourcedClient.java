@@ -38,13 +38,13 @@ public final class EventSourcedClient {
         return this;
     }
 
-    public <K, C> CommandAPI<K, C> createCommandApi(final Function<CommandAPIBuilder<K, C>, CommandSpec<K, C>> buildSteps) {
+    public <K, C> CommandAPI<K, C> createCommandAPI(final Function<CommandAPIBuilder<K, C>, CommandSpec<K, C>> buildSteps) {
         CommandAPIBuilder<K, C> builder = CommandAPIBuilder.newBuilder();
         CommandSpec<K, C> commandSpec = buildSteps.apply(builder);
-        return createCommandApi(commandSpec);
+        return createCommandAPI(commandSpec);
     }
 
-    public <K, C> CommandAPI<K, C> createCommandApi(final CommandSpec<K, C> commandSpec) {
+    public <K, C> CommandAPI<K, C> createCommandAPI(final CommandSpec<K, C> commandSpec) {
         requireNonNull(scheduler, "Scheduler has not been defined. Please define with with 'withScheduler' method.");
 
         return new KafkaCommandAPI<>(commandSpec, kafkaConfig, scheduler);
