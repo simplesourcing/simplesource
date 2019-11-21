@@ -22,9 +22,6 @@ import static java.util.Objects.requireNonNull;
 public final class EventSourcedApp {
     private KafkaConfig kafkaConfig;
     private Map<String, AggregateSpec<?, ?, ?, ?>> aggregateConfigMap = new HashMap<>();
-    private AggregateSetSpec aggregateSetSpec;
-    private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
-            new NamedThreadFactory("EventSourcedApp-scheduler"));
     private boolean isStarted = false;
 
     public EventSourcedApp withKafkaConfig(
@@ -35,11 +32,6 @@ public final class EventSourcedApp {
 
     public EventSourcedApp withKafkaConfig(final KafkaConfig kafkaConfig) {
         this.kafkaConfig = kafkaConfig;
-        return this;
-    }
-
-    public EventSourcedApp withScheduler(final ScheduledExecutorService scheduler) {
-        this.scheduler = scheduler;
         return this;
     }
 
