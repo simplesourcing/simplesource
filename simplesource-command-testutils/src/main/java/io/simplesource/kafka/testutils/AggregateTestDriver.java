@@ -99,7 +99,7 @@ public final class AggregateTestDriver<K, C, E, A> {
     public FutureResult<CommandError, Sequence> queryCommandResult(
         final CommandId commandId,
         final Duration timeout) {
-        pollForApiResponse();
+        pollForAPIResponse();
         return commandAPI.queryCommandResult(commandId, timeout);
     }
 
@@ -139,7 +139,7 @@ public final class AggregateTestDriver<K, C, E, A> {
                 record.value()));
     }
 
-    public void pollForApiResponse() {
+    public void pollForAPIResponse() {
         statePollers.forEach(Runnable::run);
     }
 

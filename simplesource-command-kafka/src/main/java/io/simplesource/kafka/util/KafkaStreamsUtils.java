@@ -53,16 +53,4 @@ public final class KafkaStreamsUtils {
         } while (!done);
         logger.info("Streams app stable for 5 seconds. Considered up.");
     }
-
-    public static void waitForShutdown(final Logger logger, final KafkaStreams streams) {
-        final CountDownLatch latch = new CountDownLatch(1);
-        Runtime.getRuntime().addShutdownHook(new Thread(latch::countDown));
-        try {
-            latch.await();
-        } catch (Exception e) {
-            logger.warn("Error waiting for shutdown: {}", e);
-            System.exit(1);
-        }
-    }
-
 }
