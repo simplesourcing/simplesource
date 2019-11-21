@@ -8,6 +8,7 @@ import io.simplesource.kafka.spec.AggregateSetSpec;
 import io.simplesource.kafka.spec.AggregateSpec;
 import io.simplesource.kafka.spec.CommandSpec;
 import io.simplesource.kafka.util.SpecUtils;
+import org.apache.kafka.streams.errors.StreamsException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +25,7 @@ public final class EventSourcedApp {
     private AggregateSetSpec aggregateSetSpec;
     private ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(
             new NamedThreadFactory("EventSourcedApp-scheduler"));
+    private boolean isStarted = false;
 
     public EventSourcedApp withKafkaConfig(
             final Function<KafkaConfig.Builder, KafkaConfig> builder) {
@@ -70,6 +72,7 @@ public final class EventSourcedApp {
 
     public void start() {
         requireNonNull(kafkaConfig, "KafkaConfig has not been defined. Please define it with 'withKafkaConfig' method.");
+        if (isStarted) return;
 
         final AggregateSetSpec aggregateSetSpec = new AggregateSetSpec(
                 kafkaConfig,
@@ -77,5 +80,6 @@ public final class EventSourcedApp {
 
         EventSourcedStreamsApp app = new EventSourcedStreamsApp(aggregateSetSpec);
         app.start();
+        isStarted = true;
     }
 }
