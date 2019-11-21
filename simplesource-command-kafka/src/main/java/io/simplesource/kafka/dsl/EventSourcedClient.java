@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
@@ -38,19 +37,15 @@ public final class EventSourcedClient {
         return this;
     }
 
-    public CommandAPI<?, ?> createCommandApi(final Consumer<CommandAPIBuilder<?, ?>> buildSteps) {
-        CommandAPIBuilder<?, ?> builder = CommandAPIBuilder.newBuilder();
-        buildSteps.accept(builder);
-        final CommandSpec<?, ?> commandSpec = builder.build();
+    public <K, C> CommandAPI<K, C> createCommandApi(final Function<CommandAPIBuilder<K, C>, CommandSpec<K, C>> buildSteps) {
+        CommandAPIBuilder<K, C> builder = CommandAPIBuilder.newBuilder();
+        CommandSpec<K, C> commandSpec = buildSteps.apply(builder);
         return createCommandApi(commandSpec);
     }
 
-    public CommandAPI<?, ?> createCommandApi(final CommandSpec<?, ?> commandSpec) {
+    public <K, C> CommandAPI<K, C> createCommandApi(final CommandSpec<K, C> commandSpec) {
         requireNonNull(scheduler, "Scheduler has not been defined. Please define with with 'withScheduler' method.");
 
-        return new KafkaCommandAPI(
-                        commandSpec,
-                        kafkaConfig,
-                        scheduler);
+        return new KafkaCommandAPI<>(commandSpec, kafkaConfig, scheduler);
     }
 }
