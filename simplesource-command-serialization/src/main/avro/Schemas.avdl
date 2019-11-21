@@ -1,31 +1,6 @@
 @namespace("io.simplesource.serialization.avro.generated")
 protocol SimpleSourceSchemas {
-  record AvroCommandRequest {
-    string commandId;
-    bytes aggregateKey;
-    long readSequence;
-    bytes command;
-  }
-
-  record AvroAggregateUpdate {
-    bytes aggregate;
-    long sequence;
-  }
-
-  record AvroValueWithSequence {
-    bytes value;
-    long sequence;
-  }
-
-  record AvroCommandError {
-    string reason;
-    string message;
-  }
-
-  record AvroCommandResponse {
-    string commandId;
-    bytes aggregateKey;
-    long readSequence;
-    union { array<AvroCommandError>, long } result;
+  record AvroBool {
+    boolean value;
   }
 }

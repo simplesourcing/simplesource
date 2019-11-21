@@ -1,5 +1,7 @@
 package io.simplesource.kafka.serialization.util;
 
+import java.util.function.Function;
+
 /**
  * Provides a mapping from your domain classes for aggregates, events, commands and keys to
  * a generic serialization class used to read and write from Kafka.
@@ -10,4 +12,18 @@ package io.simplesource.kafka.serialization.util;
 public interface GenericMapper<V, S> {
     S toGeneric(V value);
     V fromGeneric(S serialized);
+
+    static <V, S> GenericMapper<V, S> of(Function<V, S> to, Function<S, V> from) {
+        return new GenericMapper<V, S>() {
+            @Override
+            public S toGeneric(V value) {
+                return to.apply(value);
+            }
+
+            @Override
+            public V fromGeneric(S serialized) {
+                return from.apply(serialized);
+            }
+        };
+    }
 }

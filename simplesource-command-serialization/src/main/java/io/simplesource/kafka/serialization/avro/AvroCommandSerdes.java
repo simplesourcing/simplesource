@@ -14,19 +14,19 @@ import java.util.Arrays;
 
 import static io.simplesource.kafka.serialization.avro.AvroSpecificGenericMapper.specificDomainMapper;
 
-public final class AvroCommandSerdes<K, C> implements CommandSerdes<K, C> {
+final class AvroCommandSerdes<K, C> implements CommandSerdes<K, C> {
 
     private final Serde<K> ak;
     private final Serde<CommandRequest<K, C>> crq;
     private final Serde<CommandId> crk;
     private final Serde<CommandResponse<K>> crp;
 
-    public static <K extends GenericRecord, C extends GenericRecord> AvroCommandSerdes<K, C> of(
+    static <K extends GenericRecord, C extends GenericRecord> AvroCommandSerdes<K, C> of(
             final String schemaRegistryUrl) {
         return of(schemaRegistryUrl, false);
     }
 
-    public static <K extends GenericRecord, C extends GenericRecord> AvroCommandSerdes<K, C> of(
+    static <K extends GenericRecord, C extends GenericRecord> AvroCommandSerdes<K, C> of(
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry
     ) {
@@ -50,7 +50,7 @@ public final class AvroCommandSerdes<K, C> implements CommandSerdes<K, C> {
                 useMockSchemaRegistry);
     }
 
-    public AvroCommandSerdes(
+    AvroCommandSerdes(
             final GenericMapper<K, GenericRecord> keyMapper,
             final GenericMapper<C, GenericRecord> commandMapper,
             final String schemaRegistryUrl,
@@ -61,15 +61,15 @@ public final class AvroCommandSerdes<K, C> implements CommandSerdes<K, C> {
 
         ak = GenericSerde.of(keySerde, keyMapper::toGeneric, keyMapper::fromGeneric);
         crq = GenericSerde.of(valueSerde,
-                v -> AvroSerdes.CommandRequestAvroHelper.toGenericRecord(v.map2(keyMapper::toGeneric, commandMapper::toGeneric)),
-                s -> AvroSerdes.CommandRequestAvroHelper.fromGenericRecord(s).map2(keyMapper::fromGeneric, x -> commandMapper.fromGeneric(x)));
+                v -> AvroGenericUtils.CommandRequestAvroHelper.toGenericRecord(v.map2(keyMapper::toGeneric, commandMapper::toGeneric)),
+                s -> AvroGenericUtils.CommandRequestAvroHelper.fromGenericRecord(s).map2(keyMapper::fromGeneric, x -> commandMapper.fromGeneric(x)));
         crk = GenericSerde.of(valueSerde,
-                AvroSerdes.CommandResponseKeyAvroHelper::toGenericRecord,
-                AvroSerdes.CommandResponseKeyAvroHelper::fromGenericRecord);
+                AvroGenericUtils.CommandResponseKeyAvroHelper::toGenericRecord,
+                AvroGenericUtils.CommandResponseKeyAvroHelper::fromGenericRecord);
 
         crp = GenericSerde.of(valueSerde,
-                v -> AvroSerdes.CommandResponseAvroHelper.toCommandResponse(v.map(keyMapper::toGeneric)),
-                s -> AvroSerdes.CommandResponseAvroHelper.fromCommandResponse(s).map(keyMapper::fromGeneric));
+                v -> AvroGenericUtils.CommandResponseAvroHelper.toCommandResponse(v.map(keyMapper::toGeneric)),
+                s -> AvroGenericUtils.CommandResponseAvroHelper.fromCommandResponse(s).map(keyMapper::fromGeneric));
     }
 
     @Override

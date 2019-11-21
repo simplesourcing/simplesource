@@ -5,7 +5,7 @@ protocol UserSubsystem {
     string id;
   }
 
-  // 1. Define a basic aggregate model
+  // 1. Define a basic aggregateOf model
   record User {
     string firstName;
     string lastName;

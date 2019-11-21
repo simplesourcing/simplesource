@@ -4,27 +4,23 @@ import io.simplesource.api.CommandError;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
-import io.simplesource.kafka.api.AggregateSerdes;
-import io.simplesource.kafka.model.AggregateUpdate;
+import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
-import io.simplesource.kafka.model.ValueWithSequence;
+import io.simplesource.kafka.serialization.avro.AvroSerdes;
 import io.simplesource.kafka.serialization.avro.generated.*;
-import io.simplesource.kafka.serialization.avro2.AvroSerdes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-class AvroSpecificAggregateSerdeTests {
+class AvroGenericCommandSerdeTests {
     private static final String topic = "topic";
-    private AggregateSerdes<UserAccountId, AccountCommand, AccountEvent, UserAccount> serdes;
+    private CommandSerdes<UserAccountId, AccountCommand> serdes;
 
     @BeforeEach
     void setup() {
-        serdes = AvroSerdes.Specific.aggregateSerdes(
+        serdes = AvroSerdes.Generic.command(
                 "http://localhost:8081",
                 true);
     }
@@ -47,17 +43,6 @@ class AvroSpecificAggregateSerdeTests {
     }
 
     @Test
-    void aggregateUpdate() {
-        AggregateUpdate<UserAccount> update = new AggregateUpdate<>(
-                new UserAccount("Name", BigDecimal.valueOf(1000, 4)),
-                Sequence.position(101L));
-
-        byte[] serialised = serdes.aggregateUpdate().serializer().serialize(topic, update);
-        AggregateUpdate<UserAccount> deserialised = serdes.aggregateUpdate().deserializer().deserialize(topic, serialised);
-        assertThat(deserialised).isEqualToComparingFieldByField(update);
-    }
-
-    @Test
     void commandRequest() {
         UserAccountId aggKey = new UserAccountId("userId");
 
@@ -70,17 +55,6 @@ class AvroSpecificAggregateSerdeTests {
         byte[] serialised = serdes.commandRequest().serializer().serialize(topic, commandRequest);
         CommandRequest<UserAccountId, AccountCommand> deserialised = serdes.commandRequest().deserializer().deserialize(topic, serialised);
         assertThat(deserialised).isEqualToComparingFieldByField(commandRequest);
-    }
-
-    @Test
-    void eventWithSequence() {
-        ValueWithSequence<AccountEvent> eventSeq = new ValueWithSequence<>(
-                new AccountEvent(new AccountCreated("name", BigDecimal.valueOf(1000, 4))),
-                Sequence.position(103L));
-
-        byte[] serialised = serdes.valueWithSequence().serializer().serialize(topic, eventSeq);
-        ValueWithSequence<AccountEvent> deserialised = serdes.valueWithSequence().deserializer().deserialize(topic, serialised);
-        assertThat(deserialised).isEqualToComparingFieldByField(eventSeq);
     }
 
     @Test

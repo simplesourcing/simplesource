@@ -4,32 +4,27 @@ import io.simplesource.api.CommandError;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
-import io.simplesource.kafka.api.AggregateSerdes;
-import io.simplesource.kafka.model.AggregateUpdate;
+import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
-import io.simplesource.kafka.model.ValueWithSequence;
-import io.simplesource.kafka.serialization.avro.mappers.domain.*;
-import io.simplesource.kafka.serialization.avro2.AvroSerdes;
-import io.simplesource.kafka.serialization.util.SerdeUtils;
+import io.simplesource.kafka.serialization.avro.AvroSerdes;
+import io.simplesource.kafka.serialization.avro.mappers.domain.UserAccountDomainCommand;
+import io.simplesource.kafka.serialization.avro.mappers.domain.UserAccountDomainKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class AvroJsonAggregateSerdeTests {
+class AvroCustomCommandSerdeTests {
     private static final String topic = "topic";
-    private AggregateSerdes<UserAccountDomainKey, UserAccountDomainCommand, UserAccountDomainEvent, Optional<UserAccountDomain>> serdes;
+    private CommandSerdes<UserAccountDomainKey, UserAccountDomainCommand> serdes;
 
     @BeforeEach
     void setup() {
-        serdes = AvroSerdes.aggregateSerdes(
-                GsonSerde.of(UserAccountDomainKey.class),
-                GsonADTSerde.of(UserAccountDomainCommand.class),
-                GsonADTSerde.of(UserAccountDomainEvent.class),
-                SerdeUtils.iMap(GsonSerde.of(UserAccountDomain.class), Optional::get, Optional::ofNullable),
+        serdes = AvroSerdes.Custom.command(
+                UserAccountAvroMappers.keyMapper,
+                UserAccountAvroMappers.commandMapper,
                 "http://localhost:8081",
                 true);
     }
@@ -48,18 +43,7 @@ class AvroJsonAggregateSerdeTests {
 
         byte[] serialised = serdes.commandId().serializer().serialize(topic, responseKey);
         CommandId deserialised = serdes.commandId().deserializer().deserialize(topic, serialised);
-        assertThat(deserialised).isEqualTo(responseKey);
-    }
-
-    @Test
-    void aggregateUpdate() {
-        AggregateUpdate<Optional<UserAccountDomain>> update = new AggregateUpdate<>(
-                Optional.of(new UserAccountDomain("Name", Money.valueOf("100"))),
-                Sequence.first());
-
-        byte[] serialised = serdes.aggregateUpdate().serializer().serialize(topic, update);
-        AggregateUpdate<Optional<UserAccountDomain>> deserialised = serdes.aggregateUpdate().deserializer().deserialize(topic, serialised);
-        assertThat(deserialised).isEqualToComparingFieldByField(update);
+        assertThat(deserialised).isEqualToComparingFieldByField(responseKey);
     }
 
     @Test
@@ -75,17 +59,6 @@ class AvroJsonAggregateSerdeTests {
         byte[] serialised = serdes.commandRequest().serializer().serialize(topic, commandRequest);
         CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> deserialised = serdes.commandRequest().deserializer().deserialize(topic, serialised);
         assertThat(deserialised).isEqualToComparingFieldByField(commandRequest);
-    }
-
-    @Test
-    void eventWithSequence() {
-        ValueWithSequence<UserAccountDomainEvent> eventSeq = new ValueWithSequence<>(
-                new UserAccountDomainEvent.AccountCreated("name", Money.valueOf("100")),
-                Sequence.first()                );
-
-        byte[] serialised = serdes.valueWithSequence().serializer().serialize(topic, eventSeq);
-        ValueWithSequence<UserAccountDomainEvent> deserialised = serdes.valueWithSequence().deserializer().deserialize(topic, serialised);
-        assertThat(deserialised).isEqualToComparingFieldByField(eventSeq);
     }
 
     @Test

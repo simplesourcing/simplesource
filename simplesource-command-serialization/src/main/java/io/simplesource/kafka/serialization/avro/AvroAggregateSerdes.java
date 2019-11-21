@@ -15,7 +15,7 @@ import java.util.*;
 import static io.simplesource.kafka.serialization.avro.AvroSpecificGenericMapper.specificDomainMapper;
 import static io.simplesource.kafka.serialization.avro.AvroSerdes.*;
 
-public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K, C, E, A> {
+final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K, C, E, A> {
 
     private final Serde<K> ak;
     private final Serde<CommandRequest<K, C>> crq;
@@ -24,7 +24,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     private final Serde<AggregateUpdate<A>> au;
     private final Serde<CommandResponse<K>> crp;
 
-    public static <K extends GenericRecord, C extends GenericRecord, E extends GenericRecord, A extends GenericRecord> AvroAggregateSerdes<K, C, E, A> of(
+    static <K extends GenericRecord, C extends GenericRecord, E extends GenericRecord, A extends GenericRecord> AvroAggregateSerdes<K, C, E, A> of(
             final String schemaRegistryUrl,
             final Schema aggregateSchema
     ) {
@@ -34,7 +34,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
                 aggregateSchema);
     }
 
-    public static <K extends GenericRecord, C extends GenericRecord, E extends GenericRecord, A extends GenericRecord> AvroAggregateSerdes<K, C, E, A> of(
+    static <K extends GenericRecord, C extends GenericRecord, E extends GenericRecord, A extends GenericRecord> AvroAggregateSerdes<K, C, E, A> of(
             final String schemaRegistryUrl,
             final boolean useMockSchemaRegistry,
             final Schema aggregateSchema
@@ -49,7 +49,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
                 aggregateSchema);
     }
 
-    public AvroAggregateSerdes(
+    AvroAggregateSerdes(
             final GenericMapper<K, GenericRecord> keyMapper,
             final GenericMapper<C, GenericRecord> commandMapper,
             final GenericMapper<E, GenericRecord> eventMapper,
@@ -59,7 +59,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
             final Schema aggregateSchema) {
 
         // aggregates must use SchemaNameStrategy.TOPIC_NAME for compatibility with kafka-connect
-        // (so aggregate topics can be streamed directly to the read-store)
+        // (so aggregateOf topics can be streamed directly to the read-store)
         Serde<GenericRecord> aggKeySerde = AvroGenericUtils.genericAvroSerde(schemaRegistryUrl, useMockSchemaRegistry, true, SchemaNameStrategy.TOPIC_NAME);
         Serde<GenericRecord> aggValueSerde = AvroGenericUtils.genericAvroSerde(schemaRegistryUrl, useMockSchemaRegistry, false, SchemaNameStrategy.TOPIC_NAME);
 
