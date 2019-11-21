@@ -71,8 +71,8 @@ public final class EventSourcedApp {
     }
 
     public void start() {
-        requireNonNull(kafkaConfig, "KafkaConfig has not been defined. Please define it with 'withKafkaConfig' method.");
         if (isStarted) return;
+        requireNonNull(kafkaConfig, "KafkaConfig has not been defined. Please define it with 'withKafkaConfig' method.");
 
         final AggregateSetSpec aggregateSetSpec = new AggregateSetSpec(
                 kafkaConfig,
