@@ -59,7 +59,7 @@ final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K, C, E, 
             final Schema aggregateSchema) {
 
         // aggregates must use SchemaNameStrategy.TOPIC_NAME for compatibility with kafka-connect
-        // (so aggregateOf topics can be streamed directly to the read-store)
+        // (so aggregate topics can be streamed directly to the read-store)
         Serde<GenericRecord> aggKeySerde = AvroGenericUtils.genericAvroSerde(schemaRegistryUrl, useMockSchemaRegistry, true, SchemaNameStrategy.TOPIC_NAME);
         Serde<GenericRecord> aggValueSerde = AvroGenericUtils.genericAvroSerde(schemaRegistryUrl, useMockSchemaRegistry, false, SchemaNameStrategy.TOPIC_NAME);
 

@@ -5,7 +5,7 @@ protocol UserSubsystem {
     string id;
   }
 
-  // 1. Define a basic aggregateOf model
+  // 1. Define a basic aggregate model
   record UserAccount {
     string name;
     decimal(12,4) balance;

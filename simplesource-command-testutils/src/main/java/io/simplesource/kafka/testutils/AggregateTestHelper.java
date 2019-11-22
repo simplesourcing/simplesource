@@ -168,7 +168,7 @@ public final class AggregateTestHelper<K, C, E, A> {
         /**
          * Publish the command and assert that the publishCommand was success generating the given events and aggregate_update update.
          * @param expectedAggregate the list of expected events
-         * @param expectedAggregate the expected aggregateOf state
+         * @param expectedAggregate the expected aggregate state
          *
          */
         public PublishResponse expecting(
