@@ -2,10 +2,12 @@ package io.simplesource.kafka.serialization.avro;
 
 import io.simplesource.api.CommandId;
 import io.simplesource.kafka.api.AggregateSerdes;
+import io.simplesource.kafka.api.EventSerdes;
 import io.simplesource.kafka.serialization.util.GenericMapper;
 import io.simplesource.kafka.model.*;
 import io.simplesource.kafka.serialization.util.GenericSerde;
 import io.simplesource.kafka.serialization.avro.AvroGenericUtils.*;
+import io.simplesource.serialization.avro.generated.AvroBool;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.common.serialization.Serde;
@@ -15,7 +17,7 @@ import java.util.*;
 import static io.simplesource.kafka.serialization.avro.AvroSpecificGenericMapper.specificDomainMapper;
 import static io.simplesource.kafka.serialization.avro.AvroSerdes.*;
 
-final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K, C, E, A> {
+class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K, C, E, A> {
 
     private final Serde<K> ak;
     private final Serde<CommandRequest<K, C>> crq;
@@ -23,31 +25,6 @@ final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K, C, E, 
     private final Serde<ValueWithSequence<E>> vws;
     private final Serde<AggregateUpdate<A>> au;
     private final Serde<CommandResponse<K>> crp;
-
-    static <K extends GenericRecord, C extends GenericRecord, E extends GenericRecord, A extends GenericRecord> AvroAggregateSerdes<K, C, E, A> of(
-            final String schemaRegistryUrl,
-            final Schema aggregateSchema
-    ) {
-        return of(
-                schemaRegistryUrl,
-                false,
-                aggregateSchema);
-    }
-
-    static <K extends GenericRecord, C extends GenericRecord, E extends GenericRecord, A extends GenericRecord> AvroAggregateSerdes<K, C, E, A> of(
-            final String schemaRegistryUrl,
-            final boolean useMockSchemaRegistry,
-            final Schema aggregateSchema
-    ) {
-        return new AvroAggregateSerdes<>(
-                specificDomainMapper(),
-                specificDomainMapper(),
-                specificDomainMapper(),
-                specificDomainMapper(),
-                schemaRegistryUrl,
-                useMockSchemaRegistry,
-                aggregateSchema);
-    }
 
     AvroAggregateSerdes(
             final GenericMapper<K, GenericRecord> keyMapper,

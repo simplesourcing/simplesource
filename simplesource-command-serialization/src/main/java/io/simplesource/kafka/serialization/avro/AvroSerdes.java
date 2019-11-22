@@ -2,6 +2,7 @@ package io.simplesource.kafka.serialization.avro;
 
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.api.CommandSerdes;
+import io.simplesource.kafka.api.EventSerdes;
 import io.simplesource.kafka.serialization.util.GenericMapper;
 import io.simplesource.serialization.avro.generated.AvroBool;
 import org.apache.avro.Schema;
@@ -43,17 +44,15 @@ public final class AvroSerdes {
                     aggregateSchema);
         }
 
-        public static <K, E> AggregateSerdes<K, E, E, Boolean> event(
+        public static <K, E> EventSerdes<K, E> event(
                 final GenericMapper<K, GenericRecord> keyMapper,
                 final GenericMapper<E, GenericRecord> eventMapper,
                 final String schemaRegistryUrl,
                 final boolean useMockSchemaRegistry
         ) {
-            return new AvroAggregateSerdes<>(
+            return new AvroEventSerdes<>(
                     keyMapper,
                     eventMapper,
-                    eventMapper,
-                    GenericMapper.of(AvroBool::new, s -> (Boolean) s.get("value")),
                     schemaRegistryUrl,
                     useMockSchemaRegistry,
                     AvroBool.SCHEMA$);
@@ -75,15 +74,13 @@ public final class AvroSerdes {
             return new AvroAggregateSerdes<>(specificDomainMapper(), specificDomainMapper(), specificDomainMapper(), specificDomainMapper(), schemaRegistryUrl, useMockSchemaRegistry, aggregateSchema);
         }
 
-        public static <K extends GenericRecord, E extends GenericRecord> AggregateSerdes<K, E, E, Boolean> event(
+        public static <K extends GenericRecord, E extends GenericRecord> EventSerdes<K, E> event(
                 final String schemaRegistryUrl,
                 final boolean useMockSchemaRegistry
         ) {
-            return new AvroAggregateSerdes<>(
+            return new AvroEventSerdes<>(
                     specificDomainMapper(),
                     specificDomainMapper(),
-                    specificDomainMapper(),
-                    GenericMapper.of(AvroBool::new, s -> (Boolean) s.get("value")),
                     schemaRegistryUrl,
                     useMockSchemaRegistry,
                     AvroBool.SCHEMA$);

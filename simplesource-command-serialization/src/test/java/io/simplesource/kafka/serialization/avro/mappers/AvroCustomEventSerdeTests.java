@@ -5,6 +5,7 @@ import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.AggregateSerdes;
+import io.simplesource.kafka.api.EventSerdes;
 import io.simplesource.kafka.model.AggregateUpdate;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
@@ -20,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class AvroCustomEventSerdeTests {
     private static final String topic = "topic";
-    private AggregateSerdes<UserAccountDomainKey, UserAccountDomainEvent, UserAccountDomainEvent, Boolean> serdes;
+    private EventSerdes<UserAccountDomainKey, UserAccountDomainEvent> serdes;
 
     @BeforeEach
     void setup() {
