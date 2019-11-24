@@ -15,7 +15,7 @@ import java.util.*;
 import static io.simplesource.kafka.serialization.avro.AvroSpecificGenericMapper.specificDomainMapper;
 import static io.simplesource.kafka.serialization.avro.AvroSerdes.*;
 
-public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K, C, E, A> {
+class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K, C, E, A> {
 
     private final Serde<K> ak;
     private final Serde<CommandRequest<K, C>> crq;
@@ -24,32 +24,7 @@ public final class AvroAggregateSerdes<K, C, E, A> implements AggregateSerdes<K,
     private final Serde<AggregateUpdate<A>> au;
     private final Serde<CommandResponse<K>> crp;
 
-    public static <K extends GenericRecord, C extends GenericRecord, E extends GenericRecord, A extends GenericRecord> AvroAggregateSerdes<K, C, E, A> of(
-            final String schemaRegistryUrl,
-            final Schema aggregateSchema
-    ) {
-        return of(
-                schemaRegistryUrl,
-                false,
-                aggregateSchema);
-    }
-
-    public static <K extends GenericRecord, C extends GenericRecord, E extends GenericRecord, A extends GenericRecord> AvroAggregateSerdes<K, C, E, A> of(
-            final String schemaRegistryUrl,
-            final boolean useMockSchemaRegistry,
-            final Schema aggregateSchema
-    ) {
-        return new AvroAggregateSerdes<>(
-                specificDomainMapper(),
-                specificDomainMapper(),
-                specificDomainMapper(),
-                specificDomainMapper(),
-                schemaRegistryUrl,
-                useMockSchemaRegistry,
-                aggregateSchema);
-    }
-
-    public AvroAggregateSerdes(
+    AvroAggregateSerdes(
             final GenericMapper<K, GenericRecord> keyMapper,
             final GenericMapper<C, GenericRecord> commandMapper,
             final GenericMapper<E, GenericRecord> eventMapper,

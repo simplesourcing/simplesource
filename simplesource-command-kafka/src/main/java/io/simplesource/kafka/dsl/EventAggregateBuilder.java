@@ -4,6 +4,7 @@ import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Result;
 import io.simplesource.kafka.api.AggregateResources.TopicEntity;
 import io.simplesource.kafka.api.AggregateSerdes;
+import io.simplesource.kafka.api.EventSerdes;
 import io.simplesource.kafka.api.ResourceNamingStrategy;
 import io.simplesource.kafka.spec.AggregateSpec;
 import io.simplesource.kafka.spec.TopicSpec;
@@ -39,8 +40,8 @@ public final class EventAggregateBuilder<K, E> {
         return apply(b -> b.withResourceNamingStrategy(resourceNamingStrategy));
     }
 
-    public EventAggregateBuilder<K, E> withSerdes(final AggregateSerdes<K, E, E, Boolean> aggregateSerdes) {
-        return apply(b -> b.withSerdes(aggregateSerdes));
+    public EventAggregateBuilder<K, E> withSerdes(final EventSerdes<K, E> eventSerdes) {
+        return apply(b -> b.withSerdes(eventSerdes));
     }
 
     public EventAggregateBuilder<K, E> withDefaultTopicSpec(final int partitions, final int replication, final int retentionDays) {

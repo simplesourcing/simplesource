@@ -1,0 +1,6 @@
+@namespace("io.simplesource.serialization.avro.generated")
+protocol SimpleSourceSchemas {
+  record AvroBool {
+    boolean value;
+  }
+}

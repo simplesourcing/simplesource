@@ -6,7 +6,7 @@ import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.AggregateSerdes;
 import io.simplesource.kafka.model.*;
-import io.simplesource.kafka.serialization.avro.AvroAggregateSerdes;
+import io.simplesource.kafka.serialization.avro.AvroSerdes;
 import io.simplesource.kafka.serialization.avro.mappers.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,13 +15,13 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class AvroAggregateSerdeTests {
+public class AvroCustomAggregateSerdeTests {
     private static final String topic = "topic";
     private AggregateSerdes<UserAccountDomainKey, UserAccountDomainCommand, UserAccountDomainEvent, Optional<UserAccountDomain>> serdes;
 
     @BeforeEach
     void setup() {
-        serdes = new AvroAggregateSerdes<>(
+        serdes = AvroSerdes.Custom.aggregate(
                 UserAccountAvroMappers.keyMapper,
                 UserAccountAvroMappers.commandMapper,
                 UserAccountAvroMappers.eventMapper,
@@ -63,7 +63,7 @@ public class AvroAggregateSerdeTests {
     void commandRequest() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = new CommandRequest<>(
+        CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = CommandRequest.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),
@@ -88,7 +88,7 @@ public class AvroAggregateSerdeTests {
     @Test
     void commandResponseSuccess() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
-        CommandResponse commandResponse = new CommandResponse(
+        CommandResponse commandResponse = CommandResponse.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),
@@ -102,7 +102,7 @@ public class AvroAggregateSerdeTests {
     @Test
     void commandResponseFailure() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
-        CommandResponse commandResponse = new CommandResponse(
+        CommandResponse commandResponse = CommandResponse.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),

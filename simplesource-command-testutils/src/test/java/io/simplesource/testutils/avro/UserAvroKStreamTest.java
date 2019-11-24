@@ -4,6 +4,7 @@ import io.simplesource.api.CommandError;
 import io.simplesource.data.NonEmptyList;
 import io.simplesource.data.Sequence;
 import io.simplesource.kafka.api.AggregateSerdes;
+import io.simplesource.kafka.serialization.avro.AvroSerdes;
 import io.simplesource.kafka.testutils.AggregateTestDriver;
 import io.simplesource.kafka.testutils.AggregateTestHelper;
 import io.simplesource.testutils.domain.UserAggregate;
@@ -14,7 +15,6 @@ import io.simplesource.testutils.domain.UserKey;
 import io.simplesource.kafka.dsl.KafkaConfig;
 import io.simplesource.kafka.util.PrefixResourceNamingStrategy;
 import io.simplesource.kafka.model.ValueWithSequence;
-import io.simplesource.kafka.serialization.avro.AvroAggregateSerdes;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ class UserAvroKStreamTest {
     @BeforeEach
     public void setup() {
         final AggregateSerdes<UserKey, UserCommand, UserEvent, Optional<User>> avroAggregateSerdes =
-                new AvroAggregateSerdes<>(
+                AvroSerdes.Custom.aggregate(
                         keyMapper, commandMapper, eventMapper, aggregateMapper,
                         "http://mock-registry:8081",
                         true,

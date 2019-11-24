@@ -4,9 +4,10 @@ import io.simplesource.api.CommandError;
 import io.simplesource.api.CommandId;
 import io.simplesource.data.Result;
 import io.simplesource.data.Sequence;
+import io.simplesource.kafka.api.CommandSerdes;
 import io.simplesource.kafka.model.CommandRequest;
 import io.simplesource.kafka.model.CommandResponse;
-import io.simplesource.kafka.serialization.avro.AvroCommandSerdes;
+import io.simplesource.kafka.serialization.avro.AvroSerdes;
 import io.simplesource.kafka.serialization.avro.mappers.domain.UserAccountDomainCommand;
 import io.simplesource.kafka.serialization.avro.mappers.domain.UserAccountDomainKey;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,13 +16,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class AvroCommandSerdeTests {
+class AvroCustomCommandSerdeTests {
     private static final String topic = "topic";
-    private AvroCommandSerdes<UserAccountDomainKey, UserAccountDomainCommand> serdes;
+    private CommandSerdes<UserAccountDomainKey, UserAccountDomainCommand> serdes;
 
     @BeforeEach
     void setup() {
-        serdes = AvroCommandSerdes.of(
+        serdes = AvroSerdes.Custom.command(
                 UserAccountAvroMappers.keyMapper,
                 UserAccountAvroMappers.commandMapper,
                 "http://localhost:8081",
@@ -49,7 +50,7 @@ class AvroCommandSerdeTests {
     void commandRequest() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = new CommandRequest<>(
+        CommandRequest<UserAccountDomainKey, UserAccountDomainCommand> commandRequest = CommandRequest.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),
@@ -64,7 +65,7 @@ class AvroCommandSerdeTests {
     void commandResponseSuccess() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandResponse commandResponse = new CommandResponse<>(
+        CommandResponse commandResponse = CommandResponse.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),
@@ -79,7 +80,7 @@ class AvroCommandSerdeTests {
     void commandResponseFailure() {
         UserAccountDomainKey aggKey = new UserAccountDomainKey("userId");
 
-        CommandResponse commandResponse = new CommandResponse<>(
+        CommandResponse commandResponse = CommandResponse.of(
                 CommandId.random(),
                 aggKey,
                 Sequence.first(),
