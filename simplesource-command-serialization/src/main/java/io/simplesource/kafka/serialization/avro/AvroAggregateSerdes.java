@@ -2,12 +2,10 @@ package io.simplesource.kafka.serialization.avro;
 
 import io.simplesource.api.CommandId;
 import io.simplesource.kafka.api.AggregateSerdes;
-import io.simplesource.kafka.api.EventSerdes;
 import io.simplesource.kafka.serialization.util.GenericMapper;
 import io.simplesource.kafka.model.*;
 import io.simplesource.kafka.serialization.util.GenericSerde;
 import io.simplesource.kafka.serialization.avro.AvroGenericUtils.*;
-import io.simplesource.serialization.avro.generated.AvroBool;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.common.serialization.Serde;
