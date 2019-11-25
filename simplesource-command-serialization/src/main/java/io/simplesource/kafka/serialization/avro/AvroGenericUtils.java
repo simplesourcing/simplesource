@@ -352,7 +352,7 @@ public final class AvroGenericUtils {
 
     }
 
-    static class ValueWithSequenceAvroHelper {
+    public static class ValueWithSequenceAvroHelper {
         private static final Map<Schema, Schema> schemaCache = new ConcurrentHashMap<>();
 
         private static final String VALUE = "value";
