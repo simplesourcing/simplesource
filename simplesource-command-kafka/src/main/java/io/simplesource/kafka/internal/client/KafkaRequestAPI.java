@@ -13,7 +13,6 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Clock;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -28,11 +27,11 @@ public final class KafkaRequestAPI<K, I, RK, R> {
     private static final Logger logger = LoggerFactory.getLogger(KafkaRequestAPI.class);
 
     @Value
-    static final class ResponseReceiver<K, M, V> {
-        final ExpiringMap<K, M> expiringMap;
-        final BiFunction<M, V, M> mapModifier;
+    static final class ResponseReceiver<RK, I, R> {
+        final CachedResponseHandlers<RK, I, R> expiringMap;
+        final BiFunction<ResponseHandler<I, R>, R, ResponseHandler<I, R>> mapModifier;
 
-        void receive(K k, V v) {
+        void receive(RK k, R v) {
             expiringMap.computeIfPresent(k, m -> mapModifier.apply(m, v));
         }
     }
@@ -55,7 +54,7 @@ public final class KafkaRequestAPI<K, I, RK, R> {
 
     private final RequestAPIContext<K, I, RK, R> ctx;
     private final ResponseSubscription responseSubscription;
-    private final ExpiringMap<RK, ResponseHandler<I, R>> responseHandlers;
+    private final CachedResponseHandlers<RK, I, R> responseHandlers;
     private final RequestPublisher<K, I> requestSender;
     private final RequestPublisher<RK, String> responseTopicMapSender;
 
@@ -122,8 +121,8 @@ public final class KafkaRequestAPI<K, I, RK, R> {
             }
         }
 
-        responseHandlers = new ExpiringMap<>(retentionInSeconds, Clock.systemUTC());
-        ResponseReceiver<RK, ResponseHandler<I, R>, R> responseReceiver =
+        responseHandlers = new CachedResponseHandlers<>(retentionInSeconds);
+        ResponseReceiver<RK, I, R> responseReceiver =
             new ResponseReceiver<>(responseHandlers, (h, r) -> {
                 h.forEachFuture(future -> future.complete(r));
                 return ResponseHandler.initialise(h.input, Optional.of(r));
@@ -135,18 +134,11 @@ public final class KafkaRequestAPI<K, I, RK, R> {
     }
 
     public FutureResult<Exception, RequestPublisher.PublishResult> publishRequest(final K key, RK requestId, final I request) {
-
-        FutureResult<Exception, RequestPublisher.PublishResult> result = responseTopicMapSender.publish(requestId, ctx.privateResponseTopic())
+        return responseTopicMapSender.publish(requestId, ctx.privateResponseTopic())
                 .flatMap(r -> requestSender.publish(key, request)).map(r -> {
                     responseHandlers.insertIfAbsent(requestId, () -> ResponseHandler.initialise(request, Optional.empty()));
                     return r;
                 });
-
-        responseHandlers.removeStaleAsync(h ->
-                h.forEachFuture(f ->
-                        f.complete(ctx.errorValue().apply(h.input, new Exception("Request not processed.")))));
-
-        return result;
     }
 
     public CompletableFuture<R> queryResponse(final RK requestId, final Duration timeout) {
