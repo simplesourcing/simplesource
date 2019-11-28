@@ -3,10 +3,10 @@ package io.simplesource.kafka.api;
 public final class AggregateResources {
 
     public enum TopicEntity {
-        command_request,
-        event,
-        aggregate,
-        command_response,
-        command_response_topic_map,
+        COMMAND_REQUEST,
+        EVENT,
+        AGGREGATE,
+        COMMAND_RESPONSE,
+        COMMAND_RESPONSE_TOPIC_MAP,
     }
 }
