@@ -116,7 +116,7 @@ public final class AggregateBuilder<K, C, E, A> {
     private Map<TopicEntity, TopicSpec> defaultTopicConfig(final int partitions, final int replication, final int retentionDays) {
         short replicationShort = (short)replication;
         final Map<TopicEntity, TopicSpec> config = new HashMap<>();
-        String retentionMillis = String.valueOf(TimeUnit.HOURS.toMillis(retentionDays));
+        String retentionMillis = String.valueOf(TimeUnit.DAYS.toMillis(retentionDays));
 
         final Map<String, String> commandRequestTopic = new HashMap<>();
         commandRequestTopic.put(TopicConfig.RETENTION_MS_CONFIG, retentionMillis);
