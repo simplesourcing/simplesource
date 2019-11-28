@@ -22,7 +22,7 @@ public final class AggregateBuilder<K, C, E, A> {
     private String name;
     private ResourceNamingStrategy resourceNamingStrategy;
     private AggregateSerdes<K, C, E, A> aggregateSerdes;
-    private Map<TopicEntity, TopicSpec> topicConfig;
+    private final Map<TopicEntity, TopicSpec> topicConfig = new HashMap<>();
     private WindowSpec commandResponseStoreSpec;
     private InitialValue<K, A> initialValue;
     private CommandHandler<K, C, E, A> commandHandler;
@@ -34,7 +34,6 @@ public final class AggregateBuilder<K, C, E, A> {
     }
 
     private AggregateBuilder() {
-        topicConfig = new HashMap<>();
         commandResponseStoreSpec = new WindowSpec(TimeUnit.DAYS.toSeconds(1L));
     }
 
@@ -93,11 +92,14 @@ public final class AggregateBuilder<K, C, E, A> {
         requireNonNull(name, "No name for aggregate has been defined");
         requireNonNull(resourceNamingStrategy, "No resource naming strategy for aggregate has been defined");
         requireNonNull(aggregateSerdes, "No domain serializer for aggregate has been defined");
-        requireNonNull(topicConfig, "No topic config for aggregate has been defined");
         requireNonNull(initialValue, "No initial value for aggregate has been defined");
         requireNonNull(commandHandler, "No CommandHandler for aggregate has been defined");
         requireNonNull(aggregator, "No Aggregator for aggregate has been defined");
-        
+
+        if (topicConfig.isEmpty()) {
+            throw new RuntimeException("No topic config for aggregate has been defined");
+        }
+
         // by default strict
         if (invalidSequenceHandler == null)
             invalidSequenceHandler = InvalidSequenceHandlerProvider.getForStrategy(InvalidSequenceStrategy.Strict);
