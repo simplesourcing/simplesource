@@ -18,6 +18,7 @@ public final class UserAggregate {
             final InitialValue<UserKey, Optional<User>> initialValue
     ) {
         return AggregateBuilder.<UserKey, UserCommand, UserEvent, Optional<User>>newBuilder()
+                .withDefaultTopicSpec(1, 1, 1)
                 .withName(name)
                 .withSerdes(aggregateSerdes)
                 .withResourceNamingStrategy(resourceNamingStrategy)
