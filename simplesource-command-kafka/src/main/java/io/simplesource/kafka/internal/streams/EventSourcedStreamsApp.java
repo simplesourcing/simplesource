@@ -108,8 +108,7 @@ public final class EventSourcedStreamsApp {
         // empty and set state store directory
         new File(aggregateSetSpec.kafkaConfig().stateDir()).mkdirs();
 
-        final KafkaStreams streams = new KafkaStreams(
-                topology, new StreamsConfig(aggregateSetSpec.kafkaConfig().streamsConfig()));
+        final KafkaStreams streams = new KafkaStreams(topology, aggregateSetSpec.kafkaConfig().streamsConfig());
         registerExceptionHandler(logger, streams);
         addShutdownHook(logger, streams);
         streams.start();

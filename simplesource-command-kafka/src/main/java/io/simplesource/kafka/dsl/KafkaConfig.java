@@ -12,7 +12,7 @@ import static java.util.Objects.requireNonNull;
 
 @Value
 public class KafkaConfig {
-    private final Map<String, Object> config;
+    private final Properties config;
 
     public String applicationId() {
         return (String)config.get(StreamsConfig.APPLICATION_ID_CONFIG);
@@ -58,12 +58,12 @@ public class KafkaConfig {
         return configs;
     }
 
-    public Map<String, Object> streamsConfig() {
-        return new HashMap<>(config);
+    public Properties streamsConfig() {
+        return config;
     }
 
     public static class Builder {
-        private Map<String, Object> config = new HashMap<>();
+        private Properties config = new Properties();
 
         public Builder() {
             config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE);
@@ -91,6 +91,14 @@ public class KafkaConfig {
             return this;
         }
 
+        public Builder withReplicationFactor(final int replicationFactor) {
+            if (replicationFactor < 1) {
+                throw new RuntimeException("Invalid replication factor");
+            }
+
+            config.put(StreamsConfig.REPLICATION_FACTOR_CONFIG, String.valueOf(replicationFactor));
+            return this;
+        }
 
         public Builder withSetting(final String name, final Object value) {
             config.put(name, value);
