@@ -64,9 +64,9 @@ public final class AggregateTestDriver<K, C, E, A> {
 
         // create a version of the command API that pipes stuff in and out of the TestTopologyDriver
         RequestPublisher<K, CommandRequest<K, C>> commandRequestPublisher =
-                new TestPublisher<>(driver, aggregateSerdes.aggregateKey(), aggregateSerdes.commandRequest(), topicName(TopicEntity.command_request));
+                new TestPublisher<>(driver, aggregateSerdes.aggregateKey(), aggregateSerdes.commandRequest(), topicName(TopicEntity.COMMAND_REQUEST));
         final RequestPublisher<CommandId, String> responseTopicMapPublisher =
-                new TestPublisher<>(driver, aggregateSerdes.commandId(), Serdes.String(), topicName(TopicEntity.command_response_topic_map));
+                new TestPublisher<>(driver, aggregateSerdes.commandId(), Serdes.String(), topicName(TopicEntity.COMMAND_RESPONSE_TOPIC_MAP));
 
         CommandSpec<K, C> commandSpec = SpecUtils.getCommandSpec(aggregateSpec,"localhost");
         RequestAPIContext<?, ?, CommandId, CommandResponse<K>> requestCtx =
@@ -105,7 +105,7 @@ public final class AggregateTestDriver<K, C, E, A> {
 
     Optional<KeyValue<K, AggregateUpdate<A>>> readAggregateTopic() {
         final ProducerRecord<K, AggregateUpdate<A>> maybeRecord = driver.readOutput(
-                topicName(TopicEntity.aggregate),
+                topicName(TopicEntity.AGGREGATE),
                 aggregateSerdes.aggregateKey().deserializer(),
                 aggregateSerdes.aggregateUpdate().deserializer()
         );
@@ -117,7 +117,7 @@ public final class AggregateTestDriver<K, C, E, A> {
 
     Optional<KeyValue<K, CommandResponse<K>>> readCommandResponseTopic() {
         final ProducerRecord<K, CommandResponse<K>> maybeRecord = driver.readOutput(
-                topicName(TopicEntity.command_response),
+                topicName(TopicEntity.COMMAND_RESPONSE),
                 aggregateSerdes.aggregateKey().deserializer(),
                 aggregateSerdes.commandResponse().deserializer()
         );
@@ -129,7 +129,7 @@ public final class AggregateTestDriver<K, C, E, A> {
 
     Optional<KeyValue<K, ValueWithSequence<E>>> readEventTopic() {
         final ProducerRecord<K, ValueWithSequence<E>> maybeRecord = driver.readOutput(
-            topicName(TopicEntity.event),
+            topicName(TopicEntity.EVENT),
                 aggregateSerdes.aggregateKey().deserializer(),
             aggregateSerdes.valueWithSequence().deserializer()
         );

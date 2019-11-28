@@ -30,7 +30,7 @@ class TestContextDriver<K, C, E, A> {
     }
 
     void publishCommand(K key, CommandRequest<K, C> commandRequest) {
-        commandPublisher.publish(ctx.topicName(TopicEntity.command_request), key, commandRequest);
+        commandPublisher.publish(ctx.topicName(TopicEntity.COMMAND_REQUEST), key, commandRequest);
     }
 
     public <KP, VP> TestDriverPublisher<KP, VP> getPublisher(final Serde<KP> keySerde, final Serde<VP> valueSerde) {
@@ -54,7 +54,7 @@ class TestContextDriver<K, C, E, A> {
     }
 
     ValueWithSequence<E> verifyEvent(K k, Consumer<ValueWithSequence<E>> verifier) {
-        return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.event),
+        return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.EVENT),
                 ctx.serdes().aggregateKey().deserializer(),
                 ctx.serdes().valueWithSequence().deserializer()), false, k, verifier);
     }
@@ -63,7 +63,7 @@ class TestContextDriver<K, C, E, A> {
         List<ValueWithSequence<E>> eventList = new ArrayList<>();
         int[] index = new int[1];
         while (true) {
-            ValueWithSequence<E> response = verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.event),
+            ValueWithSequence<E> response = verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.EVENT),
                     ctx.serdes().aggregateKey().deserializer(),
                     ctx.serdes().valueWithSequence().deserializer()), false, k, verifier == null ? null : resp -> verifier.accept(new Tuple2<>(index[0], resp)));
             if (response == null) break;
@@ -81,13 +81,13 @@ class TestContextDriver<K, C, E, A> {
     }
 
     void verifyNoEvent() {
-        verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.event),
+        verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.EVENT),
                 ctx.serdes().aggregateKey().deserializer(),
                 ctx.serdes().valueWithSequence().deserializer()), true, null, null);
     }
 
     CommandResponse verifyCommandResponse(K k, Consumer<CommandResponse<K>> verifier) {
-        return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.command_response),
+        return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.COMMAND_RESPONSE),
                 ctx.serdes().aggregateKey().deserializer(),
                 ctx.serdes().commandResponse().deserializer()), false, k, verifier);
     }
@@ -100,19 +100,19 @@ class TestContextDriver<K, C, E, A> {
     }
 
     void verifyNoCommandResponse() {
-        verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.command_response),
+        verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.COMMAND_RESPONSE),
                 ctx.serdes().aggregateKey().deserializer(),
                 ctx.serdes().commandResponse().deserializer()), true, null, null);
     }
 
     AggregateUpdate<A> verifyAggregateUpdate(K k, Consumer<AggregateUpdate<A>> verifier) {
-        return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.aggregate),
+        return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.AGGREGATE),
                 ctx.serdes().aggregateKey().deserializer(),
                 ctx.serdes().aggregateUpdate().deserializer()), false, k, verifier);
     }
 
     AggregateUpdate<A> verifyNoAggregateUpdate() {
-        return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.aggregate),
+        return verifyAndReturn(driver.readOutput(ctx.topicName(TopicEntity.AGGREGATE),
                 ctx.serdes().aggregateKey().deserializer(),
                 ctx.serdes().aggregateUpdate().deserializer()), true, null, null);
     }

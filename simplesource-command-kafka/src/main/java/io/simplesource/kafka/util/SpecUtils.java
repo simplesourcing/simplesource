@@ -12,6 +12,6 @@ public class SpecUtils {
                 aSpec.serialization().resourceNamingStrategy(),
                 aSpec.serialization().serdes(),
                 aSpec.generation().stateStoreSpec(),
-                aSpec.generation().topicConfig().get(AggregateResources.TopicEntity.command_response));
+                aSpec.generation().topicConfig().get(AggregateResources.TopicEntity.COMMAND_RESPONSE));
     }
 }
