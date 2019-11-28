@@ -121,7 +121,7 @@ public final class AggregateBuilder<K, C, E, A> {
         final Map<String, String> commandRequestTopic = new HashMap<>();
         commandRequestTopic.put(TopicConfig.RETENTION_MS_CONFIG, retentionMillis);
         config.put(
-            TopicEntity.command_request,
+            TopicEntity.COMMAND_REQUEST,
             new TopicSpec(partitions, replicationShort, commandRequestTopic));
 
         // turn on log compaction of aggregates by default
@@ -130,26 +130,26 @@ public final class AggregateBuilder<K, C, E, A> {
         aggregateTopic.put(TopicConfig.MIN_COMPACTION_LAG_MS_CONFIG, retentionMillis);
         aggregateTopic.put(TopicConfig.DELETE_RETENTION_MS_CONFIG, retentionMillis);
         config.put(
-            TopicEntity.aggregate,
+            TopicEntity.AGGREGATE,
             new TopicSpec(partitions, replicationShort, aggregateTopic));
 
         // never delete old log segments for events
         final Map<String, String> eventTopic = new HashMap<>();
         eventTopic.put(TopicConfig.RETENTION_MS_CONFIG, "-1");
         config.put(
-                TopicEntity.event,
+                TopicEntity.EVENT,
                 new TopicSpec(partitions, replicationShort, eventTopic));
 
         final Map<String, String> commandResponseTopic = new HashMap<>();
         aggregateTopic.put(TopicConfig.RETENTION_MS_CONFIG, retentionMillis);
         config.put(
-                TopicEntity.command_response,
+                TopicEntity.COMMAND_RESPONSE,
                 new TopicSpec(partitions, replicationShort, commandResponseTopic));
 
         final Map<String, String> commandResponseTopicMapTopic = new HashMap<>();
         aggregateTopic.put(TopicConfig.RETENTION_MS_CONFIG, retentionMillis);
         config.put(
-                TopicEntity.command_response_topic_map,
+                TopicEntity.COMMAND_RESPONSE_TOPIC_MAP,
                 new TopicSpec(partitions, replicationShort, commandResponseTopicMapTopic));
 
         return config;

@@ -8,23 +8,23 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.simplesource.kafka.api.AggregateResources.TopicEntity.aggregate;
-import static io.simplesource.kafka.api.AggregateResources.TopicEntity.event;
+import static io.simplesource.kafka.api.AggregateResources.TopicEntity.AGGREGATE;
+import static io.simplesource.kafka.api.AggregateResources.TopicEntity.EVENT;
 
 final class EventSourcedPublisher {
     private static final Logger logger = LoggerFactory.getLogger(EventSourcedPublisher.class);
 
     static <K, C, E, A> void publishEvents(TopologyContext<K, C, E, A> ctx, final KStream<K, ValueWithSequence<E>> eventStream) {
         eventStream
-                .peek((k, v) -> logger.debug("Writing event ({},{}) to {}", k, v, ctx.topicName(event)))
-                .to(ctx.topicName(event), ctx.eventsConsumedProduced());
+                .peek((k, v) -> logger.debug("Writing event ({},{}) to {}", k, v, ctx.topicName(EVENT)))
+                .to(ctx.topicName(EVENT), ctx.eventsConsumedProduced());
     }
 
     static <K, A> void publishAggregateUpdates(TopologyContext<K, ?, ?, A> ctx, final KStream<K, AggregateUpdate<A>> aggregateUpdateStream) {
-        aggregateUpdateStream.to(ctx.topicName(aggregate), ctx.aggregatedUpdateProduced());
+        aggregateUpdateStream.to(ctx.topicName(AGGREGATE), ctx.aggregatedUpdateProduced());
     }
 
     static <K> void publishCommandResponses(TopologyContext<K, ?, ?, ?> ctx, final KStream<K, CommandResponse<K>> responseStream) {
-        responseStream.to(ctx.topicName(AggregateResources.TopicEntity.command_response), ctx.commandResponseProduced());
+        responseStream.to(ctx.topicName(AggregateResources.TopicEntity.COMMAND_RESPONSE), ctx.commandResponseProduced());
     }
 }

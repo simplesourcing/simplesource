@@ -84,17 +84,17 @@ public final class KafkaCommandAPI<K, C> implements CommandAPI<K, C> {
         CommandSerdes<K, C> serdes = commandSpec.serdes();
         String responseTopicBase = namingStrategy.topicName(
                 commandSpec.aggregateName(),
-                command_response.name());
+                COMMAND_RESPONSE.name());
 
         String privateResponseTopic =  String.format("%s_%s", responseTopicBase, commandSpec.clientId());
         return RequestAPIContext.<K, CommandRequest<K, C>, CommandId, CommandResponse<K>>builder()
                 .kafkaConfig(kafkaConfig)
                 .requestTopic(namingStrategy.topicName(
                         commandSpec.aggregateName(),
-                        command_request.name()))
+                        COMMAND_REQUEST.name()))
                 .responseTopicMapTopic(namingStrategy.topicName(
                         commandSpec.aggregateName(),
-                        command_response_topic_map.name()))
+                        COMMAND_RESPONSE_TOPIC_MAP.name()))
                 .privateResponseTopic(privateResponseTopic)
                 .requestKeySerde(serdes.aggregateKey())
                 .requestValueSerde(serdes.commandRequest())

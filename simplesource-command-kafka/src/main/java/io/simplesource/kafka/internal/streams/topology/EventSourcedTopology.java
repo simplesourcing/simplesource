@@ -54,7 +54,7 @@ public final class EventSourcedTopology {
 
     private static <K> DistributorContext<CommandId, CommandResponse<K>> getDistributorContext(TopologyContext<K, ?, ?, ?> ctx) {
         return new DistributorContext<>(
-                ctx.aggregateSpec().serialization().resourceNamingStrategy().topicName(ctx.aggregateSpec().aggregateName(), AggregateResources.TopicEntity.command_response_topic_map.toString()),
+                ctx.aggregateSpec().serialization().resourceNamingStrategy().topicName(ctx.aggregateSpec().aggregateName(), AggregateResources.TopicEntity.COMMAND_RESPONSE_TOPIC_MAP.toString()),
                 new DistributorSerdes<>(ctx.serdes().commandId(), ctx.serdes().commandResponse()),
                 ctx.aggregateSpec().generation().stateStoreSpec(),
                 CommandResponse::commandId, CommandId::id);
