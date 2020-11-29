@@ -8,5 +8,5 @@ Simple Sourcing is an API for building event sourcing systems where the data is 
 See the [documentation](https://simplesource.io/simple_sourcing_docs_home.html)
 for more details.
 
-See the [Quick Start](http://simplesource.io/quickstart.html) for
+See the [Quick Start](http://simplesource.io/simple_sourcing_quickstart.html) for
 getting Simple Sourcing running locally.
